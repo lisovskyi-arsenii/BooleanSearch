@@ -15,7 +15,10 @@ public class Main {
         LOGGER.info("APPLICATION STARTED at {}", LocalDateTime.now());
         LOGGER.info("=".repeat(80));
 
+
         try {
+            System.out.println("ANNOTATIONS: ");
+            ReflectionEngine.searchForAnnotations();
             BooleanSearchEngine searchEngine = new BooleanSearchEngine();
 
             searchEngine.indexDocumentsFromDirectory(DIRECTORY_NAME);

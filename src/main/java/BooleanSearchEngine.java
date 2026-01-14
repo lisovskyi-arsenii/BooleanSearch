@@ -1,5 +1,7 @@
+import annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.FileWalker;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -34,17 +36,8 @@ public class BooleanSearchEngine {
 //    public BooleanSearchEngine() {}
 
     // indexing files
-    public void indexDocumentsFromDirectory(String directoryPath) throws IllegalArgumentException, IOException {
-        Path dir = Paths.get(directoryPath);
-
-        if (!Files.exists(dir) || !Files.isDirectory(dir)) {
-            throw new IllegalArgumentException("%s is not a directory".formatted(directoryPath));
-        }
-
-        List<Path> paths = Files.walk(dir, 1)
-                .filter(Files::isRegularFile)
-                .filter(path -> (path.toString().endsWith(".txt")) || path.toString().endsWith(".json"))
-                .toList();
+    public void indexDocumentsFromDirectory(@NotNull String directoryPath) throws IllegalArgumentException, IOException {
+        List<Path> paths = FileWalker.findFiles(directoryPath);
 
         for (Path path : paths) {
             LOGGER.info("Indexing documents from {}", path.toString());

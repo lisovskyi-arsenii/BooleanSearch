@@ -11,7 +11,7 @@ repositories {
 }
 
 val slf4jVersion = "2.0.9"
-val logbackVersion = "1.4.14"
+val logbackVersion = "1.5.13"
 
 dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
