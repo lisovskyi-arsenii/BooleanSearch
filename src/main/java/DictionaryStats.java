@@ -2,13 +2,13 @@ public class DictionaryStats {
     private int documentsCount;
     private int uniqueTerms;
     private int totalWords;
-    private long dictionarySizeInBytes;
+    private long collectionSizeInBytes;
 
-    public DictionaryStats(int documentsCount, int uniqueTerms, int totalWords, long dictionarySizeInBytes) {
+    public DictionaryStats(int documentsCount, int uniqueTerms, int totalWords, long collectionSizeInBytes) {
         this.documentsCount = documentsCount;
         this.uniqueTerms = uniqueTerms;
         this.totalWords = totalWords;
-        this.dictionarySizeInBytes = dictionarySizeInBytes;
+        this.collectionSizeInBytes = collectionSizeInBytes;
     }
 
     public void incrementDocumentsCount() {
@@ -23,8 +23,8 @@ public class DictionaryStats {
         this.totalWords++;
     }
 
-    public void addSizeTotalDictionarySize(long size) {
-        this.dictionarySizeInBytes += size;
+    public void addFileSize(long size) {
+        this.collectionSizeInBytes += size;
     }
 
     public int getUniqueTerms() {
@@ -35,8 +35,8 @@ public class DictionaryStats {
         return totalWords;
     }
 
-    public long getDictionarySizeInBytes() {
-        return dictionarySizeInBytes;
+    public long getCollectionSizeInBytes() {
+        return collectionSizeInBytes;
     }
 
     // TODO
@@ -46,7 +46,7 @@ public class DictionaryStats {
                 "documentsCount=" + documentsCount +
                 ", uniqueTerms=" + uniqueTerms +
                 ", totalWords=" + totalWords +
-                ", dictionarySizeInBytes=" + dictionarySizeInBytes +
+                ", collectionSizeInBytes=" + collectionSizeInBytes +
                 '}';
     }
 }

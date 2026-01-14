@@ -4,7 +4,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-public class BooleanSearchEngine implements Serializable {
+public class BooleanSearchEngine {
     private static final String FILENAME_STOPWORDS = "stopwords.txt";
     private static final List<String> STOP_WORDS = new ArrayList<>();
 
@@ -12,10 +12,11 @@ public class BooleanSearchEngine implements Serializable {
     private final Map<String, Integer> docMetadata = new HashMap<>(); // filename -> document id
     private final Map<Integer, String> idToFilename = new HashMap<>(); // document id -> filename
 
-    private final DictionaryStats dictionaryStats = new DictionaryStats(0,0, 0, 0);
     // TODO
     private  SerializationComparison serializationComparison;
     private int nextDocID = 1;
+
+    private long totalCollectionSize = 0;
 
 
     static {
@@ -49,6 +50,8 @@ public class BooleanSearchEngine implements Serializable {
     }
 
     private void indexFileFromDisk(Path filePath) throws IOException {
+        totalCollectionSize += Files.size(filePath);
+
         String filename = filePath.getFileName().toString();
 
         if (!docMetadata.containsKey(filename)) {
@@ -185,7 +188,17 @@ public class BooleanSearchEngine implements Serializable {
 
     // статистика
     public DictionaryStats getStats() {
-        return dictionaryStats;
+        int uniqueTerms = invertedIndex.size();
+        int totalWords = invertedIndex.values().stream()
+                .mapToInt(Set::size)
+                .sum();
+
+        return new DictionaryStats(
+                docMetadata.size(),
+                uniqueTerms,
+                totalWords,
+                totalCollectionSize
+        );
     }
 
     // print out
@@ -205,8 +218,6 @@ public class BooleanSearchEngine implements Serializable {
         int id = nextDocID++;
         docMetadata.put(filename, id);
         idToFilename.put(id, filename);
-
-        dictionaryStats.incrementDocumentsCount();
     }
 
     private static void addAllStopWordsToList(String filename) throws IllegalArgumentException, IOException {
