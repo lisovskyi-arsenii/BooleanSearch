@@ -4,13 +4,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-public class BooleanSearchEngine {
+public class BooleanSearchEngine implements Serializable {
     private static final String FILENAME_STOPWORDS = "stopwords.txt";
     private static final List<String> STOP_WORDS = new ArrayList<>();
 
     private final Map<String, Set<Integer>> invertedIndex = new HashMap<>(); // term -> [document ids]
     private final Map<String, Integer> docMetadata = new HashMap<>(); // filename -> document id
     private final Map<Integer, String> idToFilename = new HashMap<>(); // document id -> filename
+
+    private final DictionaryStats dictionaryStats = new DictionaryStats(0,0, 0, 0);;
     private int nextDocID = 1;
 
 
@@ -22,7 +24,8 @@ public class BooleanSearchEngine {
         }
     }
 
-    public BooleanSearchEngine() {}
+    public BooleanSearchEngine() {
+    }
 
     // indexing files
     public void indexDocumentsFromDirectory(String directoryPath) throws IllegalArgumentException, IOException {
@@ -101,6 +104,7 @@ public class BooleanSearchEngine {
     }
 
 
+    // serialization
 
 
     // work with data after queries
@@ -142,6 +146,11 @@ public class BooleanSearchEngine {
     }
 
 
+    // статистика
+    public DictionaryStats getStats() {
+        return dictionaryStats;
+    }
+
     // print out
     public void printIndex() {
         for (Map.Entry<String, Set<Integer>> entry : invertedIndex.entrySet()) {
@@ -155,6 +164,8 @@ public class BooleanSearchEngine {
         int id = nextDocID++;
         docMetadata.put(filename, id);
         idToFilename.put(id, filename);
+
+        dictionaryStats.incrementDocumentsCount();
     }
 
     private static void addAllStopWordsToList(String filename) throws IllegalArgumentException, IOException {

@@ -37,6 +37,7 @@ public class Main {
                     () -> System.out.println("No and search result found"));
 
 
+            System.out.println(searchEngine.getStats());
 
         } catch (IOException | IllegalArgumentException e) {
             System.err.println(e.getMessage());
