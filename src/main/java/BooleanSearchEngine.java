@@ -12,7 +12,9 @@ public class BooleanSearchEngine implements Serializable {
     private final Map<String, Integer> docMetadata = new HashMap<>(); // filename -> document id
     private final Map<Integer, String> idToFilename = new HashMap<>(); // document id -> filename
 
-    private final DictionaryStats dictionaryStats = new DictionaryStats(0,0, 0, 0);;
+    private final DictionaryStats dictionaryStats = new DictionaryStats(0,0, 0, 0);
+    // TODO
+    private  SerializationComparison serializationComparison;
     private int nextDocID = 1;
 
 
@@ -105,6 +107,41 @@ public class BooleanSearchEngine implements Serializable {
 
 
     // serialization
+    // TODO
+    public void saveDictionaryBinary(String filepath) throws IOException {
+
+    }
+
+    // TODO
+    public void saveDictionaryText(String filepath) throws IOException {
+
+    }
+
+    // TODO
+    public void saveDictionaryJSON(String filepath) throws IOException {
+
+    }
+
+    // deserialization
+    // TODO
+    public void loadDictionaryBinary(String filepath) throws IOException {
+
+    }
+
+    // TODO
+    public void loadDictionaryText(String filepath) throws IOException {
+
+    }
+
+    // TODO
+    public void loadDictionaryJSON(String filepath) throws IOException {
+
+    }
+
+    // порівняння форматів сереалізації
+    public SerializationComparison getSerializationComparison() {
+        return serializationComparison;
+    }
 
 
     // work with data after queries
@@ -160,6 +197,10 @@ public class BooleanSearchEngine implements Serializable {
 
 
     // util methods
+    public void clearIndex() {
+        invertedIndex.clear();
+    }
+
     private void registerDocument(String filename) {
         int id = nextDocID++;
         docMetadata.put(filename, id);
