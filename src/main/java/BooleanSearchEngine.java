@@ -1,4 +1,3 @@
-import annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.FileWalker;
@@ -36,11 +35,11 @@ public class BooleanSearchEngine {
 //    public BooleanSearchEngine() {}
 
     // indexing files
-    public void indexDocumentsFromDirectory(@NotNull String directoryPath) throws IllegalArgumentException, IOException {
+    public void indexDocumentsFromDirectory(String directoryPath) throws IllegalArgumentException, IOException {
         List<Path> paths = FileWalker.findFiles(directoryPath);
 
         for (Path path : paths) {
-            LOGGER.info("Indexing documents from {}", path.toString());
+            LOGGER.info("Indexing documents from {}", path);
             indexFileFromDisk(path);
         }
     }
@@ -124,7 +123,15 @@ public class BooleanSearchEngine {
 
     // TODO
     public void saveDictionaryText(String filepath) throws IOException {
-
+        try (
+            OutputStream file = new FileOutputStream(filepath);
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(file));
+        ) {
+            for (Map.Entry<String, Set<Integer>> entry : invertedIndex.entrySet()) {
+                writer.write(entry.getKey() + " " + entry.getValue());
+                writer.newLine();
+            }
+        }
     }
 
     // TODO
@@ -155,7 +162,14 @@ public class BooleanSearchEngine {
 
     // TODO
     public void loadDictionaryText(String filepath) throws IOException {
+        try (
+            InputStream file = new FileInputStream(filepath);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(file));
+        ) {
+            String line;
+            while ((line = reader.readLine()) != null) {}
 
+        }
     }
 
     // TODO

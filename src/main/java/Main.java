@@ -9,6 +9,7 @@ public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private static final String DIRECTORY_NAME = "documents";
     private static final String SERIALIZATION_FILENAME = "serialization.ser";
+    private static final String SERIALIZATION_TXT_FILENAME = "serialization.txt";
 
     public static void main(String[] args) {
         LOGGER.info("=".repeat(80));
@@ -17,8 +18,6 @@ public class Main {
 
 
         try {
-            System.out.println("ANNOTATIONS: ");
-            ReflectionEngine.searchForAnnotations();
             BooleanSearchEngine searchEngine = new BooleanSearchEngine();
 
             searchEngine.indexDocumentsFromDirectory(DIRECTORY_NAME);
@@ -57,6 +56,8 @@ public class Main {
             System.out.println("Inverted index was serialized");
 
             searchEngine.loadDictionaryBinary(SERIALIZATION_FILENAME);
+            searchEngine.saveDictionaryText(SERIALIZATION_TXT_FILENAME);
+            searchEngine.loadDictionaryText(SERIALIZATION_TXT_FILENAME);
 
         } catch (IOException | IllegalArgumentException | ClassNotFoundException e) {
             System.err.println(e.getMessage());
