@@ -1,3 +1,6 @@
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -5,10 +8,11 @@ import java.nio.file.Paths;
 import java.util.*;
 
 public class BooleanSearchEngine {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BooleanSearchEngine.class);
     private static final String FILENAME_STOPWORDS = "stopwords.txt";
     private static final List<String> STOP_WORDS = new ArrayList<>();
 
-    private final Map<String, Set<Integer>> invertedIndex = new HashMap<>(); // term -> [document ids]
+    private Map<String, Set<Integer>> invertedIndex = new HashMap<>(); // term -> [document ids]
     private final Map<String, Integer> docMetadata = new HashMap<>(); // filename -> document id
     private final Map<Integer, String> idToFilename = new HashMap<>(); // document id -> filename
 
@@ -23,12 +27,11 @@ public class BooleanSearchEngine {
         try {
             addAllStopWordsToList(FILENAME_STOPWORDS);
         } catch (IOException | IllegalArgumentException e) {
-            System.err.println("Unable to load stopwords file: " + FILENAME_STOPWORDS + "\n" + e.getMessage());
+            LOGGER.error("Unable to load stopwords file: {}", e.getMessage());
         }
     }
 
-    public BooleanSearchEngine() {
-    }
+//    public BooleanSearchEngine() {}
 
     // indexing files
     public void indexDocumentsFromDirectory(String directoryPath) throws IllegalArgumentException, IOException {
@@ -44,7 +47,7 @@ public class BooleanSearchEngine {
                 .toList();
 
         for (Path path : paths) {
-            System.out.printf("Indexing %s%n", path);
+            LOGGER.info("Indexing documents from {}", path.toString());
             indexFileFromDisk(path);
         }
     }
@@ -110,9 +113,20 @@ public class BooleanSearchEngine {
 
 
     // serialization
-    // TODO
     public void saveDictionaryBinary(String filepath) throws IOException {
-
+        try (
+            OutputStream file = new FileOutputStream(filepath);
+            OutputStream buffer = new BufferedOutputStream(file);
+            ObjectOutput output = new ObjectOutputStream(buffer);
+        ) {
+            output.writeObject(invertedIndex);
+            Path path = Paths.get(filepath);
+            if (Files.exists(path)) {
+                LOGGER.info("Saving dictionary into {}", filepath);
+            } else {
+                LOGGER.warn("Could not save dictionary into {}", filepath);
+            }
+        }
     }
 
     // TODO
@@ -127,8 +141,23 @@ public class BooleanSearchEngine {
 
     // deserialization
     // TODO
-    public void loadDictionaryBinary(String filepath) throws IOException {
-
+    @SuppressWarnings("unchecked")
+    public void loadDictionaryBinary(String filepath) throws IOException, ClassNotFoundException {
+        try (
+            InputStream file = new FileInputStream(filepath);
+            InputStream buffer = new BufferedInputStream(file);
+            ObjectInput input = new ObjectInputStream(buffer);
+        ) {
+            invertedIndex = (HashMap<String, Set<Integer>>) input.readObject();
+            for (Map.Entry<String, Set<Integer>> entry : invertedIndex.entrySet()) {
+                System.out.println(entry.getKey() + " : " + entry.getValue());
+            }
+            if (!invertedIndex.isEmpty()) {
+                LOGGER.info("Loading dictionary into variable `invertedIndex` from {}", filepath);
+            } else {
+                LOGGER.warn("Could not load dictionary into variable `invertedIndex` from {}", filepath);
+            }
+        }
     }
 
     // TODO

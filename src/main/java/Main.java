@@ -1,10 +1,20 @@
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class Main {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private static final String DIRECTORY_NAME = "documents";
+    private static final String SERIALIZATION_FILENAME = "serialization.ser";
 
     public static void main(String[] args) {
+        LOGGER.info("=".repeat(80));
+        LOGGER.info("APPLICATION STARTED at {}", LocalDateTime.now());
+        LOGGER.info("=".repeat(80));
+
         try {
             BooleanSearchEngine searchEngine = new BooleanSearchEngine();
 
@@ -12,7 +22,7 @@ public class Main {
             searchEngine.printIndex();
 
             Optional<Set<Integer>> docIDs = searchEngine.search("study");
-            docIDs.ifPresentOrElse((ids) -> {
+            docIDs.ifPresentOrElse(ids -> {
                         List<String> findFilenames = new ArrayList<>();
                         for (Map.Entry<String, Integer> entry : searchEngine.getDocMetadata().entrySet()) {
                             if (ids.contains(entry.getValue())) {
@@ -25,7 +35,7 @@ public class Main {
             );
 
             Optional<Set<Integer>> andSearch = searchEngine.andSearch("study", "machine");
-            andSearch.ifPresentOrElse((ids) -> {
+            andSearch.ifPresentOrElse(ids -> {
                 List<String> findFilenames = new ArrayList<>();
                 for (Map.Entry<String, Integer> entry : searchEngine.getDocMetadata().entrySet()) {
                     if (ids.contains(entry.getValue())) {
@@ -39,8 +49,17 @@ public class Main {
 
             System.out.println(searchEngine.getStats());
 
-        } catch (IOException | IllegalArgumentException e) {
+            searchEngine.saveDictionaryBinary(SERIALIZATION_FILENAME);
+
+            System.out.println("Inverted index was serialized");
+
+            searchEngine.loadDictionaryBinary(SERIALIZATION_FILENAME);
+
+        } catch (IOException | IllegalArgumentException | ClassNotFoundException e) {
             System.err.println(e.getMessage());
+        } finally {
+            LOGGER.info("APPLICATION FINISHED");
+            LOGGER.info("=".repeat(80) + "\n");
         }
     }
 }

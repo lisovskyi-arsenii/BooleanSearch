@@ -10,11 +10,20 @@ repositories {
     mavenCentral()
 }
 
+val slf4jVersion = "2.0.9"
+val logbackVersion = "1.4.14"
+
 dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation(kotlin("stdlib-jdk8"))
+
+    // SLF4J API
+    implementation("org.slf4j:slf4j-api:${slf4jVersion}")
+
+    // Logback
+    implementation("ch.qos.logback:logback-classic:${logbackVersion}")
 }
 
 tasks.test {
