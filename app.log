@@ -31,3 +31,14 @@
 2026-01-14 02:57:45 [main] INFO  Main - APPLICATION FINISHED
 2026-01-14 02:57:45 [main] INFO  Main - ================================================================================
 
+2026-01-14 04:15:44 [main] INFO  Main - ================================================================================
+2026-01-14 04:15:44 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T04:15:44.317884300
+2026-01-14 04:15:44 [main] INFO  Main - ================================================================================
+2026-01-14 04:15:44 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 04:15:44 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 04:15:44 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 04:15:44 [main] INFO  BooleanSearchEngine - Saving dictionary into serialization.ser
+2026-01-14 04:15:44 [main] INFO  BooleanSearchEngine - Loading dictionary into variable `invertedIndex` from serialization.ser
+2026-01-14 04:15:44 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 04:15:44 [main] INFO  Main - ================================================================================
+
