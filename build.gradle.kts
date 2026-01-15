@@ -13,7 +13,6 @@ repositories {
 val slf4jVersion = "2.0.9"
 val logbackVersion = "1.5.13"
 val jacksonVersion = "2.18.2"
-val aspectjVersion = "1.9.22.1"
 
 dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
@@ -23,34 +22,10 @@ dependencies {
     implementation("org.slf4j:slf4j-api:$slf4jVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-
-    // AspectJ для Load-Time Weaving
-    implementation("org.aspectj:aspectjrt:$aspectjVersion")
-    implementation("org.aspectj:aspectjweaver:$aspectjVersion")
 }
 
 application {
     mainClass.set("Main")
-}
-
-tasks.withType<JavaExec>().configureEach {
-    val aspectjWeaver = configurations.runtimeClasspath.get()
-        .files.find { it.name.contains("aspectjweaver") }
-
-    if (aspectjWeaver != null) {
-        jvmArgs("-javaagent:${aspectjWeaver.absolutePath}")
-    }
-}
-
-tasks.test {
-    useJUnitPlatform()
-
-    val aspectjWeaver = configurations.testRuntimeClasspath.get()
-        .files.find { it.name.contains("aspectjweaver") }
-
-    if (aspectjWeaver != null) {
-        jvmArgs("-javaagent:${aspectjWeaver.absolutePath}")
-    }
 }
 
 tasks.withType<Test>().configureEach {
@@ -66,6 +41,6 @@ tasks.withType<JavaCompile> {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(24))
     }
 }

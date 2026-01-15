@@ -1,3 +1,5 @@
+package serialization;
+
 public record FormatMetrics(String formatName, long timeSerialization, long timeDeserialization, long sizeInBytes) {
 
     public double getSizeInKB() {

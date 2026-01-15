@@ -16,41 +16,42 @@ public class Main {
         LOGGER.info("APPLICATION STARTED at {}", LocalDateTime.now());
         LOGGER.info("=".repeat(80));
 
+        BooleanSearchEngine searchEngine = new BooleanSearchEngine();
 
         try {
-            BooleanSearchEngine searchEngine = new BooleanSearchEngine();
+            searchEngine.indexDocuments(DIRECTORY_NAME);
 
-            searchEngine.indexDocumentsFromDirectory(DIRECTORY_NAME);
+            System.out.println(searchEngine.getStatistics());
             searchEngine.printIndex();
 
-            Optional<Set<Integer>> docIDs = searchEngine.search("study");
-            docIDs.ifPresentOrElse(ids -> {
-                        List<String> findFilenames = new ArrayList<>();
-                        for (Map.Entry<String, Integer> entry : searchEngine.getDocMetadata().entrySet()) {
-                            if (ids.contains(entry.getValue())) {
-                                findFilenames.add(entry.getKey());
-                            }
-                        }
-                        findFilenames.forEach(System.out::println);
-                    },
-                    () -> System.out.println("No document found")
-            );
-
-            Optional<Set<Integer>> andSearch = searchEngine.andSearch("study", "machine");
-            andSearch.ifPresentOrElse(ids -> {
-                List<String> findFilenames = new ArrayList<>();
-                for (Map.Entry<String, Integer> entry : searchEngine.getDocMetadata().entrySet()) {
-                    if (ids.contains(entry.getValue())) {
-                        findFilenames.add(entry.getKey());
-                    }
-                }
-                findFilenames.forEach(System.out::println);
-            },
-                    () -> System.out.println("No and search result found"));
-
-
-            System.out.println(searchEngine.getStats());
-//            GenerateFiles.generateMediumFiles();
+//            Optional<Set<Integer>> docIDs = searchEngine.search("study");
+//            docIDs.ifPresentOrElse(ids -> {
+//                        List<String> findFilenames = new ArrayList<>();
+//                        for (Map.Entry<String, Integer> entry : searchEngine.getIndex().entrySet()) {
+//                            if (ids.contains(entry.getValue())) {
+//                                findFilenames.add(entry.getKey());
+//                            }
+//                        }
+//                        findFilenames.forEach(System.out::println);
+//                    },
+//                    () -> System.out.println("No document found")
+//            );
+//
+//            Optional<Set<Integer>> andSearch = searchEngine.andSearch("study", "machine");
+//            andSearch.ifPresentOrElse(ids -> {
+//                List<String> findFilenames = new ArrayList<>();
+//                for (Map.Entry<String, Integer> entry : searchEngine.getDocMetadata().entrySet()) {
+//                    if (ids.contains(entry.getValue())) {
+//                        findFilenames.add(entry.getKey());
+//                    }
+//                }
+//                findFilenames.forEach(System.out::println);
+//            },
+//                    () -> System.out.println("No and search result found"));
+//
+//
+//            System.out.println(searchEngine.getStats());
+////            GenerateFiles.generateMediumFiles();
 
         } catch (IOException | IllegalArgumentException e) {
             System.err.println(e.getMessage());

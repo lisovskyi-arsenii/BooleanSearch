@@ -1,170 +1,184 @@
 package core;
 
-import annotations.Loggable;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import document.DocumentRegistry;
+import index.InvertedIndex;
+import query.BooleanQueryExecutor;
+import serialization.FileType;
+import serialization.SerializationComparison;
+import serialization.serializers.BinarySerializer;
+import serialization.serializers.JsonSerializer;
+import serialization.serializers.TextSerializer;
 import statistics.DictionaryStats;
+import tokenization.Tokenizer;
 import util.FileWalker;
 
-import java.io.*;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
-public class BooleanSearchEngine {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BooleanSearchEngine.class);
-
+public class BooleanSearchEngine implements SearchEngine {
+    private final InvertedIndex index;
+    private final DocumentRegistry documentRegistry;
+    private final BooleanQueryExecutor queryExecutor;
     private SerializationComparison serializationComparison;
-
     private long totalCollectionSize = 0;
 
+    public BooleanSearchEngine() {
+        this.index = new InvertedIndex();
+        this.documentRegistry = new DocumentRegistry();
+        this.queryExecutor = new BooleanQueryExecutor(index);
+    }
 
-    // indexing files
-    public void indexDocumentsFromDirectory(String directoryPath) throws IllegalArgumentException, IOException {
+    // indexing
+    public void indexDocuments(String directoryPath) throws IOException {
+        Objects.requireNonNull(directoryPath, "Directory path must not be null");
         List<Path> paths = FileWalker.findFiles(directoryPath);
 
         for (Path path : paths) {
-            LOGGER.info("Indexing documents from {}", path);
-            indexFileFromDisk(path);
+            indexFile(path);
         }
     }
 
-    private void indexFileFromDisk(Path filePath) throws IOException {
-        totalCollectionSize += Files.size(filePath);
-        String filename = filePath.getFileName().toString();
+    private void indexFile(Path path) throws IOException {
+        long size = Files.size(path);
+        totalCollectionSize += size;
 
-        if (!docMetadata.containsKey(filename)) {
-            registerDocument(filename);
-        }
+        String filename = path.getFileName().toString();
+        int docID = documentRegistry.registerDocument(filename, Files.size(path));
 
-        int documentID = docMetadata.get(filename);
-
-        String content = Files.readString(filePath);
+        String content = Files.readString(path);
         List<String> tokens = Tokenizer.tokenize(content);
 
         for (String token : tokens) {
-            invertedIndex.computeIfAbsent(token, k -> new HashSet<>()).add(documentID);
+            index.addTerm(token, docID);
         }
     }
 
-    // search by one term
 
-
-    private String normalizeTerm(String term) {
+    // searching
+    @Override
+    public Optional<Set<Integer>> search(String term) {
+        Objects.requireNonNull(term, "Term in search() must not be null");
+        return queryExecutor.search(term);
     }
 
-    // serialization
-    @Loggable(message = "Saving dictionary into binary file", level = Loggable.LoggingLevel.INFO)
-    public void saveDictionaryBinary(String filepath) throws IOException {
-
+    public Optional<Set<Integer>> andSearch(String term1, String term2) {
+        Objects.requireNonNull(term1, "First term in andSearch() must not be null");
+        Objects.requireNonNull(term2, "Second term in andSearch() must not be null");
+        return queryExecutor.andSearch(term1, term2);
     }
 
-    @Loggable(message = "Saving dictionary into txt file", level = Loggable.LoggingLevel.INFO)
-    public void saveDictionaryText(String filepath) throws IOException {
-
+    public Optional<Set<Integer>> orSearch(String term1, String term2) {
+        Objects.requireNonNull(term1, "First term in orSearch() must not be null");
+        Objects.requireNonNull(term2, "Second term in orSearch() must not be null");
+        return queryExecutor.orSearch(term1, term2);
     }
 
-    @Loggable(message = "Saving dictionary into json file", level = Loggable.LoggingLevel.INFO)
-    public void saveDictionaryJSON(String filepath) throws IOException {
-
-    }
-
-    // deserialization
-    @SuppressWarnings("unchecked")
-    @Loggable(message = "Loading dictionary from binary file", level = Loggable.LoggingLevel.INFO)
-    public void loadDictionaryBinary(String filepath) throws IOException, ClassNotFoundException {
-
-    }
-
-    @Loggable(message = "Loading dictionary from txt file", level = Loggable.LoggingLevel.INFO)
-    public void loadDictionaryText(String filepath) throws IOException {
-
-    }
-
-    @Loggable(message = "Load dictionary from json file", level = Loggable.LoggingLevel.INFO)
-    public void loadDictionaryJSON(String filepath) throws IOException {
-
-    }
-
-    // порівняння форматів серіалізації
-    public SerializationComparison getSerializationComparison() {
-        return serializationComparison;
+    public Optional<Set<Integer>> notSearch(String term, Set<Integer> docIDs) {
+        Objects.requireNonNull(term, "First term in notSearch() must not be null");
+        Objects.requireNonNull(docIDs, "Second term in notSearch() must not be null");
+        return queryExecutor.notSearch(term, docIDs);
     }
 
 
-    // work with data after queries
-    public List<String> getDocumentNames(Set<Integer> docIDs) {
-        List<String> result = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : docMetadata.entrySet()) {
-            if (docIDs.contains(entry.getValue())) {
-                result.add(entry.getKey());
-            }
+    // serialization/deserialization
+    @Override
+    public void saveIndex(String filepath, FileType format) throws IllegalArgumentException, IOException {
+        Objects.requireNonNull(filepath, "Filepath in saveIndex() must not be null");
+        Objects.requireNonNull(format, "Format in saveIndex() must not be null");
+        switch (format) {
+            case JSON -> saveDictionaryJson(filepath);
+            case TEXT -> saveDictionaryText(filepath);
+            case BINARY -> saveDictionaryBinary(filepath);
         }
-
-        return result;
     }
 
-    public Optional<String> getDocumentName(int docID) throws IllegalArgumentException {
-        return Optional.ofNullable(idToFilename.get(docID));
+    @Override
+    public void loadIndex(String filepath, FileType format) throws IOException, IllegalArgumentException, ClassNotFoundException {
+        Objects.requireNonNull(filepath, "Filepath in loadIndex() must not be null");
+        Objects.requireNonNull(format, "Format in loadIndex() must not be null");
+        switch (format) {
+            case JSON -> loadDictionaryJson(filepath);
+            case TEXT -> loadDictionaryText(filepath);
+            case BINARY -> loadDictionaryBinary(filepath);
+        }
     }
 
-    public int documentCount() {
-        return docMetadata.size();
+    private void saveDictionaryBinary(String filepath) throws IOException {
+        new BinarySerializer().serialize(index.getIndex(), filepath);
+    }
+
+    private void saveDictionaryText(String filepath) throws IOException {
+        new TextSerializer().serialize(index.getIndex(), filepath);
+    }
+
+    private void saveDictionaryJson(String filepath) throws IOException {
+        new JsonSerializer().serialize(index.getIndex(), filepath);
+    }
+
+    private void loadDictionaryBinary(String filepath) throws IOException, ClassNotFoundException {
+        index.loadIndex(new BinarySerializer().deserialize(filepath));
+    }
+
+    private void loadDictionaryText(String filepath) throws IOException, ClassNotFoundException {
+        index.loadIndex(new TextSerializer().deserialize(filepath));
+    }
+
+    private void loadDictionaryJson(String filepath) throws IOException, ClassNotFoundException {
+        index.loadIndex(new JsonSerializer().deserialize(filepath));
     }
 
 
     // statistics
-    public int termFrequency(String term) {
-        return invertedIndex.getOrDefault(term, Collections.emptySet()).size();
-    }
-
-    public Set<String> getAllTerms() {
-        return invertedIndex.keySet();
-    }
-
-    public Map<String, Set<Integer>> getInvertedIndex() {
-        return invertedIndex;
-    }
-
-    public Map<String, Integer> getDocMetadata() {
-        return docMetadata;
-    }
-
-
-    // статистика
-    public DictionaryStats getStats() {
-        int uniqueTerms = invertedIndex.size();
-        int totalWords = invertedIndex.values().stream()
-                .mapToInt(Set::size)
-                .sum();
+    public DictionaryStats getStatistics() {
+        int uniqueTerms = index.size();
+        int totalWords = index.getTotalTermOccurrences();
 
         return new DictionaryStats(
-                docMetadata.size(),
+                documentRegistry.documentCount(),
                 uniqueTerms,
                 totalWords,
                 totalCollectionSize
         );
     }
 
-    // print out
+
+    // getters
+    public SerializationComparison getSerializationComparison() {
+        return serializationComparison;
+    }
+
+    public void setSerializationComparison(SerializationComparison serializationComparison) {
+        Objects.requireNonNull(serializationComparison, "SerializationComparison must not be null");
+        this.serializationComparison = serializationComparison;
+    }
+
+    public List<String> getDocumentNames(Set<Integer> docIDs) {
+        Objects.requireNonNull(docIDs, "DocIDs must not be null");
+        return documentRegistry.getDocumentNames(docIDs);
+    }
+
+    public int documentCount() {
+        return documentRegistry.documentCount();
+    }
+
+    public InvertedIndex getIndex() {
+        return index;
+    }
+
+
+    // utility
     public void printIndex() {
-        for (Map.Entry<String, Set<Integer>> entry : invertedIndex.entrySet()) {
-            System.out.println(entry.getKey() + ": " + entry.getValue());
-        }
+        index.print();
     }
 
-
-    // util methods
-    public void clearIndex() {
-        invertedIndex.clear();
+    public void clear() {
+        index.clear();
+        documentRegistry.clear();
+        totalCollectionSize = 0;
     }
-
-    private void registerDocument(String filename) {
-        int id = nextDocID++;
-        docMetadata.put(filename, id);
-        idToFilename.put(id, filename);
-    }
-
 }

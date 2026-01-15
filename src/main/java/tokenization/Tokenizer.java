@@ -9,8 +9,7 @@ import java.util.regex.Pattern;
 public final class Tokenizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(Tokenizer.class);
     private static final Pattern PUNCTUATION_PATTERN = Pattern.compile("[^\\p{L}\\p{N}\\s]+");
-
-
+    private static final StopWordsFilter STOP_WORD_FILTER = new StopWordsFilter();
 
     private Tokenizer() {
         throw new AssertionError("Instantiation of Tokenizer - Utility class");
@@ -24,19 +23,11 @@ public final class Tokenizer {
         StringTokenizer tokenizer = new StringTokenizer(cleaned);
         while (tokenizer.hasMoreTokens()) {
             String token = tokenizer.nextToken().trim();
-            if (!token.isEmpty() && !STOP_WORDS.contains(token)) {
+            if (!token.isEmpty()) {
                 tokens.add(token);
             }
         }
 
-        return tokens;
-    }
-
-    public static boolean isStopWord(String word) {
-        return STOP_WORDS.contains(word.toLowerCase());
-    }
-
-    public static Set<String> getStopWords() {
-        return Collections.unmodifiableSet(STOP_WORDS);
+        return STOP_WORD_FILTER.filter(tokens);
     }
 }

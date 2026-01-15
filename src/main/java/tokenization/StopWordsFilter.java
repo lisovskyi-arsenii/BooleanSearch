@@ -8,20 +8,20 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Stream;
 
-public class StopWordFilter {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StopWordFilter.class);
+public class StopWordsFilter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StopWordsFilter.class);
     private static final String FILENAME_STOPWORDS = "stopwords.txt";
     private final Set<String> stopWords = new HashSet<>();
 
-    public StopWordFilter() {
+    public StopWordsFilter() {
         addAllStopWordsToList();
     }
 
     public List<String> filter(List<String> tokens) {
-        return Stream.of(tokens)
+        return tokens.stream()
                 .filter(token -> !stopWords.contains(token))
+                .toList();
     }
 
     public boolean isStopWord(String word) {
