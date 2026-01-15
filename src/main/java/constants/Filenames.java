@@ -8,6 +8,6 @@ public final class Filenames {
     public static final String SERIALIZATION_FILENAME_SER = "serialization.ser";
     public static final String SERIALIZATION_FILENAME_TXT = "serialization.txt";
     public static final String SERIALIZATION_FILENAME_JSON = "serialization.json";
-    public static final String DIRECTORY_NAME = "documents";
+    public static final String DIRECTORY_NAME = "document";
 
 }

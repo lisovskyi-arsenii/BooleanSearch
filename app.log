@@ -1042,3 +1042,99 @@
 2026-01-15 02:50:50 [main] INFO  Main - APPLICATION FINISHED
 2026-01-15 02:50:50 [main] INFO  Main - ================================================================================
 
+2026-01-15 12:37:15 [main] INFO  Main - ================================================================================
+2026-01-15 12:37:15 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T12:37:15.496169700
+2026-01-15 12:37:15 [main] INFO  Main - ================================================================================
+2026-01-15 12:37:16 [main] INFO  FileGenerator.GenerateFiles - === Generating Medium Files (~500-800 KB) ===
+2026-01-15 12:37:16 [virtual-40] INFO  FileGenerator.GenerateFiles -   [1] Downloading book 84...
+2026-01-15 12:37:18 [virtual-42] INFO  FileGenerator.GenerateFiles -   [2] Downloading book 345...
+2026-01-15 12:37:20 [virtual-43] INFO  FileGenerator.GenerateFiles -   [3] Downloading book 1952...
+2026-01-15 12:37:20 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 12:37:20 [main] INFO  Main - ================================================================================
+
+2026-01-15 12:38:00 [main] INFO  Main - ================================================================================
+2026-01-15 12:38:00 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T12:38:00.202515700
+2026-01-15 12:38:00 [main] INFO  Main - ================================================================================
+2026-01-15 12:38:00 [main] INFO  FileGenerator.GenerateFiles - === Generating Medium Files (~500-800 KB) ===
+2026-01-15 12:38:00 [virtual-40] INFO  FileGenerator.GenerateFiles -   [1] Downloading book 84...
+2026-01-15 12:38:02 [virtual-42] INFO  FileGenerator.GenerateFiles -   [2] Downloading book 345...
+2026-01-15 12:38:04 [virtual-43] INFO  FileGenerator.GenerateFiles -   [3] Downloading book 1952...
+2026-01-15 12:38:04 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 12:38:04 [main] INFO  Main - ================================================================================
+
+2026-01-15 12:39:22 [main] INFO  Main - ================================================================================
+2026-01-15 12:39:22 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T12:39:22.484417700
+2026-01-15 12:39:22 [main] INFO  Main - ================================================================================
+2026-01-15 12:39:23 [main] INFO  FileGenerator.GenerateFiles - === Generating Medium Files (~500-800 KB) ===
+2026-01-15 12:39:23 [virtual-40] INFO  FileGenerator.GenerateFiles -   [1] Downloading book 84...
+2026-01-15 12:39:24 [virtual-40] INFO  FileGenerator.GenerateFiles - ✓ Downloaded book 84 (409 KB)
+2026-01-15 12:39:25 [virtual-42] INFO  FileGenerator.GenerateFiles -   [2] Downloading book 345...
+2026-01-15 12:39:25 [virtual-42] INFO  FileGenerator.GenerateFiles - ✓ Downloaded book 345 (841 KB)
+2026-01-15 12:39:27 [virtual-43] INFO  FileGenerator.GenerateFiles -   [3] Downloading book 1952...
+2026-01-15 12:39:27 [virtual-43] INFO  FileGenerator.GenerateFiles - ✓ Downloaded book 1952 (31 KB)
+2026-01-15 12:39:27 [main] INFO  FileGenerator.GenerateFiles - ✓ Completed
+2026-01-15 12:39:27 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 12:39:27 [main] INFO  Main - ================================================================================
+
+2026-01-15 12:41:15 [main] INFO  Main - ================================================================================
+2026-01-15 12:41:15 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T12:41:15.009321800
+2026-01-15 12:41:15 [main] INFO  Main - ================================================================================
+2026-01-15 12:41:15 [main] INFO  FileGenerator.GenerateFiles - === Generating Medium Files (~500-800 KB) ===
+2026-01-15 12:41:15 [virtual-42] INFO  FileGenerator.GenerateFiles -   [1] Downloading book 84...
+2026-01-15 12:41:17 [virtual-42] INFO  FileGenerator.GenerateFiles - ✓ Downloaded book 84 (409 KB)
+2026-01-15 12:41:17 [virtual-44] INFO  FileGenerator.GenerateFiles -   [2] Downloading book 345...
+2026-01-15 12:41:18 [virtual-44] INFO  FileGenerator.GenerateFiles - ✓ Downloaded book 345 (841 KB)
+2026-01-15 12:41:19 [virtual-45] INFO  FileGenerator.GenerateFiles -   [3] Downloading book 76...
+2026-01-15 12:41:20 [virtual-45] INFO  FileGenerator.GenerateFiles - ✓ Downloaded book 76 (557 KB)
+2026-01-15 12:41:20 [main] INFO  FileGenerator.GenerateFiles - ✓ Completed
+2026-01-15 12:41:20 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 12:41:20 [main] INFO  Main - ================================================================================
+
+2026-01-15 12:42:00 [main] INFO  Main - ================================================================================
+2026-01-15 12:42:00 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T12:42:00.528931800
+2026-01-15 12:42:00 [main] INFO  Main - ================================================================================
+2026-01-15 12:42:00 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 12:42:00 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 12:42:00 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 12:42:00 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_345.txt
+2026-01-15 12:42:01 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_76.txt
+2026-01-15 12:42:01 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_84.txt
+2026-01-15 12:42:01 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 12:42:01 [main] INFO  Main - ================================================================================
+
+2026-01-15 12:42:53 [main] INFO  Main - ================================================================================
+2026-01-15 12:42:53 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T12:42:53.224352600
+2026-01-15 12:42:53 [main] INFO  Main - ================================================================================
+2026-01-15 12:42:53 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 12:42:53 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 12:42:53 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 12:42:53 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_345.txt
+2026-01-15 12:42:53 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_76.txt
+2026-01-15 12:42:53 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_84.txt
+2026-01-15 12:42:54 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 12:42:54 [main] INFO  Main - ================================================================================
+
+2026-01-15 13:08:41 [main] INFO  Main - ================================================================================
+2026-01-15 13:08:41 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T13:08:41.500550300
+2026-01-15 13:08:41 [main] INFO  Main - ================================================================================
+2026-01-15 13:08:41 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 13:08:41 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 13:08:41 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 13:08:41 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_345.txt
+2026-01-15 13:08:42 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_76.txt
+2026-01-15 13:08:42 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_84.txt
+2026-01-15 13:08:42 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 13:08:42 [main] INFO  Main - ================================================================================
+
+2026-01-15 13:09:15 [main] INFO  Main - ================================================================================
+2026-01-15 13:09:15 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T13:09:15.172337300
+2026-01-15 13:09:15 [main] INFO  Main - ================================================================================
+2026-01-15 13:09:15 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 13:09:15 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 13:09:15 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 13:09:15 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_345.txt
+2026-01-15 13:09:15 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_76.txt
+2026-01-15 13:09:15 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_84.txt
+2026-01-15 13:09:15 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 13:09:15 [main] INFO  Main - ================================================================================
+

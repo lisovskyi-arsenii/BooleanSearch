@@ -1,9 +1,8 @@
-import FileGenerator.GenerateFiles;
+import core.BooleanSearchEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -51,11 +50,8 @@ public class Main {
 
 
             System.out.println(searchEngine.getStats());
+//            GenerateFiles.generateMediumFiles();
 
-            System.out.println("\n");
-//            String result = GenerateFiles.downloadBook(2600);
-//            System.out.println(result);
-//            GenerateFiles.saveToFile("documents/book.txt", result);
         } catch (IOException | IllegalArgumentException e) {
             System.err.println(e.getMessage());
         } finally {
