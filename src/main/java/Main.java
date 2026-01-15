@@ -1,15 +1,16 @@
+import FileGenerator.GenerateFiles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static constants.Filenames.*;
+
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
-    private static final String DIRECTORY_NAME = "documents";
-    private static final String SERIALIZATION_FILENAME = "serialization.ser";
-    private static final String SERIALIZATION_TXT_FILENAME = "serialization.txt";
 
     public static void main(String[] args) {
         LOGGER.info("=".repeat(80));
@@ -51,15 +52,11 @@ public class Main {
 
             System.out.println(searchEngine.getStats());
 
-            searchEngine.saveDictionaryBinary(SERIALIZATION_FILENAME);
-
-            System.out.println("Inverted index was serialized");
-
-            searchEngine.loadDictionaryBinary(SERIALIZATION_FILENAME);
-            searchEngine.saveDictionaryText(SERIALIZATION_TXT_FILENAME);
-            searchEngine.loadDictionaryText(SERIALIZATION_TXT_FILENAME);
-
-        } catch (IOException | IllegalArgumentException | ClassNotFoundException e) {
+            System.out.println("\n");
+//            String result = GenerateFiles.downloadBook(2600);
+//            System.out.println(result);
+//            GenerateFiles.saveToFile("documents/book.txt", result);
+        } catch (IOException | IllegalArgumentException e) {
             System.err.println(e.getMessage());
         } finally {
             LOGGER.info("APPLICATION FINISHED");

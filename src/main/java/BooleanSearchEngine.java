@@ -1,3 +1,6 @@
+import annotations.Loggable;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.FileWalker;
@@ -5,7 +8,6 @@ import util.FileWalker;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 public class BooleanSearchEngine {
@@ -17,8 +19,7 @@ public class BooleanSearchEngine {
     private final Map<String, Integer> docMetadata = new HashMap<>(); // filename -> document id
     private final Map<Integer, String> idToFilename = new HashMap<>(); // document id -> filename
 
-    // TODO
-    private  SerializationComparison serializationComparison;
+    private SerializationComparison serializationComparison;
     private int nextDocID = 1;
 
     private long totalCollectionSize = 0;
@@ -32,7 +33,6 @@ public class BooleanSearchEngine {
         }
     }
 
-//    public BooleanSearchEngine() {}
 
     // indexing files
     public void indexDocumentsFromDirectory(String directoryPath) throws IllegalArgumentException, IOException {
@@ -105,6 +105,7 @@ public class BooleanSearchEngine {
 
 
     // serialization
+    @Loggable(message = "Saving dictionary into binary file", level = Loggable.LoggingLevel.INFO)
     public void saveDictionaryBinary(String filepath) throws IOException {
         try (
             OutputStream file = new FileOutputStream(filepath);
@@ -112,16 +113,10 @@ public class BooleanSearchEngine {
             ObjectOutput output = new ObjectOutputStream(buffer);
         ) {
             output.writeObject(invertedIndex);
-            Path path = Paths.get(filepath);
-            if (Files.exists(path)) {
-                LOGGER.info("Saving dictionary into {}", filepath);
-            } else {
-                LOGGER.warn("Could not save dictionary into {}", filepath);
-            }
         }
     }
 
-    // TODO
+    @Loggable(message = "Saving dictionary into txt file", level = Loggable.LoggingLevel.INFO)
     public void saveDictionaryText(String filepath) throws IOException {
         try (
             OutputStream file = new FileOutputStream(filepath);
@@ -134,14 +129,21 @@ public class BooleanSearchEngine {
         }
     }
 
-    // TODO
+    @Loggable(message = "Saving dictionary into json file", level = Loggable.LoggingLevel.INFO)
     public void saveDictionaryJSON(String filepath) throws IOException {
-
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonString = objectMapper.writeValueAsString(invertedIndex);
+        try (
+            OutputStream file = new FileOutputStream(filepath);
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(file));
+        ) {
+            writer.write(jsonString);
+        }
     }
 
     // deserialization
-    // TODO
     @SuppressWarnings("unchecked")
+    @Loggable(message = "Loading dictionary from binary file", level = Loggable.LoggingLevel.INFO)
     public void loadDictionaryBinary(String filepath) throws IOException, ClassNotFoundException {
         try (
             InputStream file = new FileInputStream(filepath);
@@ -149,35 +151,59 @@ public class BooleanSearchEngine {
             ObjectInput input = new ObjectInputStream(buffer);
         ) {
             invertedIndex = (HashMap<String, Set<Integer>>) input.readObject();
-            for (Map.Entry<String, Set<Integer>> entry : invertedIndex.entrySet()) {
-                System.out.println(entry.getKey() + " : " + entry.getValue());
-            }
-            if (!invertedIndex.isEmpty()) {
-                LOGGER.info("Loading dictionary into variable `invertedIndex` from {}", filepath);
-            } else {
-                LOGGER.warn("Could not load dictionary into variable `invertedIndex` from {}", filepath);
-            }
         }
     }
 
-    // TODO
+    @Loggable(message = "Loading dictionary from txt file", level = Loggable.LoggingLevel.INFO)
     public void loadDictionaryText(String filepath) throws IOException {
         try (
             InputStream file = new FileInputStream(filepath);
             BufferedReader reader = new BufferedReader(new InputStreamReader(file));
         ) {
+            invertedIndex.clear();
             String line;
-            while ((line = reader.readLine()) != null) {}
+            while ((line = reader.readLine()) != null) {
+                int spaceIndex = line.indexOf(' ');
+                if (spaceIndex == -1) continue;
+                String term = line.substring(0, spaceIndex);
+                String setString = line.substring(spaceIndex + 1).trim();
 
+                if (setString.startsWith("[") && setString.endsWith("]")) {
+                    setString = setString.substring(1, setString.length() - 1);
+                }
+
+                Set<Integer> docIDs = new HashSet<>();
+                if (!setString.isEmpty()) {
+                    String[] ids = setString.split(", ");
+                    for (String id : ids) {
+                        try {
+                            docIDs.add(Integer.parseInt(id));
+                        } catch (NumberFormatException e) {
+                            LOGGER.warn("Invalid document ID: {}", id);
+                        }
+                    }
+                }
+
+                invertedIndex.put(term, docIDs);
+            }
         }
     }
 
-    // TODO
+    @Loggable(message = "Load dictionary from json file", level = Loggable.LoggingLevel.INFO)
     public void loadDictionaryJSON(String filepath) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        TypeReference<Map<String, Set<Integer>>> typeRef = new TypeReference<>(){};
 
+        Map<String, Set<Integer>> map = objectMapper.readValue(
+                new File(filepath),
+                typeRef
+        );
+
+        invertedIndex.clear();
+        invertedIndex.putAll(map);
     }
 
-    // порівняння форматів сереалізації
+    // порівняння форматів серіалізації
     public SerializationComparison getSerializationComparison() {
         return serializationComparison;
     }
@@ -261,10 +287,10 @@ public class BooleanSearchEngine {
         InputStream inputStream = classLoader.getResourceAsStream(filename);
 
         if (inputStream == null) {
-            throw new IllegalArgumentException("File " + filename + " not found");
+            throw new IllegalArgumentException("File not found: " + filename);
         }
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+        try (inputStream; BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
             String line;
             StringTokenizer tokenizer;
             while ((line = reader.readLine()) != null) {
@@ -273,9 +299,6 @@ public class BooleanSearchEngine {
                     STOP_WORDS.add(tokenizer.nextToken().toLowerCase());
                 }
             }
-        } finally {
-            inputStream.close();
-
         }
     }
 }

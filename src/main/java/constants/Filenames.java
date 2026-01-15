@@ -1,0 +1,13 @@
+package constants;
+
+public final class Filenames {
+    private Filenames() {
+        throw new AssertionError("%s is class which contains constants - cannot create instance".formatted(getClass().getSimpleName()));
+    }
+
+    public static final String SERIALIZATION_FILENAME_SER = "serialization.ser";
+    public static final String SERIALIZATION_FILENAME_TXT = "serialization.txt";
+    public static final String SERIALIZATION_FILENAME_JSON = "serialization.json";
+    public static final String DIRECTORY_NAME = "documents";
+
+}

@@ -429,3 +429,616 @@
 2026-01-14 20:59:55 [main] INFO  Main - APPLICATION FINISHED
 2026-01-14 20:59:55 [main] INFO  Main - ================================================================================
 
+2026-01-14 21:06:51 [main] INFO  Main - ================================================================================
+2026-01-14 21:06:51 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T21:06:51.144676800
+2026-01-14 21:06:51 [main] INFO  Main - ================================================================================
+2026-01-14 21:06:51 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:06:51 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:06:51 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:06:51 [main] INFO  BooleanSearchEngine - Saving dictionary into serialization.ser
+2026-01-14 21:06:51 [main] INFO  BooleanSearchEngine - Loading dictionary into variable `invertedIndex` from serialization.ser
+2026-01-14 21:06:51 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 21:06:51 [main] INFO  Main - ================================================================================
+
+2026-01-14 21:07:18 [main] INFO  Main - ================================================================================
+2026-01-14 21:07:18 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T21:07:18.087009700
+2026-01-14 21:07:18 [main] INFO  Main - ================================================================================
+2026-01-14 21:07:18 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:07:18 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:07:18 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:07:18 [main] INFO  BooleanSearchEngine - Saving dictionary into serialization.ser
+2026-01-14 21:07:18 [main] INFO  BooleanSearchEngine - Loading dictionary into variable `invertedIndex` from serialization.ser
+2026-01-14 21:07:18 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 21:07:18 [main] INFO  Main - ================================================================================
+
+2026-01-14 21:07:32 [main] INFO  Main - ================================================================================
+2026-01-14 21:07:32 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T21:07:32.492174600
+2026-01-14 21:07:32 [main] INFO  Main - ================================================================================
+2026-01-14 21:07:32 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:07:32 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:07:32 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:07:32 [main] INFO  BooleanSearchEngine - Saving dictionary into serialization.ser
+2026-01-14 21:07:32 [main] INFO  BooleanSearchEngine - Loading dictionary into variable `invertedIndex` from serialization.ser
+2026-01-14 21:07:32 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 21:07:32 [main] INFO  Main - ================================================================================
+
+2026-01-14 21:07:43 [main] INFO  Main - ================================================================================
+2026-01-14 21:07:43 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T21:07:43.700640900
+2026-01-14 21:07:43 [main] INFO  Main - ================================================================================
+2026-01-14 21:07:43 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:07:43 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:07:43 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:07:43 [main] INFO  BooleanSearchEngine - Saving dictionary into serialization.ser
+2026-01-14 21:07:43 [main] INFO  BooleanSearchEngine - Loading dictionary into variable `invertedIndex` from serialization.ser
+2026-01-14 21:07:43 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 21:07:43 [main] INFO  Main - ================================================================================
+
+2026-01-14 21:08:48 [main] INFO  Main - ================================================================================
+2026-01-14 21:08:48 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T21:08:48.669130400
+2026-01-14 21:08:48 [main] INFO  Main - ================================================================================
+2026-01-14 21:08:48 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:08:48 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:08:48 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:08:48 [main] INFO  BooleanSearchEngine - Saving dictionary into serialization.ser
+2026-01-14 21:08:48 [main] INFO  BooleanSearchEngine - Loading dictionary into variable `invertedIndex` from serialization.ser
+2026-01-14 21:08:48 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 21:08:48 [main] INFO  Main - ================================================================================
+
+2026-01-14 21:09:58 [main] INFO  Main - ====================================================================================================
+2026-01-14 21:09:58 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T21:09:58.448959900
+2026-01-14 21:09:58 [main] INFO  Main - ====================================================================================================
+2026-01-14 21:09:58 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:09:58 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:09:58 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:09:58 [main] INFO  BooleanSearchEngine - Saving dictionary into serialization.ser
+2026-01-14 21:09:58 [main] INFO  BooleanSearchEngine - Loading dictionary into variable `invertedIndex` from serialization.ser
+2026-01-14 21:09:58 [main] INFO  BooleanSearchEngine - Dictionary loaded from serialization.txt: 6 terms
+2026-01-14 21:09:58 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 21:09:58 [main] INFO  Main - ================================================================================
+
+2026-01-14 21:39:26 [Test worker] INFO  BooleanSearchEngine - Saving dictionary into serialization.json
+2026-01-14 21:41:24 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:41:24 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:41:24 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:41:24 [Test worker] INFO  BooleanSearchEngine - Saving dictionary into serialization.json
+2026-01-14 21:41:51 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:41:51 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:41:51 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:41:51 [Test worker] INFO  BooleanSearchEngine - Saving dictionary into serialization.json
+2026-01-14 21:42:33 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:42:33 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:42:33 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:42:33 [Test worker] INFO  BooleanSearchEngine - Saving dictionary into serialization.json
+2026-01-14 21:50:19 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:50:19 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:50:19 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:50:19 [Test worker] INFO  BooleanSearchEngine - Saving dictionary into serialization.json
+2026-01-14 21:52:30 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:52:30 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:52:30 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:52:30 [Test worker] INFO  BooleanSearchEngine - Saving dictionary into serialization.json
+2026-01-14 21:52:30 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:52:30 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:52:30 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:52:30 [Test worker] INFO  BooleanSearchEngine - Saving dictionary into serialization.json
+2026-01-14 21:52:30 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:52:30 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:52:30 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:52:30 [Test worker] INFO  BooleanSearchEngine - Saving dictionary into serialization.json
+2026-01-14 21:57:20 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:57:20 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:57:20 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:57:20 [Test worker] INFO  BooleanSearchEngine - Saving dictionary into serialization.json
+2026-01-14 21:57:20 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:57:20 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:57:20 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:57:20 [Test worker] INFO  BooleanSearchEngine - Dictionary loaded from serialization.txt: 6 terms
+2026-01-14 21:57:20 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 21:57:20 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 21:57:20 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 21:57:20 [Test worker] INFO  BooleanSearchEngine - Saving dictionary into serialization.ser
+2026-01-14 21:57:20 [Test worker] INFO  BooleanSearchEngine - Load dictionary into serialization.ser
+2026-01-14 23:17:51 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:17:51 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:17:51 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:19:34 [main] INFO  Main - ================================================================================
+2026-01-14 23:19:34 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T23:19:34.019135700
+2026-01-14 23:19:34 [main] INFO  Main - ================================================================================
+2026-01-14 23:19:34 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:19:34 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:19:34 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:19:34 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 23:19:34 [main] INFO  Main - ================================================================================
+
+2026-01-14 23:20:26 [main] INFO  Main - ================================================================================
+2026-01-14 23:20:26 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T23:20:26.177495400
+2026-01-14 23:20:26 [main] INFO  Main - ================================================================================
+2026-01-14 23:20:26 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:20:26 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:20:26 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:20:26 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 23:20:26 [main] INFO  Main - ================================================================================
+
+2026-01-14 23:21:05 [main] INFO  Main - ================================================================================
+2026-01-14 23:21:05 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T23:21:05.243930200
+2026-01-14 23:21:05 [main] INFO  Main - ================================================================================
+2026-01-14 23:21:05 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:21:05 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:21:05 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:21:05 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 23:21:05 [main] INFO  Main - ================================================================================
+
+2026-01-14 23:23:10 [main] INFO  Main - ================================================================================
+2026-01-14 23:23:10 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T23:23:10.778672200
+2026-01-14 23:23:10 [main] INFO  Main - ================================================================================
+2026-01-14 23:23:10 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:23:10 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:23:10 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:23:10 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 23:23:10 [main] INFO  Main - ================================================================================
+
+2026-01-14 23:29:24 [main] INFO  Main - ================================================================================
+2026-01-14 23:29:24 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T23:29:24.647051100
+2026-01-14 23:29:24 [main] INFO  Main - ================================================================================
+2026-01-14 23:29:24 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:29:24 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:29:24 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:29:24 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 23:29:24 [main] INFO  Main - ================================================================================
+
+2026-01-14 23:30:18 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:30:18 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:30:18 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:30:18 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:30:18 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:30:18 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:30:18 [Test worker] INFO  BooleanSearchEngine - Dictionary loaded from serialization.txt: 6 terms
+2026-01-14 23:30:18 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:30:18 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:30:18 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:30:18 [Test worker] INFO  BooleanSearchEngine - Saving dictionary into serialization.ser
+2026-01-14 23:30:42 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:30:42 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:30:42 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:30:42 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:30:42 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:30:42 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:30:42 [Test worker] INFO  BooleanSearchEngine - Dictionary loaded from serialization.txt: 6 terms
+2026-01-14 23:30:42 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:30:42 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:30:42 [Test worker] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:30:42 [Test worker] INFO  BooleanSearchEngine - Saving dictionary into serialization.ser
+2026-01-14 23:30:52 [main] INFO  Main - ================================================================================
+2026-01-14 23:30:52 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T23:30:52.450062700
+2026-01-14 23:30:52 [main] INFO  Main - ================================================================================
+2026-01-14 23:30:52 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:30:52 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:30:52 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:30:52 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 23:30:52 [main] INFO  Main - ================================================================================
+
+2026-01-14 23:32:19 [main] INFO  Main - ================================================================================
+2026-01-14 23:32:19 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T23:32:19.728993700
+2026-01-14 23:32:19 [main] INFO  Main - ================================================================================
+2026-01-14 23:32:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:32:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:32:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:32:19 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 23:32:19 [main] INFO  Main - ================================================================================
+
+2026-01-14 23:33:09 [main] INFO  Main - ================================================================================
+2026-01-14 23:33:09 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T23:33:09.402164900
+2026-01-14 23:33:09 [main] INFO  Main - ================================================================================
+2026-01-14 23:33:09 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:33:09 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:33:09 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:33:09 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 23:33:09 [main] INFO  Main - ================================================================================
+
+2026-01-14 23:35:14 [main] INFO  Main - ================================================================================
+2026-01-14 23:35:14 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T23:35:14.137455300
+2026-01-14 23:35:14 [main] INFO  Main - ================================================================================
+2026-01-14 23:35:14 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:35:14 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:35:14 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:35:14 [main] INFO  BooleanSearchEngine - -> Entering BooleanSearchEngine.saveDictionaryJSON([serialization.json])
+2026-01-14 23:35:14 [main] INFO  BooleanSearchEngine - -> Entering BooleanSearchEngine.saveDictionaryJSON([serialization.json])
+2026-01-14 23:35:14 [main] INFO  BooleanSearchEngine - <- Exiting BooleanSearchEngine.saveDictionaryJSON() = null (190 ms)
+2026-01-14 23:35:14 [main] INFO  BooleanSearchEngine - <- Exiting BooleanSearchEngine.saveDictionaryJSON() = null (193 ms)
+2026-01-14 23:35:14 [main] INFO  BooleanSearchEngine - -> Entering BooleanSearchEngine.loadDictionaryJSON([serialization.json])
+2026-01-14 23:35:14 [main] INFO  BooleanSearchEngine - -> Entering BooleanSearchEngine.loadDictionaryJSON([serialization.json])
+2026-01-14 23:35:14 [main] INFO  BooleanSearchEngine - <- Exiting BooleanSearchEngine.loadDictionaryJSON() = null (18 ms)
+2026-01-14 23:35:14 [main] INFO  BooleanSearchEngine - <- Exiting BooleanSearchEngine.loadDictionaryJSON() = null (18 ms)
+2026-01-14 23:35:14 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 23:35:14 [main] INFO  Main - ================================================================================
+
+2026-01-14 23:36:19 [main] INFO  Main - ================================================================================
+2026-01-14 23:36:19 [main] INFO  Main - APPLICATION STARTED at 2026-01-14T23:36:19.828853400
+2026-01-14 23:36:19 [main] INFO  Main - ================================================================================
+2026-01-14 23:36:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-14 23:36:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-14 23:36:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-14 23:36:19 [main] INFO  BooleanSearchEngine - -> Entering BooleanSearchEngine.saveDictionaryJSON([serialization.json])
+2026-01-14 23:36:19 [main] INFO  BooleanSearchEngine - -> Entering BooleanSearchEngine.saveDictionaryJSON([serialization.json])
+2026-01-14 23:36:20 [main] INFO  BooleanSearchEngine - <- Exiting BooleanSearchEngine.saveDictionaryJSON() = null (199 ms)
+2026-01-14 23:36:20 [main] INFO  BooleanSearchEngine - <- Exiting BooleanSearchEngine.saveDictionaryJSON() = null (201 ms)
+2026-01-14 23:36:20 [main] INFO  BooleanSearchEngine - -> Entering BooleanSearchEngine.loadDictionaryJSON([serialization.json])
+2026-01-14 23:36:20 [main] INFO  BooleanSearchEngine - -> Entering BooleanSearchEngine.loadDictionaryJSON([serialization.json])
+2026-01-14 23:36:20 [main] INFO  BooleanSearchEngine - <- Exiting BooleanSearchEngine.loadDictionaryJSON() = null (24 ms)
+2026-01-14 23:36:20 [main] INFO  BooleanSearchEngine - <- Exiting BooleanSearchEngine.loadDictionaryJSON() = null (24 ms)
+2026-01-14 23:36:20 [main] INFO  Main - APPLICATION FINISHED
+2026-01-14 23:36:20 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:24:38 [main] INFO  Main - ================================================================================
+2026-01-15 01:24:38 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:24:38.757566200
+2026-01-15 01:24:38 [main] INFO  Main - ================================================================================
+2026-01-15 01:24:39 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:24:39 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:24:59 [main] INFO  Main - ================================================================================
+2026-01-15 01:24:59 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:24:59.431198700
+2026-01-15 01:24:59 [main] INFO  Main - ================================================================================
+2026-01-15 01:24:59 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:24:59 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:24:59 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:25:00 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:25:00 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:25:36 [main] INFO  Main - ================================================================================
+2026-01-15 01:25:36 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:25:36.098072400
+2026-01-15 01:25:36 [main] INFO  Main - ================================================================================
+2026-01-15 01:25:36 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:25:36 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:25:36 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:25:37 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:25:37 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:27:19 [main] INFO  Main - ================================================================================
+2026-01-15 01:27:19 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:27:19.732952
+2026-01-15 01:27:19 [main] INFO  Main - ================================================================================
+2026-01-15 01:27:20 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:27:20 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:27:20 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:27:20 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:27:20 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:27:54 [main] INFO  Main - ================================================================================
+2026-01-15 01:27:54 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:27:54.737131300
+2026-01-15 01:27:54 [main] INFO  Main - ================================================================================
+2026-01-15 01:27:55 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:27:55 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:27:55 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:27:55 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:27:55 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:32:49 [main] INFO  Main - ================================================================================
+2026-01-15 01:32:49 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:32:49.186262300
+2026-01-15 01:32:49 [main] INFO  Main - ================================================================================
+2026-01-15 01:32:49 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:32:49 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:32:49 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:32:50 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:32:50 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:33:42 [main] INFO  Main - ================================================================================
+2026-01-15 01:33:42 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:33:42.529448600
+2026-01-15 01:33:42 [main] INFO  Main - ================================================================================
+2026-01-15 01:33:42 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:33:42 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:33:42 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:33:43 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:33:43 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:35:44 [main] INFO  Main - ================================================================================
+2026-01-15 01:35:44 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:35:44.406459300
+2026-01-15 01:35:44 [main] INFO  Main - ================================================================================
+2026-01-15 01:35:44 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:35:44 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:35:44 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:35:45 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:35:45 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:37:55 [main] INFO  Main - ================================================================================
+2026-01-15 01:37:55 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:37:55.640426700
+2026-01-15 01:37:55 [main] INFO  Main - ================================================================================
+2026-01-15 01:37:56 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:37:56 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:37:56 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:37:57 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:37:57 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:38:53 [main] INFO  Main - ================================================================================
+2026-01-15 01:38:53 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:38:53.427721800
+2026-01-15 01:38:53 [main] INFO  Main - ================================================================================
+2026-01-15 01:38:53 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:38:53 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:38:53 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:38:54 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:38:54 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:39:09 [main] INFO  Main - ================================================================================
+2026-01-15 01:39:09 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:39:09.667764200
+2026-01-15 01:39:09 [main] INFO  Main - ================================================================================
+2026-01-15 01:39:10 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:39:10 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:39:10 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:39:11 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:39:11 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:40:04 [main] INFO  Main - ================================================================================
+2026-01-15 01:40:04 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:40:04.363826300
+2026-01-15 01:40:04 [main] INFO  Main - ================================================================================
+2026-01-15 01:40:04 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:40:04 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:40:04 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:40:05 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:40:05 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:41:11 [main] INFO  Main - ================================================================================
+2026-01-15 01:41:11 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:41:11.354174
+2026-01-15 01:41:11 [main] INFO  Main - ================================================================================
+2026-01-15 01:41:11 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:41:11 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:41:11 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:41:12 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:41:12 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:43:10 [main] INFO  Main - ================================================================================
+2026-01-15 01:43:10 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:43:10.358029700
+2026-01-15 01:43:10 [main] INFO  Main - ================================================================================
+2026-01-15 01:43:10 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:43:10 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:43:10 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:43:11 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:43:11 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:45:02 [main] INFO  Main - ================================================================================
+2026-01-15 01:45:02 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:45:02.634216200
+2026-01-15 01:45:02 [main] INFO  Main - ================================================================================
+2026-01-15 01:45:03 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:45:03 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:45:03 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:45:03 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:45:03 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:47:06 [main] INFO  Main - ================================================================================
+2026-01-15 01:47:06 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:47:06.432089500
+2026-01-15 01:47:06 [main] INFO  Main - ================================================================================
+2026-01-15 01:47:06 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:47:06 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:47:06 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:47:08 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:47:08 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:53:15 [main] INFO  Main - ================================================================================
+2026-01-15 01:53:15 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:53:15.254449500
+2026-01-15 01:53:15 [main] INFO  Main - ================================================================================
+2026-01-15 01:53:15 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:53:15 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:53:15 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:53:26 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:53:26 [main] INFO  Main - ================================================================================
+
+2026-01-15 01:54:01 [main] INFO  Main - ================================================================================
+2026-01-15 01:54:01 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T01:54:01.406137700
+2026-01-15 01:54:01 [main] INFO  Main - ================================================================================
+2026-01-15 01:54:01 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 01:54:01 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 01:54:01 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 01:54:12 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 01:54:12 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:04:23 [main] INFO  Main - ================================================================================
+2026-01-15 02:04:23 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:04:23.920307800
+2026-01-15 02:04:23 [main] INFO  Main - ================================================================================
+2026-01-15 02:04:24 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:04:24 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:04:24 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:04:26 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:04:26 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:06:23 [main] INFO  Main - ================================================================================
+2026-01-15 02:06:23 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:06:23.672742700
+2026-01-15 02:06:23 [main] INFO  Main - ================================================================================
+2026-01-15 02:06:24 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:06:24 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:06:24 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:06:25 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:06:25 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:10:26 [main] INFO  Main - ================================================================================
+2026-01-15 02:10:26 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:10:26.304393800
+2026-01-15 02:10:26 [main] INFO  Main - ================================================================================
+2026-01-15 02:10:26 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:10:26 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:10:26 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:10:27 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:10:27 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:11:12 [main] INFO  Main - ================================================================================
+2026-01-15 02:11:12 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:11:12.143262700
+2026-01-15 02:11:12 [main] INFO  Main - ================================================================================
+2026-01-15 02:11:12 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:11:12 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:11:12 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:11:13 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:11:13 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:12:18 [main] INFO  Main - ================================================================================
+2026-01-15 02:12:18 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:12:18.869337700
+2026-01-15 02:12:18 [main] INFO  Main - ================================================================================
+2026-01-15 02:12:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:12:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:12:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:12:20 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:12:20 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:20:59 [main] INFO  Main - ================================================================================
+2026-01-15 02:20:59 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:20:59.781206700
+2026-01-15 02:20:59 [main] INFO  Main - ================================================================================
+2026-01-15 02:21:00 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:21:00 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:21:00 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:21:00 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:21:00 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:21:42 [main] INFO  Main - ================================================================================
+2026-01-15 02:21:42 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:21:42.226203100
+2026-01-15 02:21:42 [main] INFO  Main - ================================================================================
+2026-01-15 02:21:42 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:21:42 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:21:42 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:21:46 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:21:46 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:22:09 [main] INFO  Main - ================================================================================
+2026-01-15 02:22:09 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:22:09.028254200
+2026-01-15 02:22:09 [main] INFO  Main - ================================================================================
+2026-01-15 02:22:09 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:22:09 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:22:09 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:22:09 [main] INFO  BooleanSearchEngine - Indexing documents from documents\small_1.txt
+2026-01-15 02:22:09 [main] INFO  BooleanSearchEngine - Indexing documents from documents\small_2.txt
+2026-01-15 02:22:09 [main] INFO  BooleanSearchEngine - Indexing documents from documents\small_3.txt
+2026-01-15 02:22:10 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:22:10 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:23:28 [main] INFO  Main - ================================================================================
+2026-01-15 02:23:28 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:23:28.782249600
+2026-01-15 02:23:28 [main] INFO  Main - ================================================================================
+2026-01-15 02:23:29 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:23:29 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:23:29 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:23:29 [main] INFO  BooleanSearchEngine - Indexing documents from documents\small_1.txt
+2026-01-15 02:23:29 [main] INFO  BooleanSearchEngine - Indexing documents from documents\small_2.txt
+2026-01-15 02:23:29 [main] INFO  BooleanSearchEngine - Indexing documents from documents\small_3.txt
+2026-01-15 02:23:30 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:23:30 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:23:48 [main] INFO  Main - ================================================================================
+2026-01-15 02:23:48 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:23:48.985577700
+2026-01-15 02:23:48 [main] INFO  Main - ================================================================================
+2026-01-15 02:23:49 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:23:49 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:23:49 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:23:50 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:23:50 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:24:19 [main] INFO  Main - ================================================================================
+2026-01-15 02:24:19 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:24:19.243
+2026-01-15 02:24:19 [main] INFO  Main - ================================================================================
+2026-01-15 02:24:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:24:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:24:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:24:28 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:24:28 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:28:42 [main] INFO  Main - ================================================================================
+2026-01-15 02:28:42 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:28:42.587245500
+2026-01-15 02:28:42 [main] INFO  Main - ================================================================================
+2026-01-15 02:28:43 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:28:43 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:28:43 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:28:43 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_1.txt
+2026-01-15 02:28:43 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_2.txt
+2026-01-15 02:28:43 [main] INFO  BooleanSearchEngine - Indexing documents from documents\medium_3.txt
+2026-01-15 02:28:46 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:28:46 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:29:36 [main] INFO  Main - ================================================================================
+2026-01-15 02:29:36 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:29:36.912564100
+2026-01-15 02:29:36 [main] INFO  Main - ================================================================================
+2026-01-15 02:29:37 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:29:37 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:29:37 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:29:38 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:29:38 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:29:45 [main] INFO  Main - ================================================================================
+2026-01-15 02:29:45 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:29:45.238976900
+2026-01-15 02:29:45 [main] INFO  Main - ================================================================================
+2026-01-15 02:29:45 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:29:45 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:29:45 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:29:48 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:29:48 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:30:53 [main] INFO  Main - ================================================================================
+2026-01-15 02:30:53 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:30:53.880748100
+2026-01-15 02:30:53 [main] INFO  Main - ================================================================================
+2026-01-15 02:30:54 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:30:54 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:30:54 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:31:02 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:31:02 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:31:37 [main] INFO  Main - ================================================================================
+2026-01-15 02:31:37 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:31:37.285427600
+2026-01-15 02:31:37 [main] INFO  Main - ================================================================================
+2026-01-15 02:31:37 [main] INFO  BooleanSearchEngine - Indexing documents from documents\book.txt
+2026-01-15 02:31:37 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:31:37 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:31:37 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:31:39 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:31:39 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:33:09 [main] INFO  Main - ================================================================================
+2026-01-15 02:33:09 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:33:09.843797400
+2026-01-15 02:33:09 [main] INFO  Main - ================================================================================
+2026-01-15 02:33:10 [main] INFO  BooleanSearchEngine - Indexing documents from documents\book.txt
+2026-01-15 02:33:10 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:33:10 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:33:10 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:33:17 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:33:17 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:33:19 [main] INFO  Main - ================================================================================
+2026-01-15 02:33:19 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:33:19.148012400
+2026-01-15 02:33:19 [main] INFO  Main - ================================================================================
+2026-01-15 02:33:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\book.txt
+2026-01-15 02:33:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:33:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:33:19 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:33:24 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:33:24 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:35:03 [main] INFO  Main - ================================================================================
+2026-01-15 02:35:03 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:35:03.648682600
+2026-01-15 02:35:03 [main] INFO  Main - ================================================================================
+2026-01-15 02:35:04 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:35:04 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:35:04 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:35:13 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:35:13 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:42:01 [main] INFO  Main - ================================================================================
+2026-01-15 02:42:01 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:42:01.797730300
+2026-01-15 02:42:01 [main] INFO  Main - ================================================================================
+2026-01-15 02:42:02 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:42:02 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:42:02 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:42:06 [main] INFO  FileGenerator.GenerateFiles - ✓ Downloaded book 1661 (579 KB)
+2026-01-15 02:42:06 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:42:06 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:50:05 [main] INFO  Main - ================================================================================
+2026-01-15 02:50:05 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:50:05.097084900
+2026-01-15 02:50:05 [main] INFO  Main - ================================================================================
+2026-01-15 02:50:05 [main] INFO  BooleanSearchEngine - Indexing documents from documents\book.txt
+2026-01-15 02:50:05 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:50:05 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:50:05 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:50:08 [main] INFO  FileGenerator.GenerateFiles - ✓ Downloaded book 2600 (3216 KB)
+2026-01-15 02:50:09 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:50:09 [main] INFO  Main - ================================================================================
+
+2026-01-15 02:50:49 [main] INFO  Main - ================================================================================
+2026-01-15 02:50:49 [main] INFO  Main - APPLICATION STARTED at 2026-01-15T02:50:49.137376100
+2026-01-15 02:50:49 [main] INFO  Main - ================================================================================
+2026-01-15 02:50:49 [main] INFO  BooleanSearchEngine - Indexing documents from documents\book.txt
+2026-01-15 02:50:49 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.json
+2026-01-15 02:50:49 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data1.txt
+2026-01-15 02:50:49 [main] INFO  BooleanSearchEngine - Indexing documents from documents\data2.txt
+2026-01-15 02:50:50 [main] INFO  Main - APPLICATION FINISHED
+2026-01-15 02:50:50 [main] INFO  Main - ================================================================================
+
