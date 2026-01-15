@@ -17,6 +17,10 @@ public class InvertedIndex {
         return Collections.unmodifiableMap(index);
     }
 
+    public Set<Map.Entry<String, Set<Integer>>> entrySet() {
+        return index.entrySet();
+    }
+
     public Optional<Set<Integer>> getDocuments(String term) {
         Set<Integer> docs = index.get(term);
         return docs != null && !docs.isEmpty()

@@ -171,6 +171,7 @@ public class BooleanSearchEngine implements SearchEngine {
     }
 
 
+
     // utility
     public void printIndex() {
         index.print();
