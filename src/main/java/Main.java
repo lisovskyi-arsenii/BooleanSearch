@@ -1,5 +1,4 @@
 import core.BooleanSearchEngine;
-import core.SearchEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,7 +7,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static constants.Filenames.*;
-import static java.util.Map.Entry.comparingByValue;
 
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);

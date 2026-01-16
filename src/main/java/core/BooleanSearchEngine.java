@@ -2,6 +2,8 @@ package core;
 
 import document.DocumentRegistry;
 import index.InvertedIndex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import query.BooleanQueryExecutor;
 import serialization.FileType;
 import serialization.SerializationComparison;
@@ -15,17 +17,22 @@ import util.FileWalker;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class BooleanSearchEngine implements SearchEngine {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BooleanSearchEngine.class);
     private final InvertedIndex index;
     private final DocumentRegistry documentRegistry;
     private final BooleanQueryExecutor queryExecutor;
     private SerializationComparison serializationComparison;
-    private long totalCollectionSize = 0;
+    private final AtomicLong totalCollectionSize = new AtomicLong(0);
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     public BooleanSearchEngine() {
         this.index = new InvertedIndex();
@@ -34,23 +41,47 @@ public class BooleanSearchEngine implements SearchEngine {
     }
 
     // indexing
+    @Override
     public void indexDocuments(String directoryPath) throws IOException {
         Objects.requireNonNull(directoryPath, "Directory path must not be null");
         List<Path> paths = FileWalker.findFiles(directoryPath);
 
-        for (Path path : paths) {
-            indexFile(path);
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            List<Future<?>> futures = paths.stream()
+                    .<Future<?>>map(path -> executor.submit(() -> {
+                        try {
+                            indexFile(path);
+                        } catch (IOException e) {
+                            LOGGER.error("Error indexing files in path {}", path, e);
+                        }
+                    }))
+                    .toList();
+
+            for (Future<?> future : futures) {
+                try {
+                    future.get();
+                } catch (ExecutionException | InterruptedException e) {
+                    LOGGER.error("Task execution failed", e);
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
     }
 
     private void indexFile(Path path) throws IOException {
         long size = Files.size(path);
-        totalCollectionSize += size;
-
         String filename = path.getFileName().toString();
-        int docID = documentRegistry.registerDocument(filename, Files.size(path));
-
         String content = Files.readString(path);
+
+        int docID;
+        lock.writeLock().lock();
+        try {
+            docID = documentRegistry.registerDocument(filename, Files.size(path));
+            totalCollectionSize.addAndGet(size);
+        } finally {
+            lock.writeLock().unlock();
+        }
+
         List<String> tokens = Tokenizer.tokenize(content);
 
         for (String token : tokens) {
@@ -135,23 +166,24 @@ public class BooleanSearchEngine implements SearchEngine {
 
     // statistics
     public DictionaryStats getStatistics() {
-        int uniqueTerms = index.size();
-        int totalWords = index.getTotalTermOccurrences();
+        lock.readLock().lock();
+        try {
+            int uniqueTerms = index.size();
+            int totalWords = index.getTotalTermOccurrences();
 
-        return new DictionaryStats(
-                documentRegistry.documentCount(),
-                uniqueTerms,
-                totalWords,
-                totalCollectionSize
-        );
+            return new DictionaryStats(
+                    documentRegistry.documentCount(),
+                    uniqueTerms,
+                    totalWords,
+                    totalCollectionSize.get()
+            );
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
 
     // getters
-    public SerializationComparison getSerializationComparison() {
-        return serializationComparison;
-    }
-
     public void setSerializationComparison(SerializationComparison serializationComparison) {
         Objects.requireNonNull(serializationComparison, "SerializationComparison must not be null");
         this.serializationComparison = serializationComparison;
@@ -159,17 +191,31 @@ public class BooleanSearchEngine implements SearchEngine {
 
     public List<String> getDocumentNames(Set<Integer> docIDs) {
         Objects.requireNonNull(docIDs, "DocIDs must not be null");
-        return documentRegistry.getDocumentNames(docIDs);
+
+        lock.readLock().lock();
+        try {
+            return documentRegistry.getDocumentNames(docIDs);
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     public int documentCount() {
-        return documentRegistry.documentCount();
+        lock.readLock().lock();
+        try {
+            return documentRegistry.documentCount();
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     public InvertedIndex getIndex() {
         return index;
     }
 
+    public SerializationComparison getSerializationComparison() {
+        return serializationComparison;
+    }
 
 
     // utility
@@ -178,8 +224,13 @@ public class BooleanSearchEngine implements SearchEngine {
     }
 
     public void clear() {
-        index.clear();
-        documentRegistry.clear();
-        totalCollectionSize = 0;
+        lock.writeLock().lock();
+        try {
+            index.clear();
+            documentRegistry.clear();
+            totalCollectionSize.set(0);
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 }

@@ -1,24 +1,22 @@
 package document;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class DocumentRegistry {
-    private final Map<String, Integer> filenameToId = new HashMap<>(); // filename -> document id
-    private final Map<Integer, String> idToFilename = new HashMap<>(); // document id -> filename
-    private final Map<String, Long> filenameToSize = new  HashMap<>(); // filename -> size
-    private int nextDocID = 1;
+    private final Map<String, Integer> filenameToId = new ConcurrentHashMap<>(); // filename -> document id
+    private final Map<Integer, String> idToFilename = new ConcurrentHashMap<>(); // document id -> filename
+    private final Map<String, Long> filenameToSize = new ConcurrentHashMap<>(); // filename -> size
+    private final AtomicInteger nextDocID = new AtomicInteger(1);
 
     public int registerDocument(String filename, long size) {
-        if (filenameToId.containsKey(filename)) {
-            return filenameToId.get(filename);
-        }
-
-        int docID = nextDocID++;
-        filenameToId.put(filename, docID);
-        idToFilename.put(docID, filename);
-        filenameToSize.put(filename, size);
-
-        return docID;
+        return filenameToId.computeIfAbsent(filename, fn -> {
+            int docID = nextDocID.getAndIncrement();
+            idToFilename.put(docID, fn);
+            filenameToSize.put(fn, size);
+            return docID;
+        });
     }
 
     public Optional<String> getFilename(int docID) {
@@ -49,6 +47,6 @@ public class DocumentRegistry {
         filenameToId.clear();
         idToFilename.clear();
         filenameToSize.clear();
-        nextDocID = 1;
+        nextDocID.set(1);
     }
 }

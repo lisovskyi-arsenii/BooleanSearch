@@ -1,16 +1,23 @@
 package index;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class InvertedIndex {
-    private Map<String, Set<Integer>> index = new HashMap<>(); // term -> [document ids]
+    private Map<String, Set<Integer>> index = new ConcurrentHashMap<>(); // term -> [document ids]
 
     public void addTerm(String term, int docID) {
-        index.computeIfAbsent(term, k -> new HashSet<>()).add(docID);
+        index.computeIfAbsent(term, k -> ConcurrentHashMap.newKeySet()).add(docID);
     }
 
-    public void loadIndex(Map<String, Set<Integer>> index) {
-        this.index = new HashMap<>(index);
+    public void loadIndex(Map<String, Set<Integer>> newIndex) {
+        index.clear();
+
+        newIndex.forEach((term, docIDs) -> {
+            Set<Integer> threadSafeSet = ConcurrentHashMap.newKeySet();
+            threadSafeSet.addAll(docIDs);
+            index.put(term, threadSafeSet);
+        });
     }
 
     public Map<String, Set<Integer>> getIndex() {
@@ -18,7 +25,7 @@ public class InvertedIndex {
     }
 
     public Set<Map.Entry<String, Set<Integer>>> entrySet() {
-        return index.entrySet();
+        return Collections.unmodifiableSet(index.entrySet());
     }
 
     public Optional<Set<Integer>> getDocuments(String term) {
@@ -30,10 +37,6 @@ public class InvertedIndex {
 
     public Set<Integer> getTerm(String term) {
         return index.getOrDefault(term, Collections.emptySet());
-    }
-
-    public Set<Integer> getTermOrDefault(String term, int defaultValue) {
-        return index.getOrDefault(term, Set.of(defaultValue));
     }
 
     public Set<String> getAllTerms() {
@@ -55,6 +58,7 @@ public class InvertedIndex {
     }
 
     public void print() {
-        index.forEach((term, docID) -> System.out.println(term + ": " + docID));
+        index.forEach((term, docID) ->
+                System.out.println(term + ": " + docID));
     }
 }
