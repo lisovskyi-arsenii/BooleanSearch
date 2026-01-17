@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -199,6 +200,15 @@ public class BooleanSearchEngine implements SearchEngine {
     public void setSerializationComparison(SerializationComparison serializationComparison) {
         Objects.requireNonNull(serializationComparison, "SerializationComparison must not be null");
         this.serializationComparison = serializationComparison;
+    }
+
+    public Set<Integer> getAllDocumentIDs() {
+        Set<Integer> ids = ConcurrentHashMap.newKeySet();
+        for (var entry : index.entrySet()) {
+            ids.addAll(entry.getValue());
+        }
+
+        return ids;
     }
 
     public List<String> getDocumentNames(Set<Integer> docIDs) {

@@ -3,6 +3,7 @@ package main;
 import core.BooleanSearchEngine;
 import enums.FileGenerationType;
 import enums.MenuChoice;
+import enums.SearchOperation;
 import generator.GenerateFiles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,8 +15,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static constants.Filenames.DIRECTORY_PATH;
+import static enums.SearchOperation.*;
 
 public class MenuController {
     private static final Logger LOGGER = LoggerFactory.getLogger(MenuController.class);
@@ -205,13 +209,31 @@ public class MenuController {
             return;
         }
 
+        if (!Files.isDirectory(path)) {
+            System.out.println("Path is not a directory.");
+            return;
+        }
+
         try (var stream = Files.list(path)) {
-            stream.forEach(System.out::println);
+            List<Path> files = stream.sorted().toList();
+
+            if (files.isEmpty()) {
+                System.out.println("Empty directory.");
+            } else {
+                for (Path file : files) {
+                    String type = Files.isDirectory(file) ? "Directory" : "File";
+                    long size = Files.isRegularFile(file) ? Files.size(file) : 0;
+                    String sizeStr = Files.isRegularFile(file) ?
+                            String.format("%,d bytes", size) : "";
+                    System.out.printf("\t%s %s %s%n", type, file.getFileName(), sizeStr);
+                }
+                System.out.printf("\nTotal: %d item(s)%n", files.size());
+            }
         }
     }
 
     private void clearAllFiles() throws IOException {
-        Path dir = Paths.get(DIRECTORY_PATH);
+        Path dir = Path.of(DIRECTORY_PATH);
 
         if (!Files.exists(dir)) {
             LOGGER.info("Directory {} does not exist", DIRECTORY_PATH);
@@ -219,22 +241,34 @@ public class MenuController {
         }
 
         if (!Files.isDirectory(dir)) {
-            throw new IOException("Path is not a directory: " + dir);
+            System.out.println("Path is not a directory.");
+            return;
         }
 
-        try (var stream = Files.list(dir)) {
-            stream.filter(Files::isRegularFile)
-                    .forEach(file -> {
-                        try {
-                            Files.delete(file);
-                            LOGGER.info("File {} deleted", file.getFileName());
-                        } catch (IOException e) {
-                            LOGGER.error("Failed to delete file {}", file.getFileName(), e);
-                        }
-                    });
+        int deletedCount = 0;
+        int failedCount = 0;
+
+        try (var stream = Files.walk(dir)) {
+            List<Path> files = stream.filter(Files::isRegularFile).toList();
+
+            for (Path file : files) {
+                try {
+                    Files.delete(file);
+                    deletedCount++;
+                    LOGGER.info("File {} deleted", file.getFileName());
+                } catch (IOException e) {
+                    failedCount++;
+                    LOGGER.error("Failed to delete file {}", file.getFileName(), e);
+                }
+            }
         }
 
-        LOGGER.info("All files deleted!");
+        System.out.printf("Deleted %d file(s)%n", deletedCount);
+        if (failedCount > 0) {
+            System.out.printf("\t%d failed", failedCount);
+        }
+        System.out.println();
+        LOGGER.info("Deleted {} file(s), {} failed", deletedCount, failedCount);
     }
 
     public void simpleSearch() throws IllegalArgumentException {
@@ -246,11 +280,11 @@ public class MenuController {
             return;
         }
 
-        LOGGER.info("Searching for {}", term);
+        LOGGER.debug("Searching for {}", term);
         Optional<Set<Integer>> result = searchEngine.search(term);
 
         result.ifPresentOrElse(
-                ids -> {
+    ids -> {
             List<String> filenames = searchEngine.getDocumentNames(ids);
             System.out.printf("Term '%s' was found in %d file(s):%n ", term, filenames.size());
 
@@ -259,56 +293,68 @@ public class MenuController {
             } else {
                 filenames.forEach(filename -> System.out.println("  • " + filename));
             }
-        }, () -> System.out.printf("Term %s was not found in any document", term));
+        },
+        () -> System.out.printf("Term %s was not found in any document", term));
     }
 
     public void andSearch() throws IllegalArgumentException {
-        System.out.println("Enter first term to search for: ");
-        String term1 = scanner.parseString();
-
-        System.out.println("Enter second term to search for: ");
-        String term2 = scanner.parseString();
-
-        if (term1.isEmpty() || term2.isEmpty()) {
-            System.out.println("Terms cannot be empty");
-            return;
-        }
-
-        Optional<Set<Integer>> result = searchEngine.andSearch(term1, term2);
-        result.ifPresentOrElse(
-                ids -> {
-                    List<String> filenames = searchEngine.getDocumentNames(ids);
-                    filenames.parallelStream().forEach(System.out::println);
-                },
-                () -> System.out.printf("Term %s was not found in any document", term1)
-        );
+        performSearch(
+                AND,
+                2,
+                terms -> searchEngine.andSearch(terms[0], terms[1]));
     }
 
     public void orSearch() throws IllegalArgumentException {
-        System.out.println("Enter first term to search for: ");
-        String term1 = scanner.parseString();
-
-        System.out.println("Enter second term to search for: ");
-        String term2 = scanner.parseString();
-
-        if (term1.isEmpty() || term2.isEmpty()) {
-            System.out.println("Terms cannot be empty");
-            return;
-        }
-
-        Optional<Set<Integer>> result = searchEngine.orSearch(term1, term2);
-        result.ifPresentOrElse(
-                ids -> {
-                    List<String> filenames = searchEngine.getDocumentNames(ids);
-                    filenames.parallelStream().forEach(System.out::println);
-                },
-                () -> System.out.printf("Term %s was not found in any document", term1)
-        );
-
+        performSearch(
+                OR,
+                2,
+                terms -> searchEngine.orSearch(terms[0], terms[1]));
     }
 
     public void notSearch() throws IllegalArgumentException{
+        performSearch(
+                NOT,
+                1,
+                terms -> {
+                    Set<Integer> allDocs = searchEngine.getAllDocumentIDs();
+                    return searchEngine.notSearch(terms[0], allDocs);
+                });
+    }
 
+    private void performSearch(
+            SearchOperation operation,
+            int termsCount,
+            Function<String[], Optional<Set<Integer>>> searchFunction
+    ) {
+        String[] terms = new String[termsCount];
+
+        for (int i = 0; i < termsCount; i++) {
+            System.out.println("Enter " +
+                    ((termsCount == 1) ? "term" : "term " + (i + 1)) + ": ");
+            terms[i] = scanner.parseString();
+
+            if (terms[i].isEmpty()) {
+                System.out.println("Term cannot be empty");
+                return;
+            }
+        }
+        String strOperation = operation.getOperation();
+
+        Optional<Set<Integer>> result = searchFunction.apply(terms);
+        result.ifPresentOrElse(
+                ids -> {
+                    List<String> filenames = searchEngine.getDocumentNames(ids);
+                    if (filenames.isEmpty()) {
+                        System.out.println("No files found");
+                        return;
+                    }
+
+                    System.out.printf("\n %s: found %d file(s):%n", strOperation, filenames.size());
+
+                    filenames.forEach(filename -> System.out.println("  • " + filename));
+                },
+                () -> System.out.printf("  No documents found for %s%n", strOperation)
+        );
     }
 
     public void viewStatistics() throws IllegalArgumentException{
