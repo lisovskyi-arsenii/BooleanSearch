@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static constants.Filenames.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 class BooleanSearchEngineTest {
     private BooleanSearchEngine searchEngine;
@@ -18,7 +17,7 @@ class BooleanSearchEngineTest {
     void setUp() {
         searchEngine = new BooleanSearchEngine();
         try {
-            searchEngine.indexDocumentsFromDirectory(DIRECTORY_NAME);
+            searchEngine.indexDocumentsFromDirectory(DIRECTORY_PATH);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -18,50 +18,37 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static constants.Filenames.DIRECTORY_PATH;
+
 public final class GenerateFiles {
     private static final Logger LOGGER = LoggerFactory.getLogger(GenerateFiles.class);
-
-    private static final int SMALL_FILE_CHARS = 200_000;    // ~200 KB
-    private static final int MEDIUM_FILE_CHARS = 500_000;   // ~500 KB
-    private static final int LARGE_FILE_CHARS = 1_000_000; // ~1 MB
-
+    private static final String DIRECTORY_SMALL = "small";
+    private static final String DIRECTORY_MEDIUM = "medium";
+    private static final String DIRECTORY_LARGE = "large";
     private static final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
     private static final class BookIDs {
         static final int[] SMALL = {
-                43,    // The Strange Case of Dr. Jekyll and Mr. Hyde
-                1342,  // Pride and Prejudice
-                11,    // Alice's Adventures in Wonderland
-                174,   // The Picture of Dorian Gray
-                1661   // The Adventures of Sherlock Holmes
+                43, 1342, 11, 174, 1661
         };
 
-        // Середні книги (~400-800 KB)
         static final int[] MEDIUM = {
-                84,    // Frankenstein
-                345,   // Dracula
-                76,    // Adventures of Huckleberry Finn
-                98     // A Tale of Two Cities
+                84, 345, 76, 98
         };
 
-        // Великі книги (~1-3 MB)
         static final int[] LARGE = {
-                2701,  // Moby Dick (~1.2 MB)
-                2600,  // War and Peace (~3.2 MB)
-                1399,  // Anna Karenina (~2.1 MB)
-                1661   // Sherlock Holmes Complete (~1.5 MB)
+                2701, 2600, 1399, 1661
         };
     }
-
-
 
     private GenerateFiles() {
-        throw new AssertionError("%s cannot be instantiated".formatted(getClass().getSimpleName()));
+        throw new AssertionError("%s cannot be instantiated"
+                .formatted(getClass().getSimpleName()));
     }
 
-    public static String downloadBook(int bookID) throws IOException, InterruptedException {
+    private static String downloadBook(int bookID) throws IOException, InterruptedException {
         String[] urlTemplates = {
                 "https://www.gutenberg.org/files/%d/%d-0.txt",
                 "https://www.gutenberg.org/files/%d/%d.txt",
@@ -92,7 +79,7 @@ public final class GenerateFiles {
     }
 
 
-    public static void saveToFile(String filename, String content) throws IOException {
+    private static void saveToFile(String filename, String content) throws IOException {
         Path filePath = Path.of(filename);
         if (!Files.exists(filePath)) {
             Files.createFile(filePath);
@@ -104,56 +91,74 @@ public final class GenerateFiles {
     }
 
 
-
-    public static void generateSmallFiles() throws ExecutionException, InterruptedException {
+    public static void generateSmallFiles(int quantityOfFiles) throws ExecutionException, InterruptedException {
         LOGGER.info("=== Generating Small Files (~200-500 KB) ===");
 
-        generateFilesParallel(BookIDs.SMALL, "document/small", 3);
+        generateFilesParallel(BookIDs.SMALL, String.format("%s/%s", DIRECTORY_PATH, DIRECTORY_SMALL), quantityOfFiles);
     }
 
-    public static void generateMediumFiles() throws ExecutionException, InterruptedException {
+    public static void generateMediumFiles(int quantityOfFiles) throws ExecutionException, InterruptedException {
         LOGGER.info("=== Generating Medium Files (~500-800 KB) ===");
 
-        generateFilesParallel(BookIDs.MEDIUM, "document/medium", 3);
+        generateFilesParallel(BookIDs.MEDIUM, String.format("%s/%s", DIRECTORY_PATH, DIRECTORY_MEDIUM), quantityOfFiles);
     }
 
-    public static void generateLargeFiles() throws ExecutionException, InterruptedException {
+    public static void generateLargeFiles(int quantityOfFiles) throws ExecutionException, InterruptedException {
         LOGGER.info("=== Generating Large Files (~1-3 MB) ===");
 
-        generateFilesParallel(BookIDs.LARGE, "document/large", 2);
+        generateFilesParallel(BookIDs.LARGE, String.format("%s/%s", DIRECTORY_PATH, DIRECTORY_LARGE), quantityOfFiles);
     }
 
-    private static void generateFilesParallel(int[] bookIDs, String prefix, int count) throws ExecutionException, InterruptedException {
+    private static void generateFilesParallel(int[] bookIDs, String prefix, int quantityOfFiles) throws ExecutionException, InterruptedException {
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             final List<Future<Void>> futures = new ArrayList<>();
 
-            for (int i = 0; i < Math.min(bookIDs.length, count); i++) {
+            for (int i = 0; i < quantityOfFiles; i++) {
                 final int index = i;
-                final int bookID = bookIDs[i];
+                final int bookID = bookIDs[i % bookIDs.length];
 
                 Future<Void> future = executor.submit(() -> {
-                   Thread.sleep(index * 2000L);
+                    try {
+                       Thread.sleep(index * 2000L);
+                       LOGGER.info("  [{}] Downloading book {}...", index + 1, bookID);
 
-                   LOGGER.info("  [{}] Downloading book {}...", index + 1, bookID);
+                       String text = downloadBook(bookID);
+                       String filename = String.format("%s_%d_%d.txt", prefix, bookID, index);
 
-                   String text = downloadBook(bookID);
-
-                   String filename = String.format("%s_%d.txt", prefix, bookID);
-
-                   saveToFile(filename, text);
-
-                   return null;
+                       saveToFile(filename, text);
+                       return null;
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        LOGGER.error("Task interrupted for book {}", bookID);
+                        throw new RuntimeException("Task interrupted", e);
+                    } catch (IOException e) {
+                        LOGGER.error("Failed to download/save book {}: {}",
+                                bookID, e.getMessage());
+                        throw new RuntimeException("Failed to process book " + bookID, e);
+                    }
                 });
 
                 futures.add(future);
             }
 
+            int successCount = 0;
+            int failureCount = 0;
+
             for (Future<Void> future : futures) {
-                future.get();
+                try {
+                    future.get();
+                    successCount++;
+                } catch (InterruptedException | ExecutionException e) {
+                    failureCount++;
+                    LOGGER.error("Task failed: {}", e.getCause().getMessage());
+                }
             }
 
-            LOGGER.info("✓ Completed");
+            if (failureCount > 0) {
+                LOGGER.warn("  Generated {}/{} files ({} failed)", successCount, quantityOfFiles, failureCount);
+            } else {
+                LOGGER.info("  Successfully generated all {} files", quantityOfFiles);
+            }
         }
-
     }
 }

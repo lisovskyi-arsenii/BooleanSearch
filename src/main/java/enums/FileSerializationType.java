@@ -1,13 +1,16 @@
-package serialization;
+package enums;
 
-public enum FileType {
+import java.util.Arrays;
+import java.util.Optional;
+
+public enum FileSerializationType {
     BINARY("bin"),
     TEXT("txt"),
     JSON("json");
 
     private final String extension;
 
-    FileType(String extension) {
+    FileSerializationType(String extension) {
         this.extension = extension;
     }
 
@@ -17,6 +20,12 @@ public enum FileType {
 
     public String getFilenameWithExtension(String basename) {
         return basename + "." + extension;
+    }
+
+    public static Optional<FileSerializationType> fromFormat(String format) {
+        return Arrays.stream(values())
+                .filter(extension -> extension.extension.equalsIgnoreCase(format))
+                .findFirst();
     }
 
     @Override

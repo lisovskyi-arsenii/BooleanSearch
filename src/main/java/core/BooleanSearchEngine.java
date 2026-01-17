@@ -5,7 +5,7 @@ import index.InvertedIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import query.BooleanQueryExecutor;
-import serialization.FileType;
+import enums.FileSerializationType;
 import serialization.SerializationComparison;
 import serialization.serializers.BinarySerializer;
 import serialization.serializers.JsonSerializer;
@@ -24,6 +24,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static enums.FileSerializationType.*;
 
 public class BooleanSearchEngine implements SearchEngine {
     private static final Logger LOGGER = LoggerFactory.getLogger(BooleanSearchEngine.class);
@@ -118,10 +120,15 @@ public class BooleanSearchEngine implements SearchEngine {
 
     // serialization/deserialization
     @Override
-    public void saveIndex(String filepath, FileType format) throws IllegalArgumentException, IOException {
+    public void saveIndex(String filepath, String format) throws IllegalArgumentException, IOException {
         Objects.requireNonNull(filepath, "Filepath in saveIndex() must not be null");
         Objects.requireNonNull(format, "Format in saveIndex() must not be null");
-        switch (format) {
+        var typeFormat = FileSerializationType.fromFormat(format);
+        if (typeFormat.isEmpty()) {
+            System.out.println("Format in saveIndex() must be one of: " + Arrays.toString(FileSerializationType.values()));
+            return;
+        }
+        switch (typeFormat.get()) {
             case JSON -> saveDictionaryJson(filepath);
             case TEXT -> saveDictionaryText(filepath);
             case BINARY -> saveDictionaryBinary(filepath);
@@ -129,10 +136,15 @@ public class BooleanSearchEngine implements SearchEngine {
     }
 
     @Override
-    public void loadIndex(String filepath, FileType format) throws IOException, IllegalArgumentException, ClassNotFoundException {
+    public void loadIndex(String filepath, String format) throws IOException, IllegalArgumentException, ClassNotFoundException {
         Objects.requireNonNull(filepath, "Filepath in loadIndex() must not be null");
         Objects.requireNonNull(format, "Format in loadIndex() must not be null");
-        switch (format) {
+        var typeFormat = FileSerializationType.fromFormat(format);
+        if (typeFormat.isEmpty()) {
+            System.out.println("Format in saveIndex() must be one of: " + Arrays.toString(FileSerializationType.values()));
+            return;
+        }
+        switch (typeFormat.get()) {
             case JSON -> loadDictionaryJson(filepath);
             case TEXT -> loadDictionaryText(filepath);
             case BINARY -> loadDictionaryBinary(filepath);
