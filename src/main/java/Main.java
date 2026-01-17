@@ -41,22 +41,6 @@ public class Main {
             printTopTerms(searchEngine, 10);
 
 
-
-
-
-//            Optional<Set<Integer>> docIDs = searchEngine.search("argument");
-//            docIDs.ifPresentOrElse(ids -> {
-//                        List<String> findFilenames = new ArrayList<>();
-//                        for (Map.Entry<String, Set<Integer>> entry : searchEngine.getIndex().entrySet()) {
-//                            if (ids.contains(entry.getValue())) {
-//                                findFilenames.add(entry.getKey());
-//                            }
-//                        }
-//                        findFilenames.forEach(System.out::println);
-//                    },
-//                    () -> System.out.println("No document found")
-//            );
-
         } catch (IOException | IllegalArgumentException e) {
             System.err.println(e.getMessage());
         } finally {
