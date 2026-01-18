@@ -3,22 +3,35 @@ package serialization.serializers;
 import serialization.IndexSerializer;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class TextSerializer implements IndexSerializer {
     private static final String FORMAT = "Text";
+    private static final String SEPARATOR = ": ";
+    private static final String DOC_SEPARATOR = ", ";
 
     @Override
     public void serialize(Map<String, Set<Integer>> index, String filepath) throws IOException {
         try (
-            OutputStream file = new FileOutputStream(filepath);
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(file));
+            BufferedWriter writer = new BufferedWriter(
+                new FileWriter(filepath + ".txt", StandardCharsets.UTF_8));
         ) {
-            for (Map.Entry<String, Set<Integer>> entry : index.entrySet()) {
-                writer.write(entry.getKey() + " " + entry.getValue());
+            List<String> sortedTerms = new ArrayList<>(index.keySet());
+            Collections.sort(sortedTerms);
+
+            for (String term : sortedTerms) {
+                Set<Integer> docIDs = index.get(term);
+
+                String docIDsStr = docIDs.stream()
+                        .sorted()
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(DOC_SEPARATOR));
+
+                writer.write(term);
+                writer.write(SEPARATOR);
+                writer.write(docIDsStr);
                 writer.newLine();
             }
         }
@@ -27,32 +40,28 @@ public class TextSerializer implements IndexSerializer {
     @Override
     public Map<String, Set<Integer>> deserialize(String filepath) throws IOException, ClassNotFoundException {
         try (
-                InputStream file = new FileInputStream(filepath);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(file));
+            BufferedReader reader = new BufferedReader(
+                    new FileReader(filepath + ".txt", StandardCharsets.UTF_8));
         ) {
             Map<String, Set<Integer>> index = new HashMap<>();
             String line;
+
             while ((line = reader.readLine()) != null) {
-                int spaceIndex = line.indexOf(' ');
-                if (spaceIndex == -1) continue;
-                String term = line.substring(0, spaceIndex);
-                String setString = line.substring(spaceIndex + 1).trim();
+                if (line.trim().isEmpty()) continue;
 
-                if (setString.startsWith("[") && setString.endsWith("]")) {
-                    setString = setString.substring(1, setString.length() - 1);
-                }
+                int separatorIndex = line.indexOf(SEPARATOR);
+                if (separatorIndex == -1) continue;
 
-                Set<Integer> docIDs = new HashSet<>();
-                if (!setString.isEmpty()) {
-                    String[] ids = setString.split(", ");
-                    for (String id : ids) {
-                        docIDs.add(Integer.parseInt(id));
-                    }
-                }
+                String term = line.substring(0, separatorIndex).trim();
+                String docIDsStr = line.substring(separatorIndex + SEPARATOR.length()).trim();
 
+                Set<Integer> docIDs = Arrays.stream(docIDsStr.split(DOC_SEPARATOR))
+                                        .map(String::trim)
+                                        .filter(s -> !s.isEmpty())
+                                        .map(Integer::parseInt)
+                                        .collect(Collectors.toSet());
                 index.put(term, docIDs);
             }
-
             return index;
         }
     }

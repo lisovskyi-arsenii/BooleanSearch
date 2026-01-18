@@ -3,7 +3,6 @@ package serialization.serializers;
 import serialization.IndexSerializer;
 
 import java.io.*;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -13,23 +12,20 @@ public class BinarySerializer implements IndexSerializer {
     @Override
     public void serialize(Map<String, Set<Integer>> index, String filepath) throws IOException {
         try (
-                OutputStream file = new FileOutputStream(filepath);
-                OutputStream buffer = new BufferedOutputStream(file);
-                ObjectOutput output = new ObjectOutputStream(buffer);
+            ObjectOutputStream oos = new ObjectOutputStream(
+                    new BufferedOutputStream(new FileOutputStream(filepath + ".bin"))
+            )
         ) {
-            output.writeObject(index);
+            oos.writeObject(index);
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
+    @SuppressWarnings("unchecked")
     public Map<String, Set<Integer>> deserialize(String filepath) throws IOException, ClassNotFoundException {
-        try (
-                InputStream file = new FileInputStream(filepath);
-                InputStream buffer = new BufferedInputStream(file);
-                ObjectInput input = new ObjectInputStream(buffer);
-        ) {
-            return (HashMap<String, Set<Integer>>) input.readObject();
+        try (ObjectInputStream ois = new ObjectInputStream(
+                new BufferedInputStream(new FileInputStream(filepath + ".bin")))) {
+            return (Map<String, Set<Integer>>) ois.readObject();
         }
     }
 

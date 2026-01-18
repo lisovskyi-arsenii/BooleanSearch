@@ -3,14 +3,14 @@ package enums;
 import java.util.Arrays;
 import java.util.Optional;
 
-public enum FileSerializationType {
+public enum FileSerializationFormat {
     BINARY("bin"),
     TEXT("txt"),
     JSON("json");
 
     private final String extension;
 
-    FileSerializationType(String extension) {
+    FileSerializationFormat(String extension) {
         this.extension = extension;
     }
 
@@ -22,7 +22,7 @@ public enum FileSerializationType {
         return basename + "." + extension;
     }
 
-    public static Optional<FileSerializationType> fromFormat(String format) {
+    public static Optional<FileSerializationFormat> fromFormat(String format) {
         return Arrays.stream(values())
                 .filter(extension -> extension.extension.equalsIgnoreCase(format))
                 .findFirst();

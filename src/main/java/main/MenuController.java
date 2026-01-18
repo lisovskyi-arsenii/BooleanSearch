@@ -1,14 +1,12 @@
 package main;
 
 import core.BooleanSearchEngine;
-import enums.FileGenerationType;
-import enums.MenuChoice;
-import enums.SearchOperation;
+import enums.*;
 import generator.GenerateFiles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import statistics.DictionaryStats;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,7 +16,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import static constants.Filenames.DEFAULT_FILENAME;
 import static constants.Filenames.DIRECTORY_PATH;
+import static enums.FileOperation.LOAD;
+import static enums.FileOperation.SAVE;
 import static enums.SearchOperation.*;
 
 public class MenuController {
@@ -358,13 +359,32 @@ public class MenuController {
     }
 
     public void viewStatistics() throws IllegalArgumentException{
+        DictionaryStats stats = searchEngine.getStatistics();
 
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("📊 INDEX STATISTICS");
+        System.out.println("=".repeat(80));
+        System.out.printf("  Documents indexed:      %,d%n", stats.documentsCount());
+        System.out.printf("  Unique terms:           %,d%n", stats.uniqueTerms());
+        System.out.printf("  Total term occurrences: %,d%n", stats.totalWords());
+        System.out.printf("  Collection size:        %,d bytes (%.2f MB)%n",
+                stats.collectionSizeInBytes(),
+                stats.collectionSizeInBytes() / (1024.0 * 1024.0));
+
+        if (stats.uniqueTerms() > 0 && stats.documentsCount() > 0) {
+            System.out.printf("  Average terms per doc:  %.2f%n",
+                    (double) stats.totalWords() / stats.documentsCount());
+            System.out.printf("  Average doc size:       %,d bytes%n",
+                    stats.collectionSizeInBytes() / stats.documentsCount());
+        }
+
+        System.out.println("=".repeat(80));
     }
 
     public void showTopTerms() throws IllegalArgumentException {
-        System.out.println("Show top terms");
         System.out.println("Enter how many terms you want to show: ");
         int topCount = scanner.parseInt();
+
         if (topCount < 0 || topCount > searchEngine.getIndex().size()) {
             throw new IllegalArgumentException("Invalid top count of terms you want to show.");
         }
@@ -390,11 +410,72 @@ public class MenuController {
     }
 
     public void saveIndex() throws IllegalArgumentException {
-
+        performFileOperationOnIndex(
+                SAVE,
+                (filepath, extension) -> {
+                    try {
+                        searchEngine.saveIndex(filepath, extension);
+                        String fullpath = filepath + "." + extension;
+                        System.out.printf("Index was saved into %s%n", fullpath);
+                        LOGGER.info("Index was saved into %s%n", fullpath);
+                    } catch (IOException e) {
+                        System.err.printf("Failed to save index: %s%n", filepath);
+                        LOGGER.error("Failed to load index", e);
+                    }
+                    return null;
+                }
+        );
     }
 
-    public void loadIndex() throws IllegalArgumentException{
+    public void loadIndex() throws IllegalArgumentException {
+        performFileOperationOnIndex(
+                LOAD,
+                (filepath, extension) -> {
+                    try {
+                        searchEngine.loadIndex(filepath, extension);
+                        String fullpath = filepath + "." + extension;
+                        System.out.printf("Index was loaded from %s%n", fullpath);
+                        LOGGER.info("Index was loaded from %s%n", fullpath);
+                    } catch (IOException e) {
+                        System.err.printf("Failed to load index: %s%n", filepath);
+                        LOGGER.error("Failed to load index", e);
+                    } catch (ClassNotFoundException e) {
+                        System.err.printf("Error: %s%n", e.getMessage());
+                        LOGGER.error("Error: {}", e.getMessage());
+                    }
+                    return null;
+                }
+        );
+    }
 
+    private void performFileOperationOnIndex(
+            FileOperation operation,
+            BiFunction<String, String, Void> function
+    ) {
+        System.out.println("Choose format: ");
+        System.out.println("Binary/Text/JSON: ");
+        String formatChoice = scanner.parseString();
+        Optional<FileSerializationFormat> format = FileSerializationFormat.fromFormat(formatChoice);
+
+        if (format.isEmpty()) {
+            System.err.println("Invalid format");
+            LOGGER.error("Invalid format");
+            return;
+        }
+
+        System.out.println("Enter filename (without extension): ");
+        String filename = scanner.parseString();
+        if (filename.isEmpty()) {
+            filename = DEFAULT_FILENAME;
+        }
+
+        String extension = format.get().getExtension();
+        try {
+            function.apply(filename, extension);
+        } catch (Exception e) {
+            System.err.printf("Failed to %s index: %s", operation.getOperation(), e.getMessage());
+            LOGGER.error("Failed to {} index: {}", operation.getOperation(), e.getMessage());
+        }
     }
 
     public void compareFormats() throws IllegalArgumentException{
