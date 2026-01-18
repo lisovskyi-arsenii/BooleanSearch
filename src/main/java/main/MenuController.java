@@ -453,7 +453,7 @@ public class MenuController {
             BiFunction<String, String, Void> function
     ) {
         System.out.println("Choose format: ");
-        System.out.println("Binary/Text/JSON: ");
+        System.out.println("bin/txt/json: ");
         String formatChoice = scanner.parseString();
         Optional<FileSerializationFormat> format = FileSerializationFormat.fromFormat(formatChoice);
 
@@ -470,8 +470,9 @@ public class MenuController {
         }
 
         String extension = format.get().getExtension();
+        String fullPath = filename + "." + extension;
         try {
-            function.apply(filename, extension);
+            function.apply(fullPath, extension);
         } catch (Exception e) {
             System.err.printf("Failed to %s index: %s", operation.getOperation(), e.getMessage());
             LOGGER.error("Failed to {} index: {}", operation.getOperation(), e.getMessage());

@@ -8,7 +8,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class TextSerializer implements IndexSerializer {
-    private static final String FORMAT = "Text";
+    private static final String FORMAT = "TEXT";
     private static final String SEPARATOR = ": ";
     private static final String DOC_SEPARATOR = ", ";
 
@@ -16,7 +16,7 @@ public class TextSerializer implements IndexSerializer {
     public void serialize(Map<String, Set<Integer>> index, String filepath) throws IOException {
         try (
             BufferedWriter writer = new BufferedWriter(
-                new FileWriter(filepath + ".txt", StandardCharsets.UTF_8));
+                new FileWriter(filepath, StandardCharsets.UTF_8));
         ) {
             List<String> sortedTerms = new ArrayList<>(index.keySet());
             Collections.sort(sortedTerms);
@@ -41,7 +41,7 @@ public class TextSerializer implements IndexSerializer {
     public Map<String, Set<Integer>> deserialize(String filepath) throws IOException, ClassNotFoundException {
         try (
             BufferedReader reader = new BufferedReader(
-                    new FileReader(filepath + ".txt", StandardCharsets.UTF_8));
+                    new FileReader(filepath, StandardCharsets.UTF_8));
         ) {
             Map<String, Set<Integer>> index = new HashMap<>();
             String line;

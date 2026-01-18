@@ -7,13 +7,13 @@ import java.util.Map;
 import java.util.Set;
 
 public class BinarySerializer implements IndexSerializer {
-    private static final String FORMAT = "Binary";
+    private static final String FORMAT = "BINARY";
 
     @Override
     public void serialize(Map<String, Set<Integer>> index, String filepath) throws IOException {
         try (
             ObjectOutputStream oos = new ObjectOutputStream(
-                    new BufferedOutputStream(new FileOutputStream(filepath + ".bin"))
+                    new BufferedOutputStream(new FileOutputStream(filepath))
             )
         ) {
             oos.writeObject(index);
@@ -24,7 +24,7 @@ public class BinarySerializer implements IndexSerializer {
     @SuppressWarnings("unchecked")
     public Map<String, Set<Integer>> deserialize(String filepath) throws IOException, ClassNotFoundException {
         try (ObjectInputStream ois = new ObjectInputStream(
-                new BufferedInputStream(new FileInputStream(filepath + ".bin")))) {
+                new BufferedInputStream(new FileInputStream(filepath)))) {
             return (Map<String, Set<Integer>>) ois.readObject();
         }
     }

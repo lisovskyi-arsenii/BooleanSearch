@@ -53,3 +53,45 @@
 2026-01-18 03:17:46.355 [main] INFO  main.Main - ================================================================================
 2026-01-18 03:17:46.358 [main] INFO  main.Main - APPLICATION STARTED at 2026-01-18T03:17:46.358501600
 2026-01-18 03:17:46.360 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:48:17.993 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:48:17.996 [main] INFO  main.Main - APPLICATION STARTED at 2026-01-18T03:48:17.996914600
+2026-01-18 03:48:17.998 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:48:45.902 [main] INFO  main.MenuController - Index was loaded from %s%n
+2026-01-18 03:49:05.984 [main] INFO  main.MenuController - Indexing from documents
+2026-01-18 03:49:06.463 [main] INFO  main.MenuController - Indexing completed
+2026-01-18 03:49:19.032 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:49:19.032 [main] INFO  main.Main - APPLICATION FINISHED at 2026-01-18T03:49:19.032367300
+2026-01-18 03:49:19.033 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:51:59.818 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:51:59.818 [main] INFO  main.Main - APPLICATION STARTED at 2026-01-18T03:51:59.818602300
+2026-01-18 03:51:59.818 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:52:41.562 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:52:41.565 [main] INFO  main.Main - APPLICATION STARTED at 2026-01-18T03:52:41.565987100
+2026-01-18 03:52:41.565 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:53:01.178 [main] ERROR main.MenuController - Invalid format
+2026-01-18 03:53:12.894 [main] ERROR main.MenuController - Invalid format
+2026-01-18 03:53:23.437 [main] ERROR main.MenuController - Invalid format
+2026-01-18 03:53:39.577 [main] INFO  main.MenuController - Index was saved into %s%n
+2026-01-18 03:53:41.762 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:53:41.763 [main] INFO  main.Main - APPLICATION FINISHED at 2026-01-18T03:53:41.763359800
+2026-01-18 03:53:41.763 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:55:03.770 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:55:03.773 [main] INFO  main.Main - APPLICATION STARTED at 2026-01-18T03:55:03.773265100
+2026-01-18 03:55:03.774 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:55:11.828 [main] INFO  main.MenuController - Index was saved into %s%n
+2026-01-18 03:55:16.060 [main] INFO  main.MenuController - Index was loaded from %s%n
+2026-01-18 03:55:25.201 [main] INFO  main.MenuController - Indexing from documents
+2026-01-18 03:55:25.637 [main] INFO  main.MenuController - Indexing completed
+2026-01-18 03:55:31.113 [main] INFO  main.MenuController - Index was saved into %s%n
+2026-01-18 03:55:35.537 [main] ERROR main.MenuController - Invalid format
+2026-01-18 03:55:37.062 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:55:37.062 [main] INFO  main.Main - APPLICATION FINISHED at 2026-01-18T03:55:37.062259400
+2026-01-18 03:55:37.062 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:55:41.683 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:55:41.686 [main] INFO  main.Main - APPLICATION STARTED at 2026-01-18T03:55:41.686066700
+2026-01-18 03:55:41.688 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:55:52.294 [main] INFO  main.MenuController - Index was loaded from %s%n
+2026-01-18 03:56:06.364 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:56:06.367 [main] INFO  main.Main - APPLICATION STARTED at 2026-01-18T03:56:06.367586200
+2026-01-18 03:56:06.369 [main] INFO  main.Main - ================================================================================
+2026-01-18 03:56:15.521 [main] INFO  main.MenuController - Index was loaded from %s%n
