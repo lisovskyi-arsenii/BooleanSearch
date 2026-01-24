@@ -2,7 +2,7 @@ package constants;
 
 public final class Filenames {
     private Filenames() {
-        throw new AssertionError("%s is class which contains constants - cannot create instance".formatted(getClass().getSimpleName()));
+        throw new AssertionError("Filenames is class which contains constants - cannot create instance");
     }
 
     public static final String SERIALIZATION_FILENAME_SER = "serialization.ser";

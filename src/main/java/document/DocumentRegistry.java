@@ -1,5 +1,7 @@
 package document;
 
+import core.RegistryData;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,6 +43,24 @@ public class DocumentRegistry {
 
     public Map<String, Integer> getDocumentMetadata() {
         return Collections.unmodifiableMap(filenameToId);
+    }
+
+    public RegistryData exportData() {
+        return new RegistryData(
+                new HashMap<>(filenameToId),
+                new HashMap<>(idToFilename),
+                new HashMap<>(filenameToSize),
+                nextDocID.get()
+        );
+    }
+
+    public void loadData(RegistryData registryData) {
+        clear();
+
+        filenameToId.putAll(registryData.filenameToId());
+        idToFilename.putAll(registryData.idToFilename());
+        filenameToSize.putAll(registryData.filenameToSize());
+        nextDocID.set(registryData.nextDocID());
     }
 
     public void clear() {

@@ -1,13 +1,12 @@
 package tokenization;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.regex.Pattern;
 
+@Slf4j
 public final class Tokenizer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Tokenizer.class);
     private static final Pattern PUNCTUATION_PATTERN = Pattern.compile("[^\\p{L}\\p{N}\\s]+");
     private static final StopWordsFilter STOP_WORD_FILTER = new StopWordsFilter();
 

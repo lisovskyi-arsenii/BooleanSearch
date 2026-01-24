@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 public enum FileSerializationFormat {
-    BINARY("bin"),
+    BINARY("ser"),
     TEXT("txt"),
     JSON("json");
 

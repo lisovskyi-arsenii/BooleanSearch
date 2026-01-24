@@ -92,19 +92,19 @@ public final class GenerateFiles {
 
 
     public static void generateSmallFiles(int quantityOfFiles) throws ExecutionException, InterruptedException {
-        LOGGER.info("=== Generating Small Files (~200-500 KB) ===");
+        LOGGER.info("Generating Small Files (~200-500 KB)");
 
         generateFilesParallel(BookIDs.SMALL, String.format("%s/%s", DIRECTORY_PATH, DIRECTORY_SMALL), quantityOfFiles);
     }
 
     public static void generateMediumFiles(int quantityOfFiles) throws ExecutionException, InterruptedException {
-        LOGGER.info("=== Generating Medium Files (~500-800 KB) ===");
+        LOGGER.info("Generating Medium Files (~500-800 KB)");
 
         generateFilesParallel(BookIDs.MEDIUM, String.format("%s/%s", DIRECTORY_PATH, DIRECTORY_MEDIUM), quantityOfFiles);
     }
 
     public static void generateLargeFiles(int quantityOfFiles) throws ExecutionException, InterruptedException {
-        LOGGER.info("=== Generating Large Files (~1-3 MB) ===");
+        LOGGER.info("Generating Large Files (~1-3 MB)");
 
         generateFilesParallel(BookIDs.LARGE, String.format("%s/%s", DIRECTORY_PATH, DIRECTORY_LARGE), quantityOfFiles);
     }

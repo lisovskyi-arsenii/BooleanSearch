@@ -1,10 +1,14 @@
 package index;
 
+import core.Dictionary;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class InvertedIndex {
-    private Map<String, Set<Integer>> index = new ConcurrentHashMap<>(); // term -> [document ids]
+@Slf4j
+public class InvertedIndex implements Dictionary {
+    private final Map<String, Set<Integer>> index = new ConcurrentHashMap<>(); // term -> [document ids]
 
     public void addTerm(String term, int docID) {
         index.computeIfAbsent(term, k -> ConcurrentHashMap.newKeySet()).add(docID);
@@ -28,6 +32,7 @@ public class InvertedIndex {
         return Collections.unmodifiableSet(index.entrySet());
     }
 
+    @Override
     public Optional<Set<Integer>> getDocuments(String term) {
         Set<Integer> docs = index.get(term);
         return docs != null && !docs.isEmpty()

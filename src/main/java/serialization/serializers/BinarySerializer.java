@@ -1,31 +1,33 @@
 package serialization.serializers;
 
-import serialization.IndexSerializer;
-
+import core.IndexData;
 import java.io.*;
-import java.util.Map;
-import java.util.Set;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 public class BinarySerializer implements IndexSerializer {
     private static final String FORMAT = "BINARY";
+    private static final int BUFFER_SIZE = 65536;
 
     @Override
-    public void serialize(Map<String, Set<Integer>> index, String filepath) throws IOException {
-        try (
-            ObjectOutputStream oos = new ObjectOutputStream(
-                    new BufferedOutputStream(new FileOutputStream(filepath))
-            )
-        ) {
-            oos.writeObject(index);
+    public void serialize(IndexData indexData, String filepath) throws IOException {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                new GZIPOutputStream(
+                        new BufferedOutputStream(
+                                new FileOutputStream(filepath), BUFFER_SIZE)))) {
+
+            oos.writeObject(indexData);
         }
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public Map<String, Set<Integer>> deserialize(String filepath) throws IOException, ClassNotFoundException {
+    public IndexData deserialize(String filepath) throws IOException, ClassNotFoundException {
         try (ObjectInputStream ois = new ObjectInputStream(
-                new BufferedInputStream(new FileInputStream(filepath)))) {
-            return (Map<String, Set<Integer>>) ois.readObject();
+                new GZIPInputStream(
+                        new BufferedInputStream(
+                                new FileInputStream(filepath), BUFFER_SIZE)))) {
+
+            return (IndexData) ois.readObject();
         }
     }
 

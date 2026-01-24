@@ -2,10 +2,15 @@ package core;
 
 import document.DocumentRegistry;
 import index.InvertedIndex;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import matrix.TermDocumentMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import query.BooleanQueryExecutor;
 import enums.FileSerializationFormat;
+import query.QueryExecutor;
+import serialization.FormatMetrics;
+import serialization.serializers.IndexSerializer;
 import serialization.SerializationComparison;
 import serialization.serializers.BinarySerializer;
 import serialization.serializers.JsonSerializer;
@@ -26,19 +31,23 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+@Slf4j
 public class BooleanSearchEngine implements SearchEngine {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BooleanSearchEngine.class);
     private final InvertedIndex index;
-    private final DocumentRegistry documentRegistry;
-    private final BooleanQueryExecutor queryExecutor;
+    private final TermDocumentMatrix matrix;
+    private final DocumentRegistry registry;
+    private final QueryExecutor<InvertedIndex> queryExecutor;
+    @Getter
     private SerializationComparison serializationComparison;
     private final AtomicLong totalCollectionSize = new AtomicLong(0);
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
+
     public BooleanSearchEngine() {
         this.index = new InvertedIndex();
-        this.documentRegistry = new DocumentRegistry();
-        this.queryExecutor = new BooleanQueryExecutor(index);
+        this.matrix = new TermDocumentMatrix();
+        this.registry = new DocumentRegistry();
+        this.queryExecutor = new QueryExecutor<>(index);
     }
 
     // indexing
@@ -53,7 +62,7 @@ public class BooleanSearchEngine implements SearchEngine {
                         try {
                             indexFile(path);
                         } catch (IOException e) {
-                            LOGGER.error("Error indexing files in path {}", path, e);
+                            log.error("Error indexing files in path {}", path, e);
                         }
                     }))
                     .toList();
@@ -62,7 +71,7 @@ public class BooleanSearchEngine implements SearchEngine {
                 try {
                     future.get();
                 } catch (ExecutionException | InterruptedException e) {
-                    LOGGER.error("Task execution failed", e);
+                    log.error("Task execution failed", e);
                     Thread.currentThread().interrupt();
                 }
             }
@@ -77,7 +86,7 @@ public class BooleanSearchEngine implements SearchEngine {
         int docID;
         lock.writeLock().lock();
         try {
-            docID = documentRegistry.registerDocument(filename, Files.size(path));
+            docID = registry.registerDocument(filename, Files.size(path));
             totalCollectionSize.addAndGet(size);
         } finally {
             lock.writeLock().unlock();
@@ -87,6 +96,7 @@ public class BooleanSearchEngine implements SearchEngine {
 
         for (String token : tokens) {
             index.addTerm(token, docID);
+            matrix.addTerm(token, docID);
         }
     }
 
@@ -129,10 +139,20 @@ public class BooleanSearchEngine implements SearchEngine {
             return;
         }
 
-        switch (typeFormat.get()) {
-            case JSON -> saveDictionaryJson(filepath);
-            case TEXT -> saveDictionaryText(filepath);
-            case BINARY -> saveDictionaryBinary(filepath);
+        lock.readLock().lock();
+        try {
+            IndexData indexData = new IndexData(
+                    new ConcurrentHashMap<>(index.getIndex()),
+                    registry.exportData()
+            );
+
+            IndexSerializer serializer = getSerializer(typeFormat.get());
+            serializer.serialize(indexData, filepath);
+
+            log.info("Index saved to {} (format: {}, docs: {}, terms: {})",
+                    filepath, format, registry.documentCount(), index.size());
+        } finally {
+            lock.readLock().unlock();
         }
     }
 
@@ -140,40 +160,96 @@ public class BooleanSearchEngine implements SearchEngine {
     public void loadIndex(String filepath, String format) throws IOException, IllegalArgumentException, ClassNotFoundException {
         Objects.requireNonNull(filepath, "Filepath in loadIndex() must not be null");
         Objects.requireNonNull(format, "Format in loadIndex() must not be null");
+
         var typeFormat = FileSerializationFormat.fromFormat(format);
         if (typeFormat.isEmpty()) {
             System.out.println("Format in saveIndex() must be one of: " + Arrays.toString(FileSerializationFormat.values()));
             return;
         }
-        switch (typeFormat.get()) {
-            case JSON -> loadDictionaryJson(filepath);
-            case TEXT -> loadDictionaryText(filepath);
-            case BINARY -> loadDictionaryBinary(filepath);
+
+        lock.writeLock().lock();
+        try {
+            IndexSerializer serializer = getSerializer(typeFormat.get());
+            IndexData indexData = serializer.deserialize(filepath);
+
+            index.loadIndex(indexData.index());
+
+            registry.loadData(indexData.registryData());
+
+            long totalSize = indexData.registryData().filenameToSize().values()
+                    .stream()
+                    .mapToLong(Long::longValue)
+                    .sum();
+            totalCollectionSize.set(totalSize);
+
+            log.info("Index loaded from {} (format: {}, docs: {}, terms: {}, next ID: {})",
+                    filepath, format, registry.documentCount(), index.size(),
+                    indexData.registryData().nextDocID());
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 
-    private void saveDictionaryBinary(String filepath) throws IOException {
-        new BinarySerializer().serialize(index.getIndex(), filepath);
+    public SerializationComparison measureAllFormats() throws IOException {
+        String tempFilename = "temp_comparison";
+
+        System.out.println("\nMeasuring serialization formats...");
+
+        FormatMetrics binaryMetrics = measureFormat(tempFilename, "ser", "binary");
+
+        FormatMetrics textMetrics = measureFormat(tempFilename, "txt", "text");
+
+        FormatMetrics jsonMetrics = measureFormat(tempFilename, "json", "json");
+
+        deleteIfExists(tempFilename + ".ser");
+        deleteIfExists(tempFilename + ".txt");
+        deleteIfExists(tempFilename + ".json");
+
+        System.out.println("Measurement completed!\n");
+
+        return new SerializationComparison(binaryMetrics, textMetrics, jsonMetrics);
     }
 
-    private void saveDictionaryText(String filepath) throws IOException {
-        new TextSerializer().serialize(index.getIndex(), filepath);
+    private FormatMetrics measureFormat(String filename, String extension, String format) throws IOException {
+        String filepath = filename + "." + extension;
+
+        System.out.printf("Measuring %s format...%n", format.toUpperCase());
+
+        long saveStart = System.nanoTime();
+        saveIndex(filepath, extension);
+        long saveTime = (System.nanoTime() - saveStart) / 1_000_000; // convert to ms
+
+        long fileSize = Files.size(Path.of(filepath));
+
+        long loadStart = System.nanoTime();
+        try {
+            loadIndex(filepath, extension);
+        } catch (ClassNotFoundException e) {
+            throw new IOException("Failed to load index", e);
+        }
+        long loadTime = (System.nanoTime() - loadStart) / 1_000_000; // convert to ms
+
+        System.out.printf("    Save: %d ms, Load: %d ms, Size: %.2f KB%n",
+                saveTime, loadTime, fileSize / 1024.0);
+
+        return new FormatMetrics(format.toUpperCase(), saveTime, loadTime, fileSize);
     }
 
-    private void saveDictionaryJson(String filepath) throws IOException {
-        new JsonSerializer().serialize(index.getIndex(), filepath);
+    private void deleteIfExists(String filepath) {
+        try {
+            Files.deleteIfExists(Path.of(filepath));
+        } catch (IOException e) {
+            log.warn("Failed to delete temporary file: {}", filepath);
+        }
     }
 
-    private void loadDictionaryBinary(String filepath) throws IOException, ClassNotFoundException {
-        index.loadIndex(new BinarySerializer().deserialize(filepath));
-    }
 
-    private void loadDictionaryText(String filepath) throws IOException, ClassNotFoundException {
-        index.loadIndex(new TextSerializer().deserialize(filepath));
-    }
-
-    private void loadDictionaryJson(String filepath) throws IOException, ClassNotFoundException {
-        index.loadIndex(new JsonSerializer().deserialize(filepath));
+    private IndexSerializer getSerializer(FileSerializationFormat format) {
+        return switch (format) {
+            case JSON -> new JsonSerializer();
+            case TEXT -> new TextSerializer();
+            case BINARY -> new BinarySerializer();
+        };
     }
 
 
@@ -185,7 +261,7 @@ public class BooleanSearchEngine implements SearchEngine {
             int totalWords = index.getTotalTermOccurrences();
 
             return new DictionaryStats(
-                    documentRegistry.documentCount(),
+                    registry.documentCount(),
                     uniqueTerms,
                     totalWords,
                     totalCollectionSize.get()
@@ -216,7 +292,7 @@ public class BooleanSearchEngine implements SearchEngine {
 
         lock.readLock().lock();
         try {
-            return documentRegistry.getDocumentNames(docIDs);
+            return registry.getDocumentNames(docIDs);
         } finally {
             lock.readLock().unlock();
         }
@@ -225,20 +301,29 @@ public class BooleanSearchEngine implements SearchEngine {
     public int documentCount() {
         lock.readLock().lock();
         try {
-            return documentRegistry.documentCount();
+            return registry.documentCount();
         } finally {
             lock.readLock().unlock();
         }
     }
 
     public InvertedIndex getIndex() {
-        return index;
+        lock.readLock().lock();
+        try {
+            return index;
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
-    public SerializationComparison getSerializationComparison() {
-        return serializationComparison;
+    public TermDocumentMatrix getMatrix() {
+        lock.readLock().lock();
+        try {
+            return matrix;
+        }  finally {
+            lock.readLock().unlock();
+        }
     }
-
 
     // utility
     public void printIndex() {
@@ -249,7 +334,8 @@ public class BooleanSearchEngine implements SearchEngine {
         lock.writeLock().lock();
         try {
             index.clear();
-            documentRegistry.clear();
+            matrix.clear();
+            registry.clear();
             totalCollectionSize.set(0);
         } finally {
             lock.writeLock().unlock();

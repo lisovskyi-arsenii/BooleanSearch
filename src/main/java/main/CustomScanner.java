@@ -1,6 +1,7 @@
 package main;
 
 import java.util.InputMismatchException;
+import java.util.OptionalInt;
 import java.util.Scanner;
 
 public class CustomScanner {
@@ -13,14 +14,14 @@ public class CustomScanner {
         this.scanner = scanner;
     }
 
-    public int parseInt() throws InputMismatchException {
+    public OptionalInt parseInt() throws InputMismatchException {
         try {
             int result = scanner.nextInt();
             scanner.nextLine();
-            return result;
+            return OptionalInt.of(result);
         } catch (InputMismatchException e) {
             scanner.nextLine();
-            return -1;
+            return OptionalInt.empty();
         }
     }
 

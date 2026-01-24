@@ -1,14 +1,15 @@
 package query;
 
+import core.Dictionary;
 import index.InvertedIndex;
 
 import java.util.Optional;
 import java.util.Set;
 
-public class QueryProcessor {
-    private final BooleanQueryExecutor executor;
-    public QueryProcessor(InvertedIndex invertedIndex) {
-        this.executor = new BooleanQueryExecutor(invertedIndex);
+public class QueryProcessor <T extends Dictionary> {
+    private final QueryExecutor<T> executor;
+    public QueryProcessor(T dictionary) {
+        this.executor = new QueryExecutor<>(dictionary);
     }
 
     public Optional<Set<Integer>> processQuery(String query) {
