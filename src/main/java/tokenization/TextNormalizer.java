@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public final class TextNormalizer {
     private TextNormalizer() {
-        throw new AssertionError("%s class is utility class - cannot create instance of it".formatted(getClass().getSimpleName()));
+        throw new UnsupportedOperationException("TextNormalizer class is utility class - cannot create instance of it");
     }
 
     public static String normalize(String text) {

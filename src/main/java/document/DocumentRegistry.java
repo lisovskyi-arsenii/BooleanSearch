@@ -21,14 +21,6 @@ public class DocumentRegistry {
         });
     }
 
-    public Optional<String> getFilename(int docID) {
-        return Optional.ofNullable(idToFilename.get(docID));
-    }
-
-    public Optional<Long> getSize(String filename) {
-        return Optional.ofNullable(filenameToSize.get(filename));
-    }
-
     public List<String> getDocumentNames(Set<Integer> docIDs) {
         return docIDs.stream()
                 .map(idToFilename::get)

@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 
 public final class FileWalker {
     private FileWalker() {
-        throw new AssertionError("FileWalker is utility class - cannot create instance");
+        throw new UnsupportedOperationException("FileWalker is utility class - cannot create instance");
     }
 
     @SafeVarargs
@@ -23,10 +23,11 @@ public final class FileWalker {
         }
 
         Predicate<Path> totalPredicates = Arrays.stream(predicates)
-                .reduce(path -> true, Predicate::and);
+                .reduce(_ -> true, Predicate::and);
 
         try (Stream<Path> stream = Files.walk(dir)) {
             return stream
+                    .parallel()
                     .filter(Files::isRegularFile)
                     .filter(totalPredicates)
                     .toList();

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -21,11 +21,11 @@
     </appender>
 
     <root level="INFO">
-        <appender-ref ref="CONSOLE" />
-        <appender-ref ref="FILE" />
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
     </root>
 
-    <logger name="core" level="DEBUG" />
-    <logger name="main" level="INFO" />
+    <logger name="core" level="DEBUG"/>
+    <logger name="main" level="INFO"/>
 
 </configuration>

@@ -11,6 +11,7 @@ public enum SearchStructureType {
     MATRIX("matrix");
 
     private final String type;
+
     SearchStructureType(String type) {
         this.type = type;
     }

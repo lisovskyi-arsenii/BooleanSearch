@@ -16,14 +16,15 @@ public enum MenuChoice {
     AND_SEARCH(7, "AND search"),
     OR_SEARCH(8, "OR search"),
     NOT_SEARCH(9, "NOT search"),
-    VIEW_STATISTICS(10, "View statistics"),
-    SHOW_TOP_TERMS(11, "Show top N terms"),
-    SAVE_INDEX(12, "Save index"),
-    LOAD_INDEX(13, "Load index"),
-    COMPARE_FORMATS(14, "Compare formats"),
-    CLEAR_INDEX(15, "Clear index"),
-    PRINT_INDEX(16, "Print index"),
-    COMPARE_PERFORMANCE(17, "Compare performance");
+    ADVANCED_SEARCH(10, "Advanced search (query parser)"),
+    VIEW_STATISTICS(11, "View statistics"),
+    SHOW_TOP_TERMS(12, "Show top N terms"),
+    SAVE_INDEX(13, "Save index"),
+    LOAD_INDEX(14, "Load index"),
+    COMPARE_FORMATS(15, "Compare formats"),
+    CLEAR_INDEX(16, "Clear index"),
+    PRINT_INDEX(17, "Print index"),
+    COMPARE_PERFORMANCE(18, "Compare performance");
 
     private final int code;
     @Getter

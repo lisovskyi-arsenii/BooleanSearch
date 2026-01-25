@@ -1,6 +1,7 @@
 package serialization.serializers;
 
 import core.IndexData;
+
 import java.io.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;

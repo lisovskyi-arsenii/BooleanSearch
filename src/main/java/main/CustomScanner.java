@@ -19,7 +19,7 @@ public class CustomScanner {
             int result = scanner.nextInt();
             scanner.nextLine();
             return OptionalInt.of(result);
-        } catch (InputMismatchException e) {
+        } catch (InputMismatchException _) {
             scanner.nextLine();
             return OptionalInt.empty();
         }

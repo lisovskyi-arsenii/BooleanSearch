@@ -1,8 +1,11 @@
 package enums;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 import java.util.Optional;
 
+@Getter
 public enum FileSerializationFormat {
     BINARY("ser"),
     TEXT("txt"),
@@ -12,14 +15,6 @@ public enum FileSerializationFormat {
 
     FileSerializationFormat(String extension) {
         this.extension = extension;
-    }
-
-    public String getExtension() {
-        return extension;
-    }
-
-    public String getFilenameWithExtension(String basename) {
-        return basename + "." + extension;
     }
 
     public static Optional<FileSerializationFormat> fromFormat(String format) {

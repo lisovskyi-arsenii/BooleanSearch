@@ -1,8 +1,6 @@
 package tokenization;
 
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import util.FileReader;
 
 import java.io.IOException;

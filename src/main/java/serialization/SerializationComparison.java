@@ -11,6 +11,13 @@ public record SerializationComparison(FormatMetrics binary, FormatMetrics text, 
         }
     }
 
+    public static double compareCompressionRatio(FormatMetrics f1, FormatMetrics f2) throws IllegalArgumentException {
+        if (f2.sizeInBytes() == 0) {
+            throw new IllegalArgumentException("Base format size cannot be zero");
+        }
+        return (double) f1.sizeInBytes() / (double) f2.sizeInBytes() * 100;
+    }
+
     public void printData() {
         System.out.println("================================================================================");
         System.out.println("                    SERIALIZATION FORMAT COMPARISON");
@@ -45,13 +52,6 @@ public record SerializationComparison(FormatMetrics binary, FormatMetrics text, 
         FormatMetrics best = getBestInTotal();
         System.out.println("RECOMMENDATION: Use " + best.formatName() + " format for best overall performance");
         System.out.println("================================================================================");
-    }
-
-    public static double compareCompressionRatio(FormatMetrics f1, FormatMetrics f2) throws IllegalArgumentException {
-        if (f2.sizeInBytes() == 0) {
-            throw new IllegalArgumentException("Base format size cannot be zero");
-        }
-        return (double) f1.sizeInBytes() / (double) f2.sizeInBytes() * 100;
     }
 
     public FormatMetrics getBestForSize() throws IllegalArgumentException {

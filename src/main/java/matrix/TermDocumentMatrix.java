@@ -2,7 +2,10 @@ package matrix;
 
 import core.Dictionary;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -12,11 +15,11 @@ public class TermDocumentMatrix implements Dictionary {
     private final Map<String, Integer> termToIndex;
     private final Map<Integer, Integer> docToIndex;
     private final Map<Integer, Integer> indexToDoc;
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private boolean[][] matrix; // [термін][документ]
     private int termCount = 0;
     private int docCount = 0;
     private int totalOccurrences = 0;
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
 
     public TermDocumentMatrix() {

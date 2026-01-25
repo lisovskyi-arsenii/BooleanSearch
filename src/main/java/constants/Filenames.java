@@ -2,7 +2,7 @@ package constants;
 
 public final class Filenames {
     private Filenames() {
-        throw new AssertionError("Filenames is class which contains constants - cannot create instance");
+        throw new UnsupportedOperationException("Filenames class cannot be instantiated");
     }
 
     public static final String SERIALIZATION_FILENAME_SER = "serialization.ser";

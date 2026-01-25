@@ -1,17 +1,17 @@
 package core;
 
 import document.DocumentRegistry;
+import enums.FileSerializationFormat;
 import enums.SearchStructureType;
 import index.InvertedIndex;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import matrix.TermDocumentMatrix;
-import enums.FileSerializationFormat;
 import query.QueryExecutor;
 import serialization.FormatMetrics;
-import serialization.serializers.IndexSerializer;
 import serialization.SerializationComparison;
 import serialization.serializers.BinarySerializer;
+import serialization.serializers.IndexSerializer;
 import serialization.serializers.JsonSerializer;
 import serialization.serializers.TextSerializer;
 import statistics.DictionaryStats;
@@ -39,10 +39,10 @@ public class BooleanSearchEngine implements SearchEngine {
     private final DocumentRegistry registry;
     private final QueryExecutor<InvertedIndex> indexQueryExecutor;
     private final QueryExecutor<TermDocumentMatrix> matrixQueryExecutor;
-    @Getter
-    private SerializationComparison serializationComparison;
     private final AtomicLong totalCollectionSize = new AtomicLong(0);
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    @Getter
+    private SerializationComparison serializationComparison;
 
 
     public BooleanSearchEngine() {

@@ -1,8 +1,11 @@
 package enums;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 import java.util.Optional;
 
+@Getter
 public enum FileGenerationType {
     SMALL("small"),
     MEDIUM("medium"),
@@ -12,10 +15,6 @@ public enum FileGenerationType {
 
     FileGenerationType(String type) {
         this.type = type;
-    }
-
-    public String getType() {
-        return type;
     }
 
     public static Optional<FileGenerationType> fromString(String type) {

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import core.IndexData;
 import core.RegistryData;
 
-import java.io.*;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,7 +18,8 @@ public class JsonSerializer implements IndexSerializer {
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .enable(SerializationFeature.INDENT_OUTPUT)
             .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
-    private static final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
+    private static final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {
+    };
 
     @Override
     public void serialize(IndexData indexData, String filepath) throws IOException {
@@ -80,7 +81,7 @@ public class JsonSerializer implements IndexSerializer {
                 nextDocID
         );
 
-        return new IndexData(index,registryData);
+        return new IndexData(index, registryData);
     }
 
     @Override

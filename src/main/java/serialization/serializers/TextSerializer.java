@@ -22,8 +22,8 @@ public class TextSerializer implements IndexSerializer {
     @Override
     public void serialize(IndexData indexData, String filepath) throws IOException {
         try (
-            BufferedWriter writer = new BufferedWriter(
-                new FileWriter(filepath, StandardCharsets.UTF_8));
+                BufferedWriter writer = new BufferedWriter(
+                        new FileWriter(filepath, StandardCharsets.UTF_8));
         ) {
             // nextDocID
             writer.write(METADATA_SECTION);
@@ -79,8 +79,8 @@ public class TextSerializer implements IndexSerializer {
     @Override
     public IndexData deserialize(String filepath) throws IOException {
         try (
-            BufferedReader reader = new BufferedReader(
-                    new FileReader(filepath, StandardCharsets.UTF_8));
+                BufferedReader reader = new BufferedReader(
+                        new FileReader(filepath, StandardCharsets.UTF_8));
         ) {
             Map<String, Set<Integer>> index = new ConcurrentHashMap<>();
             Map<Integer, String> idToFilename = new ConcurrentHashMap<>();

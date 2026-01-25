@@ -3,7 +3,7 @@ package generator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -29,23 +29,8 @@ public final class GenerateFiles {
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
-    private static final class BookIDs {
-        static final int[] SMALL = {
-                43, 1342, 11, 174, 1661
-        };
-
-        static final int[] MEDIUM = {
-                84, 345, 76, 98
-        };
-
-        static final int[] LARGE = {
-                2701, 2600, 1399, 1661
-        };
-    }
-
     private GenerateFiles() {
-        throw new AssertionError("%s cannot be instantiated"
-                .formatted(getClass().getSimpleName()));
+        throw new UnsupportedOperationException("GenerateFiles class cannot be instantiated");
     }
 
     private static String downloadBook(int bookID) throws IOException, InterruptedException {
@@ -78,7 +63,6 @@ public final class GenerateFiles {
         throw new IOException("Failed to download book " + bookID);
     }
 
-
     private static void saveToFile(String filename, String content) throws IOException {
         Path filePath = Path.of(filename);
         if (!Files.exists(filePath)) {
@@ -89,7 +73,6 @@ public final class GenerateFiles {
         System.out.printf("✓ Saved %s: %,d chars (%,d KB)%n",
                 filename, content.length(), content.length() / 1024);
     }
-
 
     public static void generateSmallFiles(int quantityOfFiles) throws ExecutionException, InterruptedException {
         LOGGER.info("Generating Small Files (~200-500 KB)");
@@ -119,14 +102,14 @@ public final class GenerateFiles {
 
                 Future<Void> future = executor.submit(() -> {
                     try {
-                       Thread.sleep(index * 2000L);
-                       LOGGER.info("  [{}] Downloading book {}...", index + 1, bookID);
+                        Thread.sleep(index * 2000L);
+                        LOGGER.info("  [{}] Downloading book {}...", index + 1, bookID);
 
-                       String text = downloadBook(bookID);
-                       String filename = String.format("%s_%d_%d.txt", prefix, bookID, index);
+                        String text = downloadBook(bookID);
+                        String filename = String.format("%s_%d_%d.txt", prefix, bookID, index);
 
-                       saveToFile(filename, text);
-                       return null;
+                        saveToFile(filename, text);
+                        return null;
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         LOGGER.error("Task interrupted for book {}", bookID);
@@ -160,5 +143,19 @@ public final class GenerateFiles {
                 LOGGER.info("  Successfully generated all {} files", quantityOfFiles);
             }
         }
+    }
+
+    private static final class BookIDs {
+        static final int[] SMALL = {
+                43, 1342, 11, 174, 1661
+        };
+
+        static final int[] MEDIUM = {
+                84, 345, 76, 98
+        };
+
+        static final int[] LARGE = {
+                2701, 2600, 1399, 1661
+        };
     }
 }

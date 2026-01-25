@@ -1,8 +1,11 @@
 package enums;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 import java.util.Optional;
 
+@Getter
 public enum FileOperation {
     SAVE("save"),
     LOAD("load");
@@ -11,10 +14,6 @@ public enum FileOperation {
 
     FileOperation(String operation) {
         this.operation = operation;
-    }
-
-    public String getOperation() {
-        return operation;
     }
 
     public static Optional<FileOperation> fromString(String operation) {

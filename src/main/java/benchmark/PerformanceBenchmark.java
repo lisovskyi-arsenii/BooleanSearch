@@ -4,13 +4,15 @@ import core.BooleanSearchEngine;
 import enums.SearchStructureType;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 @Slf4j
 public class PerformanceBenchmark {
-    private final BooleanSearchEngine searchEngine;
     private static final int WARMUP_ITERATIONS = 5;
     private static final int BENCHMARK_ITERATIONS = 100;
+    private final BooleanSearchEngine searchEngine;
 
     public PerformanceBenchmark(BooleanSearchEngine searchEngine) {
         this.searchEngine = searchEngine;
@@ -20,7 +22,6 @@ public class PerformanceBenchmark {
         warmup(() -> searchEngine.search(term, SearchStructureType.INDEX));
         warmup(() -> searchEngine.search(term, SearchStructureType.MATRIX));
 
-        // Вимірювання
         long indexTime = measureSearch(() ->
                 searchEngine.search(term, SearchStructureType.INDEX));
 
@@ -129,7 +130,7 @@ public class PerformanceBenchmark {
     private void printResults(List<BenchmarkResult> results) {
         System.out.println("\n" + "=".repeat(80));
         System.out.printf("%-10s %-30s %15s %15s %15s%n",
-                "Operation", "Query", "Index (μs)", "Matrix (μs)", "Winner");
+                "BooleanOperation", "Query", "Index (μs)", "Matrix (μs)", "Winner");
         System.out.println("-".repeat(80));
 
         for (BenchmarkResult result : results) {

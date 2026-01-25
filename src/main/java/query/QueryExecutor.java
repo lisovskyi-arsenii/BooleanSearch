@@ -2,12 +2,11 @@ package query;
 
 import core.Dictionary;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-public class QueryExecutor <T extends Dictionary> {
+public class QueryExecutor<T extends Dictionary> {
     private final T dictionary;
 
     public QueryExecutor(T dictionary) {
@@ -59,7 +58,7 @@ public class QueryExecutor <T extends Dictionary> {
     }
 
     public Optional<Set<Integer>> andSearchMultiple(String... terms) {
-        if (Arrays.stream(terms).findAny().isEmpty()) {
+        if (terms == null || terms.length == 0) {
             return Optional.empty();
         }
 
@@ -82,7 +81,7 @@ public class QueryExecutor <T extends Dictionary> {
     }
 
     public Optional<Set<Integer>> orSearchMultiple(String... terms) {
-        if (Arrays.stream(terms).findAny().isEmpty()) {
+        if (terms == null || terms.length == 0) {
             return Optional.empty();
         }
 

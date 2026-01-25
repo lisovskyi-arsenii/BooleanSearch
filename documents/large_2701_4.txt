@@ -1855,7 +1855,7 @@ corner, slips out the long wooden stock, unsheathes the head, whets it
 a little on his boot, and striding up to the bit of mirror against the
 wall, begins a vigorous scraping, or rather harpooning of his cheeks.
 Thinks I, Queequeg, this is using Rogers’s best cutlery with a
-vengeance. Afterwards I wondered the less at this operation when I came
+vengeance. Afterwards I wondered the less at this booleanOperation when I came
 to know of what fine steel the head of a harpoon is made, and how
 exceedingly sharp the long straight edges are always kept.
 
@@ -12585,7 +12585,7 @@ same hook get fixed in that hole? It was inserted there by my
 particular friend Queequeg, whose duty it was, as harpooneer, to
 descend upon the monster’s back for the special purpose referred to.
 But in very many cases, circumstances require that the harpooneer shall
-remain on the whale till the whole flensing or stripping operation is
+remain on the whale till the whole flensing or stripping booleanOperation is
 concluded. The whale, be it observed, lies almost entirely submerged,
 excepting the immediate parts operated upon. So down there, some ten
 feet below the level of the deck, the poor harpooneer flounders about,
@@ -13387,7 +13387,7 @@ combinations, on one side, make quite a wilderness of ropes in that
 quarter.
 
 Thus much being said, attend now, I pray you, to that marvellous and—in
-this particular instance—almost fatal operation whereby the Sperm
+this particular instance—almost fatal booleanOperation whereby the Sperm
 Whale’s great Heidelburgh Tun is tapped.
 
 
@@ -14343,7 +14343,7 @@ CHAPTER 84. Pitchpoling.
 
 To make them run easily and swiftly, the axles of carriages are
 anointed; and for much the same purpose, some whalers perform an
-analogous operation upon their boat; they grease the bottom. Nor is it
+analogous booleanOperation upon their boat; they grease the bottom. Nor is it
 to be doubted that as such a procedure can do no harm, it may possibly
 be of no contemptible advantage; considering that oil and water are
 hostile; that oil is a sliding thing, and that the object in view is to
@@ -15978,7 +15978,7 @@ work on Smells, a text-book on that subject. As its name imports
 afford a place for the blubber of the Dutch whale fleet to be tried
 out, without being taken home to Holland for that purpose. It was a
 collection of furnaces, fat-kettles, and oil sheds; and when the works
-were in full operation certainly gave forth no very pleasant savor. But
+were in full booleanOperation certainly gave forth no very pleasant savor. But
 all this is quite different with a South Sea Sperm Whaler; which in a
 voyage of four years perhaps, after completely filling her hold with
 oil, does not, perhaps, consume fifty days in the business of boiling
@@ -16316,7 +16316,7 @@ investiture alone will adequately protect him, while employed in the
 peculiar functions of his office.
 
 That office consists in mincing the horse-pieces of blubber for the
-pots; an operation which is conducted at a curious wooden horse,
+pots; an booleanOperation which is conducted at a curious wooden horse,
 planted endwise against the bulwarks, and with a capacious tub beneath
 it, into which the minced pieces drop, fast as the sheets from a rapt
 orator’s desk. Arrayed in decent black; occupying a conspicuous pulpit;
@@ -16391,7 +16391,7 @@ about it, such as may lurk in the vicinity of funereal pyres. It smells
 like the left wing of the day of judgment; it is an argument for the
 pit.
 
-By midnight the works were in full operation. We were clear from the
+By midnight the works were in full booleanOperation. We were clear from the
 carcase; sail had been made; the wind was freshening; the wild ocean
 darkness was intense. But that darkness was licked up by the fierce
 flames, which at intervals forked forth from the sooty flues, and
@@ -17971,7 +17971,7 @@ constellation. A sailor takes a fancy to wear shark-bone ear-rings: the
 carpenter drills his ears. Another has the toothache: the carpenter out
 pincers, and clapping one hand upon his bench bids him be seated there;
 but the poor fellow unmanageably winces under the unconcluded
-operation; whirling round the handle of his wooden vice, the carpenter
+booleanOperation; whirling round the handle of his wooden vice, the carpenter
 signs him to clap his jaw in that, if he would have him draw the tooth.
 
 Thus, this carpenter was prepared at all points, and alike indifferent

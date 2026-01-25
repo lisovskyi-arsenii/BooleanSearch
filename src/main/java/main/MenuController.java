@@ -4,8 +4,8 @@ import benchmark.PerformanceBenchmark;
 import core.BooleanSearchEngine;
 import enums.*;
 import generator.GenerateFiles;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import query.QueryParser;
 import serialization.SerializationComparison;
 import statistics.DictionaryStats;
 
@@ -24,8 +24,8 @@ import static enums.FileOperation.LOAD;
 import static enums.FileOperation.SAVE;
 import static enums.SearchOperation.*;
 
+@Slf4j
 public class MenuController {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MenuController.class);
     private final CustomScanner scanner;
     private final BooleanSearchEngine searchEngine;
 
@@ -93,6 +93,11 @@ public class MenuController {
                 notSearch();
                 yield true;
             }
+            case ADVANCED_SEARCH -> {
+                System.out.println("Advanced search");
+                advancedSearch();
+                yield true;
+            }
             case VIEW_STATISTICS -> {
                 System.out.println("View statistics");
                 viewStatistics();
@@ -144,9 +149,9 @@ public class MenuController {
         String directoryPath = scanner.parseString();
         if (directoryPath.isEmpty()) directoryPath = DIRECTORY_PATH;
 
-        LOGGER.info("Indexing from {}", directoryPath);
+        log.info("Indexing from {}", directoryPath);
         searchEngine.indexDocuments(directoryPath);
-        LOGGER.info("Indexing completed");
+        log.info("Indexing completed");
     }
 
     public void reindexDocuments() throws IOException {
@@ -156,9 +161,9 @@ public class MenuController {
 
         searchEngine.getIndex().clear();
         searchEngine.getMatrix().clear();
-        LOGGER.info("Reindexing from {}", directoryPath);
+        log.info("Reindexing from {}", directoryPath);
         searchEngine.indexDocuments(directoryPath);
-        LOGGER.info("Reindex completed");
+        log.info("Reindex completed");
     }
 
     public void generateFiles() throws IllegalArgumentException {
@@ -189,7 +194,7 @@ public class MenuController {
             System.out.println("Number cannot be negative");
         }
         try {
-            LOGGER.info("Generating {} {} files...", quantityOpt, fileGenerationType.get().getType());
+            log.info("Generating {} {} files...", quantityOpt, fileGenerationType.get().getType());
 
             switch (fileGenerationType.get()) {
                 case SMALL -> GenerateFiles.generateSmallFiles(quantityOfFiles);
@@ -201,11 +206,11 @@ public class MenuController {
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            LOGGER.error("File generation interrupted", e);
+            log.error("File generation interrupted", e);
             System.err.println("  File generation was interrupted");
 
         } catch (ExecutionException e) {
-            LOGGER.error("File generation failed", e.getCause());
+            log.error("File generation failed", e.getCause());
             System.err.println("  Failed to generate files: " + e.getCause().getMessage());
         }
     }
@@ -215,7 +220,7 @@ public class MenuController {
         String directoryPath = scanner.parseString();
         if (directoryPath.isEmpty()) directoryPath = DIRECTORY_PATH;
 
-        LOGGER.info("Listing directory {}", directoryPath);
+        log.info("Listing directory {}", directoryPath);
         Path path = Paths.get(directoryPath);
         if (!Files.exists(path)) {
             System.out.println("Directory does not exist");
@@ -249,7 +254,7 @@ public class MenuController {
         Path dir = Path.of(DIRECTORY_PATH);
 
         if (!Files.exists(dir)) {
-            LOGGER.info("Directory {} does not exist", DIRECTORY_PATH);
+            log.info("Directory {} does not exist", DIRECTORY_PATH);
             return;
         }
 
@@ -268,10 +273,10 @@ public class MenuController {
                 try {
                     Files.delete(file);
                     deletedCount++;
-                    LOGGER.info("File {} deleted", file.getFileName());
+                    log.info("File {} deleted", file.getFileName());
                 } catch (IOException e) {
                     failedCount++;
-                    LOGGER.error("Failed to delete file {}", file.getFileName(), e);
+                    log.error("Failed to delete file {}", file.getFileName(), e);
                 }
             }
         }
@@ -281,7 +286,7 @@ public class MenuController {
             System.out.printf("\t%d failed", failedCount);
         }
         System.out.println();
-        LOGGER.info("Deleted {} file(s), {} failed", deletedCount, failedCount);
+        log.info("Deleted {} file(s), {} failed", deletedCount, failedCount);
     }
 
     private Optional<SearchStructureType> getType() {
@@ -312,21 +317,21 @@ public class MenuController {
         }
 
         var type = typeOptional.get();
-        LOGGER.debug("Searching for {}", term);
+        log.debug("Searching for {}", term);
         Optional<Set<Integer>> result = searchEngine.search(term, type);
 
         result.ifPresentOrElse(
-    ids -> {
-            List<String> filenames = searchEngine.getDocumentNames(ids);
-            if (filenames.isEmpty()) {
-                System.out.println("No files found");
-                return;
-            }
+                ids -> {
+                    List<String> filenames = searchEngine.getDocumentNames(ids);
+                    if (filenames.isEmpty()) {
+                        System.out.println("No files found");
+                        return;
+                    }
 
-            System.out.printf("Term '%s' was found in %d file(s):%n ", term, filenames.size());
-            filenames.forEach(filename -> System.out.println("  • " + filename));
-        },
-        () -> System.out.printf("Term %s was not found in any document%n", term));
+                    System.out.printf("Term '%s' was found in %d file(s):%n ", term, filenames.size());
+                    filenames.forEach(filename -> System.out.println("  • " + filename));
+                },
+                () -> System.out.printf("Term %s was not found in any document%n", term));
     }
 
     public void andSearch() {
@@ -375,6 +380,43 @@ public class MenuController {
                     Set<Integer> allDocs = searchEngine.getAllDocumentIDs();
                     return searchEngine.notSearch(terms[0], allDocs, type);
                 });
+    }
+
+    public void advancedSearch() {
+        System.out.println("Enter complex boolean query:");
+        System.out.println("Examples: 'java AND python', 'rust OR golang', 'data AND NOT test'");
+        System.out.print("> ");
+
+        String query = scanner.parseString();
+        if (query == null || query.isEmpty()) {
+            System.out.println("Query cannot be empty");
+            return;
+        }
+
+        var typeOptional = getType();
+        if (typeOptional.isEmpty()) {
+            System.out.println("Type cannot be empty");
+            return;
+        }
+
+        var type = typeOptional.get();
+
+        var result = QueryParser.parseAndExecute(query, searchEngine, type);
+
+        result.ifPresentOrElse(
+                ids -> {
+                    List<String> filenames = searchEngine.getDocumentNames(ids);
+
+                    if (filenames.isEmpty()) {
+                        System.out.println("No files found");
+                        return;
+                    }
+
+                    System.out.printf("%nQuery '%s' found in %d file(s):%n", query, filenames.size());
+                    filenames.stream().parallel().forEach(filename -> System.out.println("  • " + filename));
+                },
+                () -> System.out.printf("No documents found for query: %s%n", query)
+        );
     }
 
     private void performSearch(
@@ -480,7 +522,7 @@ public class MenuController {
             }
         }
 
-        List<Map.Entry<String,Integer>> sorted = termFrequency.entrySet().stream()
+        List<Map.Entry<String, Integer>> sorted = termFrequency.entrySet().stream()
                 .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
                 .limit(topCount)
                 .toList();
@@ -505,10 +547,10 @@ public class MenuController {
                         searchEngine.saveIndex(filepath, extension);
                         String fullPath = filepath + "." + extension;
                         System.out.printf("Index was saved into %s%n", fullPath);
-                        LOGGER.info("Index was saved into {}%n", fullPath);
+                        log.info("Index was saved into {}%n", fullPath);
                     } catch (IOException e) {
                         System.err.printf("Failed to save index: %s%n", filepath);
-                        LOGGER.error("Failed to load index", e);
+                        log.error("Failed to load index", e);
                     }
                     return null;
                 }
@@ -523,13 +565,13 @@ public class MenuController {
                         searchEngine.loadIndex(filepath, extension);
                         String fullPath = filepath + "." + extension;
                         System.out.printf("Index was loaded from %s%n", fullPath);
-                        LOGGER.info("Index was loaded from {}%n", fullPath);
+                        log.info("Index was loaded from {}%n", fullPath);
                     } catch (IOException e) {
                         System.err.printf("Failed to load index: %s%n", filepath);
-                        LOGGER.error("Failed to load index", e);
+                        log.error("Failed to load index", e);
                     } catch (ClassNotFoundException e) {
                         System.err.printf("Error: %s%n", e.getMessage());
-                        LOGGER.error("Error: {}", e.getMessage());
+                        log.error("Error: {}", e.getMessage());
                     }
                     return null;
                 }
@@ -547,7 +589,7 @@ public class MenuController {
 
         if (format.isEmpty()) {
             System.err.println("Invalid format");
-            LOGGER.error("Invalid format");
+            log.error("Invalid format");
             return;
         }
 
@@ -563,7 +605,7 @@ public class MenuController {
             function.apply(fullPath, extension);
         } catch (Exception e) {
             System.err.printf("Failed to %s index: %s", operation.getOperation(), e.getMessage());
-            LOGGER.error("Failed to {} index: {}", operation.getOperation(), e.getMessage());
+            log.error("Failed to {} index: {}", operation.getOperation(), e.getMessage());
         }
     }
 
@@ -581,7 +623,7 @@ public class MenuController {
             searchEngine.setSerializationComparison(comparison);
         } catch (IOException e) {
             System.err.println("Failed to measure formats: " + e.getMessage());
-            LOGGER.error("Failed to measure formats", e);
+            log.error("Failed to measure formats", e);
             return;
         }
 

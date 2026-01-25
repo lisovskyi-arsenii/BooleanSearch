@@ -2,7 +2,9 @@ package tokenization;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -11,7 +13,7 @@ public final class Tokenizer {
     private static final StopWordsFilter STOP_WORD_FILTER = new StopWordsFilter();
 
     private Tokenizer() {
-        throw new AssertionError("Instantiation of Tokenizer - Utility class");
+        throw new UnsupportedOperationException("Instantiation of Tokenizer - Utility class");
     }
 
     public static List<String> tokenize(String content) {
