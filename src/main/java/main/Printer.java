@@ -34,6 +34,7 @@ public final class Printer {
         System.out.println("  UTILITY:");
         System.out.println("   15. Clear index");
         System.out.println("   16. Print index");
+        System.out.println("   17. Compare structure types");
         System.out.println();
         System.out.println("    0. Exit");
         System.out.println("=".repeat(80));

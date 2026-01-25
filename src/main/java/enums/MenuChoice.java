@@ -1,5 +1,7 @@
 package enums;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -20,18 +22,16 @@ public enum MenuChoice {
     LOAD_INDEX(13, "Load index"),
     COMPARE_FORMATS(14, "Compare formats"),
     CLEAR_INDEX(15, "Clear index"),
-    PRINT_INDEX(16, "Print index");
+    PRINT_INDEX(16, "Print index"),
+    COMPARE_PERFORMANCE(17, "Compare performance");
 
     private final int code;
+    @Getter
     private final String description;
 
     MenuChoice(int code, String description) {
         this.code = code;
         this.description = description;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     public static Optional<MenuChoice> fromCode(int code) {

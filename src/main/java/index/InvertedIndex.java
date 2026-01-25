@@ -40,14 +40,11 @@ public class InvertedIndex implements Dictionary {
                 : Optional.empty();
     }
 
-    public Set<Integer> getTerm(String term) {
-        return index.getOrDefault(term, Collections.emptySet());
-    }
-
     public Set<String> getAllTerms() {
         return Collections.unmodifiableSet(index.keySet());
     }
 
+    @Override
     public int size() {
         return index.size();
     }
@@ -58,6 +55,7 @@ public class InvertedIndex implements Dictionary {
                 .sum();
     }
 
+    @Override
     public void clear() {
         index.clear();
     }

@@ -34,14 +34,15 @@ public class QueryExecutor <T extends Dictionary> {
         var result1 = search(term1);
         var result2 = search(term2);
 
-        if (result1.isEmpty() || result2.isEmpty()) {
+        if (result1.isEmpty() && result2.isEmpty()) {
             return Optional.empty();
         }
 
-        Set<Integer> finalResult = new HashSet<>(result1.get());
-        finalResult.addAll(result2.get());
+        Set<Integer> finalResult = new HashSet<>();
+        result1.ifPresent(finalResult::addAll);
+        result2.ifPresent(finalResult::addAll);
 
-        return Optional.of(finalResult);
+        return finalResult.isEmpty() ? Optional.empty() : Optional.of(finalResult);
     }
 
     public Optional<Set<Integer>> notSearch(String term, Set<Integer> allDocsIds) {

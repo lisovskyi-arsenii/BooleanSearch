@@ -29,7 +29,7 @@ public class TermDocumentMatrix implements Dictionary {
         lock.writeLock().lock();
         try {
             int termIdx = termToIndex.computeIfAbsent(term, _ -> termCount++);
-            int docIdx = docToIndex.computeIfAbsent(docId, d -> {
+            int docIdx = docToIndex.computeIfAbsent(docId, _ -> {
                 indexToDoc.put(docCount, docId);
                 return docCount++;
             });
@@ -61,12 +61,42 @@ public class TermDocumentMatrix implements Dictionary {
         }
     }
 
+    @Override
+    public int size() {
+        return termCount;
+    }
+
+    @Override
+    public int getTotalTermOccurrences() {
+        lock.readLock().lock();
+        try {
+            int count = 0;
+            for (int termIdx = 0; termIdx < termCount; termIdx++) {
+                for (int docIdx = 0; docIdx < docCount; docIdx++) {
+                    if (matrix[termIdx][docIdx]) {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
     public void clear() {
-        termToIndex.clear();
-        docToIndex.clear();
-        matrix = new boolean[INITIAL_SIZE][INITIAL_SIZE];
-        termCount = 0;
-        docCount = 0;
+        lock.writeLock().lock();
+        try {
+            termToIndex.clear();
+            docToIndex.clear();
+            indexToDoc.clear();
+            matrix = new boolean[INITIAL_SIZE][INITIAL_SIZE];
+            termCount = 0;
+            docCount = 0;
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     private void ensureCapacity(int termIdx, int docIdx) {
@@ -79,7 +109,7 @@ public class TermDocumentMatrix implements Dictionary {
         if (newTermSize != matrix.length || newDocSize != matrix[0].length) {
             boolean[][] newMatrix = new boolean[newTermSize][newDocSize];
             for (int i = 0; i < matrix.length; i++) {
-                System.arraycopy(matrix[i], 0, newMatrix[i], 0, newDocSize);
+                System.arraycopy(matrix[i], 0, newMatrix[i], 0, matrix[i].length);
             }
             matrix = newMatrix;
         }

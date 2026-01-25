@@ -1,5 +1,6 @@
 package main;
 
+import benchmark.PerformanceBenchmark;
 import core.BooleanSearchEngine;
 import enums.*;
 import generator.GenerateFiles;
@@ -126,6 +127,11 @@ public class MenuController {
                 printIndex();
                 yield true;
             }
+            case COMPARE_PERFORMANCE -> {
+                System.out.println("Compare performance");
+                compareBenchmarks();
+                yield true;
+            }
             case EXIT -> {
                 System.out.println("Exiting program.");
                 yield false;
@@ -149,6 +155,7 @@ public class MenuController {
         if (directoryPath.isEmpty()) directoryPath = DIRECTORY_PATH;
 
         searchEngine.getIndex().clear();
+        searchEngine.getMatrix().clear();
         LOGGER.info("Reindexing from {}", directoryPath);
         searchEngine.indexDocuments(directoryPath);
         LOGGER.info("Reindex completed");
@@ -277,6 +284,18 @@ public class MenuController {
         LOGGER.info("Deleted {} file(s), {} failed", deletedCount, failedCount);
     }
 
+    private Optional<SearchStructureType> getType() {
+        System.out.println("Enter structure where to search for (index/matrix): ");
+        String structure = scanner.parseString();
+
+        if (structure.isEmpty()) {
+            System.out.println("Structure cannot be empty");
+            return Optional.empty();
+        }
+
+        return SearchStructureType.fromString(structure);
+    }
+
     public void simpleSearch() {
         System.out.println("Enter term to search for: ");
         String term = scanner.parseString();
@@ -286,8 +305,15 @@ public class MenuController {
             return;
         }
 
+        var typeOptional = getType();
+        if (typeOptional.isEmpty()) {
+            System.out.println("Type cannot be empty");
+            return;
+        }
+
+        var type = typeOptional.get();
         LOGGER.debug("Searching for {}", term);
-        Optional<Set<Integer>> result = searchEngine.search(term);
+        Optional<Set<Integer>> result = searchEngine.search(term, type);
 
         result.ifPresentOrElse(
     ids -> {
@@ -304,26 +330,50 @@ public class MenuController {
     }
 
     public void andSearch() {
+        var typeOptional = getType();
+        if (typeOptional.isEmpty()) {
+            System.out.println("Type cannot be empty");
+            return;
+        }
+
+        var type = typeOptional.get();
+
         performSearch(
                 AND,
                 2,
-                terms -> searchEngine.andSearch(terms[0], terms[1]));
+                terms -> searchEngine.andSearch(terms[0], terms[1], type));
     }
 
     public void orSearch() {
+        var typeOptional = getType();
+        if (typeOptional.isEmpty()) {
+            System.out.println("Type cannot be empty");
+            return;
+        }
+
+        var type = typeOptional.get();
+
         performSearch(
                 OR,
                 2,
-                terms -> searchEngine.orSearch(terms[0], terms[1]));
+                terms -> searchEngine.orSearch(terms[0], terms[1], type));
     }
 
     public void notSearch() {
+        var typeOptional = getType();
+        if (typeOptional.isEmpty()) {
+            System.out.println("Type cannot be empty");
+            return;
+        }
+
+        var type = typeOptional.get();
+
         performSearch(
                 NOT,
                 1,
                 terms -> {
                     Set<Integer> allDocs = searchEngine.getAllDocumentIDs();
-                    return searchEngine.notSearch(terms[0], allDocs);
+                    return searchEngine.notSearch(terms[0], allDocs, type);
                 });
     }
 
@@ -364,7 +414,14 @@ public class MenuController {
     }
 
     public void viewStatistics() {
-        DictionaryStats stats = searchEngine.getStatistics();
+        var typeOptional = getType();
+        if (typeOptional.isEmpty()) {
+            System.out.println("Type cannot be empty");
+            return;
+        }
+
+        var type = typeOptional.get();
+        DictionaryStats stats = searchEngine.getStatistics(type);
 
         System.out.println("\n" + "=".repeat(80));
         System.out.println("INDEX STATISTICS");
@@ -558,6 +615,24 @@ public class MenuController {
         System.out.println("-".repeat(80));
 
         searchEngine.printIndex();
+    }
+
+    public void compareBenchmarks() {
+        System.out.println("Enter test terms (comma-separated, e.g.: java,python,algorithm,data):");
+        String input = scanner.parseString();
+
+        if (input.isEmpty()) {
+            System.out.println("Using default terms: document, text, file, data");
+            input = "document,text,file,data";
+        }
+
+        List<String> testTerms = Arrays.asList(input.split(","))
+                .stream()
+                .map(String::trim)
+                .toList();
+
+        PerformanceBenchmark benchmark = new PerformanceBenchmark(searchEngine);
+        benchmark.runAllBenchmarks(testTerms);
     }
 
 }

@@ -1,12 +1,11 @@
 package core;
 
 import document.DocumentRegistry;
+import enums.SearchStructureType;
 import index.InvertedIndex;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import matrix.TermDocumentMatrix;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import enums.FileSerializationFormat;
 import query.QueryExecutor;
 import serialization.FormatMetrics;
@@ -33,10 +32,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Slf4j
 public class BooleanSearchEngine implements SearchEngine {
+    @Getter
     private final InvertedIndex index;
+    @Getter
     private final TermDocumentMatrix matrix;
     private final DocumentRegistry registry;
-    private final QueryExecutor<InvertedIndex> queryExecutor;
+    private final QueryExecutor<InvertedIndex> indexQueryExecutor;
+    private final QueryExecutor<TermDocumentMatrix> matrixQueryExecutor;
     @Getter
     private SerializationComparison serializationComparison;
     private final AtomicLong totalCollectionSize = new AtomicLong(0);
@@ -47,7 +49,8 @@ public class BooleanSearchEngine implements SearchEngine {
         this.index = new InvertedIndex();
         this.matrix = new TermDocumentMatrix();
         this.registry = new DocumentRegistry();
-        this.queryExecutor = new QueryExecutor<>(index);
+        this.indexQueryExecutor = new QueryExecutor<>(index);
+        this.matrixQueryExecutor = new QueryExecutor<>(matrix);
     }
 
     // indexing
@@ -103,27 +106,42 @@ public class BooleanSearchEngine implements SearchEngine {
 
     // searching
     @Override
-    public Optional<Set<Integer>> search(String term) {
+    public Optional<Set<Integer>> search(String term, SearchStructureType type) {
         Objects.requireNonNull(term, "Term in search() must not be null");
-        return queryExecutor.search(term);
+        return switch (type) {
+            case INDEX -> indexQueryExecutor.search(term);
+            case MATRIX -> matrixQueryExecutor.search(term);
+        };
     }
 
-    public Optional<Set<Integer>> andSearch(String term1, String term2) {
+    @Override
+    public Optional<Set<Integer>> andSearch(String term1, String term2, SearchStructureType type) {
         Objects.requireNonNull(term1, "First term in andSearch() must not be null");
         Objects.requireNonNull(term2, "Second term in andSearch() must not be null");
-        return queryExecutor.andSearch(term1, term2);
+        return switch (type) {
+            case INDEX -> indexQueryExecutor.andSearch(term1, term2);
+            case MATRIX -> matrixQueryExecutor.andSearch(term1, term2);
+        };
     }
 
-    public Optional<Set<Integer>> orSearch(String term1, String term2) {
+    @Override
+    public Optional<Set<Integer>> orSearch(String term1, String term2, SearchStructureType type) {
         Objects.requireNonNull(term1, "First term in orSearch() must not be null");
         Objects.requireNonNull(term2, "Second term in orSearch() must not be null");
-        return queryExecutor.orSearch(term1, term2);
+        return switch (type) {
+            case INDEX -> indexQueryExecutor.orSearch(term1, term2);
+            case MATRIX -> matrixQueryExecutor.orSearch(term1, term2);
+        };
     }
 
-    public Optional<Set<Integer>> notSearch(String term, Set<Integer> docIDs) {
+    @Override
+    public Optional<Set<Integer>> notSearch(String term, Set<Integer> docIDs, SearchStructureType type) {
         Objects.requireNonNull(term, "First term in notSearch() must not be null");
         Objects.requireNonNull(docIDs, "Second term in notSearch() must not be null");
-        return queryExecutor.notSearch(term, docIDs);
+        return switch (type) {
+            case INDEX -> indexQueryExecutor.notSearch(term, docIDs);
+            case MATRIX -> matrixQueryExecutor.notSearch(term, docIDs);
+        };
     }
 
 
@@ -239,7 +257,7 @@ public class BooleanSearchEngine implements SearchEngine {
         try {
             Files.deleteIfExists(Path.of(filepath));
         } catch (IOException e) {
-            log.warn("Failed to delete temporary file: {}", filepath);
+            log.warn("Failed to delete temporary file: {}", filepath, e);
         }
     }
 
@@ -254,11 +272,17 @@ public class BooleanSearchEngine implements SearchEngine {
 
 
     // statistics
-    public DictionaryStats getStatistics() {
+    public DictionaryStats getStatistics(SearchStructureType type) {
         lock.readLock().lock();
         try {
-            int uniqueTerms = index.size();
-            int totalWords = index.getTotalTermOccurrences();
+            int uniqueTerms = switch (type) {
+                case INDEX -> index.size();
+                case MATRIX -> matrix.size();
+            };
+            int totalWords = switch (type) {
+                case INDEX -> index.size();
+                case MATRIX -> matrix.size();
+            };
 
             return new DictionaryStats(
                     registry.documentCount(),
@@ -294,33 +318,6 @@ public class BooleanSearchEngine implements SearchEngine {
         try {
             return registry.getDocumentNames(docIDs);
         } finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public int documentCount() {
-        lock.readLock().lock();
-        try {
-            return registry.documentCount();
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public InvertedIndex getIndex() {
-        lock.readLock().lock();
-        try {
-            return index;
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public TermDocumentMatrix getMatrix() {
-        lock.readLock().lock();
-        try {
-            return matrix;
-        }  finally {
             lock.readLock().unlock();
         }
     }
