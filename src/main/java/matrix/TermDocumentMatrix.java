@@ -15,6 +15,7 @@ public class TermDocumentMatrix implements Dictionary {
     private boolean[][] matrix; // [термін][документ]
     private int termCount = 0;
     private int docCount = 0;
+    private int totalOccurrences = 0;
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
 
@@ -35,7 +36,10 @@ public class TermDocumentMatrix implements Dictionary {
             });
             ensureCapacity(termIdx, docIdx);
 
-            matrix[termIdx][docIdx] = true;
+            if (!matrix[termIdx][docIdx]) {
+                matrix[termIdx][docIdx] = true;
+                totalOccurrences++;
+            }
         } finally {
             lock.writeLock().unlock();
         }
@@ -70,15 +74,7 @@ public class TermDocumentMatrix implements Dictionary {
     public int getTotalTermOccurrences() {
         lock.readLock().lock();
         try {
-            int count = 0;
-            for (int termIdx = 0; termIdx < termCount; termIdx++) {
-                for (int docIdx = 0; docIdx < docCount; docIdx++) {
-                    if (matrix[termIdx][docIdx]) {
-                        count++;
-                    }
-                }
-            }
-            return count;
+            return totalOccurrences;
         } finally {
             lock.readLock().unlock();
         }
@@ -94,6 +90,7 @@ public class TermDocumentMatrix implements Dictionary {
             matrix = new boolean[INITIAL_SIZE][INITIAL_SIZE];
             termCount = 0;
             docCount = 0;
+            totalOccurrences = 0;
         } finally {
             lock.writeLock().unlock();
         }

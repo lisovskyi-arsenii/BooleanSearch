@@ -1,46 +1,87 @@
 package query;
 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Getter
+enum Operation {
+    AND("and"),
+    OR("or"),
+    NOT("not");
 
-// Розпізнає оператори: AND, OR, NOT
+    private final String operation;
+    Operation(String operation) {
+        this.operation = operation;
+    }
+
+    public static Optional<Operation> fromString(String operation) {
+        return Arrays.stream(Operation.values())
+                .filter(op -> op.operation.equalsIgnoreCase(operation))
+                .findFirst();
+    }
+}
+
+
+@Slf4j
 public class QueryParser {
-    private static final Pattern AND_PATTERN = Pattern.compile("(.+?)\\s+AND\\s+(.+)", Pattern.CASE_INSENSITIVE);
-    private static final Pattern OR_PATTERN = Pattern.compile("(.+?)\\s+OR\\s+(.+)", Pattern.CASE_INSENSITIVE);
-    private static final Pattern NOT_PATTERN = Pattern.compile("(.+?)\\s+NOT\\s+(.+)", Pattern.CASE_INSENSITIVE);
+    private static final String PATTERN = "\\w+|AND|OR|NOT|\\(|\\)";
+    private static final Pattern TOKEN_PATTERN = Pattern.compile(PATTERN);
 
-    public static QueryType parseQueryType(String query) {
-        if (AND_PATTERN.matcher(query).matches()) {
-            return QueryType.AND;
-        } else if (OR_PATTERN.matcher(query).matches()) {
-            return QueryType.OR;
-        } else if (NOT_PATTERN.matcher(query).matches()) {
-            return QueryType.NOT;
+    public void parseQuery(String query) {
+        if (query == null || query.isEmpty()) {
+            System.out.println("Query can't be empty");
+            return;
         }
-        return QueryType.SIMPLE;
+
+        query = cleanupQuery(query);
+        List<String> tokens = tokenize(query);
+
+        List<Operation> operations = getOperations(tokens);
+        if (operations.isEmpty()) {
+            System.out.println("No operations found");
+            return;
+        }
+
+        var result = doOperations(operations);
+        System.out.println("Result: " + result);
     }
 
-    public static String[] extractTerms(String query) {
-        Matcher andMatcher = AND_PATTERN.matcher(query);
-        if (andMatcher.matches()) {
-            return new String[]{andMatcher.group(1).trim(), andMatcher.group(2).trim()};
-        }
 
-        Matcher orMatcher = OR_PATTERN.matcher(query);
-        if (orMatcher.matches()) {
-            return new String[]{orMatcher.group(1).trim(), orMatcher.group(2).trim()};
-        }
+    private Set<Integer> doOperations(List<Operation> operations) {
+        Set<Integer> result = new HashSet<>();
 
-        Matcher notMatcher = NOT_PATTERN.matcher(query);
-        if (notMatcher.matches()) {
-            return new String[]{notMatcher.group(1).trim(), notMatcher.group(2).trim()};
-        }
-
-        return new String[]{query.trim()};
     }
 
-    public enum QueryType {
-        SIMPLE, AND, OR, NOT
+    private List<Operation> getOperations(List<String> tokens) {
+        return tokens.stream()
+                .filter(token -> token.equalsIgnoreCase("and")
+                        || token.equalsIgnoreCase("or")
+                        || token.equalsIgnoreCase("not"))
+                .map(Operation::fromString)
+                .flatMap(Optional::stream)
+                .toList();
+    }
+
+    private List<String> tokenize(String query) {
+        Matcher matcher = TOKEN_PATTERN.matcher(query);
+        List<String> tokens = new ArrayList<>();
+
+        while (matcher.find()) {
+            tokens.add(matcher.group());
+        }
+
+        return tokens;
+    }
+
+    private String cleanupQuery(String query) {
+        return query.trim()
+                .replaceAll("\\s+", " ")
+                .replaceAll("\\band\\b", "AND")
+                .replaceAll("\\bor\\b", "OR")
+                .replaceAll("\\bnot\b", "NOT");
     }
 }

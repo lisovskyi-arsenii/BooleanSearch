@@ -280,8 +280,8 @@ public class BooleanSearchEngine implements SearchEngine {
                 case MATRIX -> matrix.size();
             };
             int totalWords = switch (type) {
-                case INDEX -> index.size();
-                case MATRIX -> matrix.size();
+                case INDEX -> index.getTotalTermOccurrences();
+                case MATRIX -> matrix.getTotalTermOccurrences();
             };
 
             return new DictionaryStats(

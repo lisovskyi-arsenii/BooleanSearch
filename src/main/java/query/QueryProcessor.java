@@ -12,8 +12,8 @@ public class QueryProcessor <T extends Dictionary> {
     }
 
     public Optional<Set<Integer>> processQuery(String query) {
-        QueryParser.QueryType type = QueryParser.parseQueryType(query);
-        String[] terms = QueryParser.extractTerms(query);
+        QueryParser22.QueryType type = QueryParser22.parseQueryType(query);
+        String[] terms = QueryParser22.extractTerms(query);
 
         return switch (type) {
             case SIMPLE -> executor.search(terms[0]);
