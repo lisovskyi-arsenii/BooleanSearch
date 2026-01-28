@@ -14,6 +14,7 @@ val slf4jVersion = "2.0.9"
 val logbackVersion = "1.5.13"
 val jacksonVersion = "2.18.2"
 val lombokVersion = "1.18.42"
+val guavaLibVersion = "33.5.0"
 
 dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
@@ -23,6 +24,10 @@ dependencies {
     implementation("org.slf4j:slf4j-api:$slf4jVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+
+    implementation("com.google.guava:guava:${guavaLibVersion}-jre")
+
+    implementation(fileTree("libs") {include ( "*.jar") })
 
     compileOnly("org.projectlombok:lombok:${lombokVersion}")
     annotationProcessor("org.projectlombok:lombok:${lombokVersion}")

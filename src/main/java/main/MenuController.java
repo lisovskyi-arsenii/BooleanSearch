@@ -22,7 +22,7 @@ import static constants.Filenames.DEFAULT_FILENAME;
 import static constants.Filenames.DIRECTORY_PATH;
 import static enums.FileOperation.LOAD;
 import static enums.FileOperation.SAVE;
-import static enums.SearchOperation.*;
+import static enums.SearchOperators.*;
 
 @Slf4j
 public class MenuController {
@@ -420,7 +420,7 @@ public class MenuController {
     }
 
     private void performSearch(
-            SearchOperation operation,
+            SearchOperators operation,
             int termsCount,
             Function<String[], Optional<Set<Integer>>> searchFunction
     ) {
