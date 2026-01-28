@@ -1,4 +1,4 @@
-package core;
+package index;
 
 import java.util.Optional;
 import java.util.Set;

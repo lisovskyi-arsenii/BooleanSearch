@@ -1,6 +1,6 @@
 package document;
 
-import core.RegistryData;
+import serialization.data.RegistryData;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

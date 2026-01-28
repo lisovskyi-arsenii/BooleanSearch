@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public final class Tokenizer {
     private static final Pattern PUNCTUATION_PATTERN = Pattern.compile("[^\\p{L}\\p{N}\\s]+");
-    private static final StopWordsFilter STOP_WORD_FILTER = new StopWordsFilter();
+//    private static final StopWordsFilter STOP_WORD_FILTER = new StopWordsFilter();
 
     private Tokenizer() {
         throw new UnsupportedOperationException("Instantiation of Tokenizer - Utility class");
@@ -29,6 +29,7 @@ public final class Tokenizer {
             }
         }
 
-        return STOP_WORD_FILTER.filter(tokens);
+//        return STOP_WORD_FILTER.filter(tokens);
+        return tokens;
     }
 }

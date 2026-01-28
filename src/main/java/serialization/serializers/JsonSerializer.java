@@ -3,8 +3,8 @@ package serialization.serializers;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import core.IndexData;
-import core.RegistryData;
+import serialization.data.IndexData;
+import serialization.data.RegistryData;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

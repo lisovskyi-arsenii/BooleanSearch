@@ -1,6 +1,6 @@
 package serialization.serializers;
 
-import core.IndexData;
+import serialization.data.IndexData;
 
 import java.io.IOException;
 

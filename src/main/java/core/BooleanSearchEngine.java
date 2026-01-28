@@ -3,13 +3,16 @@ package core;
 import document.DocumentRegistry;
 import enums.FileSerializationFormat;
 import enums.SearchStructureType;
+import index.BiwordIndex;
 import index.InvertedIndex;
+import index.PositionalIndex;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import matrix.TermDocumentMatrix;
 import query.QueryExecutor;
 import serialization.FormatMetrics;
 import serialization.SerializationComparison;
+import serialization.data.IndexData;
 import serialization.serializers.BinarySerializer;
 import serialization.serializers.IndexSerializer;
 import serialization.serializers.JsonSerializer;
@@ -35,10 +38,16 @@ public class BooleanSearchEngine implements SearchEngine {
     @Getter
     private final InvertedIndex index;
     @Getter
+    private final BiwordIndex biwordIndex;
+    @Getter
+    private final PositionalIndex positionalIndex;
+    @Getter
     private final TermDocumentMatrix matrix;
     private final DocumentRegistry registry;
     private final QueryExecutor<InvertedIndex> indexQueryExecutor;
     private final QueryExecutor<TermDocumentMatrix> matrixQueryExecutor;
+    private final QueryExecutor<BiwordIndex> biwordIndexQueryExecutor;
+    private final QueryExecutor<PositionalIndex> positionalIndexQueryExecutor;
     private final AtomicLong totalCollectionSize = new AtomicLong(0);
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     @Getter
@@ -47,10 +56,14 @@ public class BooleanSearchEngine implements SearchEngine {
 
     public BooleanSearchEngine() {
         this.index = new InvertedIndex();
+        this.biwordIndex = new BiwordIndex();
+        this.positionalIndex = new PositionalIndex();
         this.matrix = new TermDocumentMatrix();
         this.registry = new DocumentRegistry();
         this.indexQueryExecutor = new QueryExecutor<>(index);
         this.matrixQueryExecutor = new QueryExecutor<>(matrix);
+        this.biwordIndexQueryExecutor = new QueryExecutor<>(biwordIndex);
+        this.positionalIndexQueryExecutor = new QueryExecutor<>(positionalIndex);
     }
 
     // indexing
@@ -86,10 +99,10 @@ public class BooleanSearchEngine implements SearchEngine {
         String filename = path.getFileName().toString();
         String content = Files.readString(path);
 
-        int docID;
+        int docId;
         lock.writeLock().lock();
         try {
-            docID = registry.registerDocument(filename, Files.size(path));
+            docId = registry.registerDocument(filename, Files.size(path));
             totalCollectionSize.addAndGet(size);
         } finally {
             lock.writeLock().unlock();
@@ -97,9 +110,18 @@ public class BooleanSearchEngine implements SearchEngine {
 
         List<String> tokens = Tokenizer.tokenize(content);
 
-        for (String token : tokens) {
-            index.addTerm(token, docID);
-            matrix.addTerm(token, docID);
+        for (int position = 0; position < tokens.size(); position++) {
+            String token = tokens.get(position);
+
+            index.addTerm(token, docId);
+            matrix.addTerm(token, docId);
+
+            positionalIndex.addTerm(token, docId, position);
+
+            if (position < tokens.size() - 1) {
+                String nextToken = tokens.get(position + 1);
+                biwordIndex.addWord(token, nextToken, docId);
+            }
         }
     }
 
@@ -111,6 +133,8 @@ public class BooleanSearchEngine implements SearchEngine {
         return switch (type) {
             case INDEX -> indexQueryExecutor.search(term);
             case MATRIX -> matrixQueryExecutor.search(term);
+            case BIWORD -> biwordIndexQueryExecutor.search(term);
+            case POSITIONAL -> positionalIndexQueryExecutor.search(term);
         };
     }
 
@@ -121,6 +145,8 @@ public class BooleanSearchEngine implements SearchEngine {
         return switch (type) {
             case INDEX -> indexQueryExecutor.andSearch(term1, term2);
             case MATRIX -> matrixQueryExecutor.andSearch(term1, term2);
+            case BIWORD -> biwordIndexQueryExecutor.andSearch(term1, term2);
+            case POSITIONAL -> positionalIndexQueryExecutor.andSearch(term1, term2);
         };
     }
 
@@ -131,6 +157,8 @@ public class BooleanSearchEngine implements SearchEngine {
         return switch (type) {
             case INDEX -> indexQueryExecutor.orSearch(term1, term2);
             case MATRIX -> matrixQueryExecutor.orSearch(term1, term2);
+            case BIWORD -> biwordIndexQueryExecutor.orSearch(term1, term2);
+            case POSITIONAL -> positionalIndexQueryExecutor.orSearch(term1, term2);
         };
     }
 
@@ -141,6 +169,8 @@ public class BooleanSearchEngine implements SearchEngine {
         return switch (type) {
             case INDEX -> indexQueryExecutor.notSearch(term, docIDs);
             case MATRIX -> matrixQueryExecutor.notSearch(term, docIDs);
+            case BIWORD -> biwordIndexQueryExecutor.notSearch(term, docIDs);
+            case POSITIONAL -> positionalIndexQueryExecutor.notSearch(term, docIDs);
         };
     }
 
@@ -278,10 +308,14 @@ public class BooleanSearchEngine implements SearchEngine {
             int uniqueTerms = switch (type) {
                 case INDEX -> index.size();
                 case MATRIX -> matrix.size();
+                case BIWORD -> biwordIndex.size();
+                case POSITIONAL -> positionalIndex.size();
             };
             int totalWords = switch (type) {
                 case INDEX -> index.getTotalTermOccurrences();
                 case MATRIX -> matrix.getTotalTermOccurrences();
+                case BIWORD -> biwordIndex.getTotalTermOccurrences();
+                case POSITIONAL -> positionalIndex.getTotalTermOccurrences();
             };
 
             return new DictionaryStats(
@@ -327,11 +361,21 @@ public class BooleanSearchEngine implements SearchEngine {
         index.print();
     }
 
+    public void printPositionalIndex() {
+        positionalIndex.print();
+    }
+
+    public void printBiwordIndex() {
+        biwordIndex.print();
+    }
+
     public void clear() {
         lock.writeLock().lock();
         try {
             index.clear();
             matrix.clear();
+            biwordIndex.clear();
+            positionalIndex.clear();
             registry.clear();
             totalCollectionSize.set(0);
         } finally {

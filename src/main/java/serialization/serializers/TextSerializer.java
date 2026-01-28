@@ -1,7 +1,7 @@
 package serialization.serializers;
 
-import core.IndexData;
-import core.RegistryData;
+import serialization.data.IndexData;
+import serialization.data.RegistryData;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;

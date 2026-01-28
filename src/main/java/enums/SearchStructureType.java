@@ -8,7 +8,9 @@ import java.util.Optional;
 @Getter
 public enum SearchStructureType {
     INDEX("index"),
-    MATRIX("matrix");
+    MATRIX("matrix"),
+    POSITIONAL("positional"),
+    BIWORD("biword");
 
     private final String type;
 

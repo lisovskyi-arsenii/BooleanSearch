@@ -1,12 +1,14 @@
 package index;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class PositionalIndex {
+@Getter
+public class PositionalIndex implements Dictionary {
     // term -> {docId, position}
     private final Map<String, Map<Integer, List<Integer>>> index = new ConcurrentHashMap<>();
 
@@ -20,39 +22,83 @@ public class PositionalIndex {
         index.clear();
 
         newIndex.forEach((term, positionData) -> {
-            var map = new ConcurrentHashMap<Integer, List<Integer>>();
-            positionData.forEach((docId, _) -> {
-                map.computeIfAbsent(docId, _ -> new ArrayList<>());
+            var docMap = new ConcurrentHashMap<Integer, List<Integer>>();
+
+            positionData.forEach((docId, positions) -> {
+                docMap.put(docId, new ArrayList<>(positions));
             });
-            index.put(term, map);
+
+            index.put(term, docMap);
         });
     }
 
-    Optional<Map<Integer, List<Integer>>> getPositions(String term) {
+    public Optional<Map<Integer, List<Integer>>> getPositions(String term) {
         var map = index.get(term);
-        return map != null ? Optional.of(map) : Optional.empty();
+        return map != null && !map.isEmpty()
+                ? Optional.of(new HashMap<>(map))
+                : Optional.empty();
     }
 
-    Optional<List<Integer>> getPositionsInDocument(String term, int docId) {
+    public Optional<List<Integer>> getPositionsInDocument(String term, int docId) {
         var map = index.get(term);
         if (map == null) {
             return Optional.empty();
         }
 
-        return Optional.ofNullable(map.get(docId));
+        List<Integer> positions = map.get(docId);
+        return positions != null && !positions.isEmpty()
+                ? Optional.of(new ArrayList<>(positions))
+                : Optional.empty();
     }
 
-    Optional<Set<Integer>> getDocuments(String term) {
+    @Override
+    public Optional<Set<Integer>> getDocuments(String term) {
         var map = index.get(term);
+
+        if (map == null || map.isEmpty()) {
+            return Optional.empty();
+        }
+
         return Optional.of(map.keySet());
     }
 
-    int size() {
+
+    public Set<String> getAllTerms() {
+        return Collections.unmodifiableSet(index.keySet());
+    }
+
+    @Override
+    public int size() {
         return index.size();
     }
 
-    int getTotalTermOccurrences() {
-        return 0;
+    @Override
+    public int getTotalTermOccurrences() {
+        return index.values().stream()
+                .mapToInt(docMap -> docMap.values().stream()
+                        .mapToInt(List::size)
+                        .sum())
+                .sum();
+    }
+
+    @Override
+    public void clear() {
+        index.clear();
+    }
+
+    public void print() {
+        if (index.isEmpty()) {
+            System.out.println("Positional index is empty");
+            return;
+        }
+
+        System.out.println("=== POSITIONAL INDEX ===");
+        index.forEach((term, docMap) -> {
+            System.out.println(term + ":");
+            docMap.forEach((docId, positions) ->
+                    System.out.printf("  Doc %d: %s%n", docId, positions));
+        });
+        System.out.println("========================");
     }
 
 }

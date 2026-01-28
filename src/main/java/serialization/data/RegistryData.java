@@ -1,4 +1,4 @@
-package core;
+package serialization.data;
 
 import java.io.Serial;
 import java.io.Serializable;

@@ -1,6 +1,6 @@
 package query;
 
-import core.Dictionary;
+import index.Dictionary;
 
 import java.util.HashSet;
 import java.util.Optional;
