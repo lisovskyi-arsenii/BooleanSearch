@@ -52,7 +52,7 @@ public final class QueryParser {
             return Optional.empty();
         }
 
-        String lastToken = tokens.get(tokens.size() - 1);
+        String lastToken = tokens.getLast();
         if (lastToken.equals("AND") || lastToken.equals("OR") || lastToken.equals("NOT")) {
             System.out.println("Query cannot end with operator: " + lastToken);
             return Optional.empty();
@@ -130,7 +130,7 @@ public final class QueryParser {
         }
 
         if (segment.size() == 1) {
-            String term = segment.get(0);
+            String term = segment.getFirst();
 
             if (term.equals("NOT") || term.equals("AND") || term.equals("OR")) {
                 System.out.printf("Expected term, but got operator '%s'%n", term);
@@ -143,17 +143,17 @@ public final class QueryParser {
             return result;
         }
 
-        if (segment.get(0).equals("NOT")) {
+        if (segment.getFirst().equals("NOT")) {
             if (segment.size() < 2) {
                 System.out.println("NOT operator requires a term");
-                return null;
+                return Collections.emptySet();
             }
 
             List<String> restSegment = segment.subList(1, segment.size());
             Set<Integer> operandResult = parseOperandSegment(restSegment, searchEngine, type);
 
             if (operandResult == null) {
-                return null;
+                return Collections.emptySet();
             }
 
             Set<Integer> allDocs = searchEngine.getAllDocumentIDs();
@@ -167,19 +167,18 @@ public final class QueryParser {
         int notIndex = segment.indexOf("NOT");
 
         if (notIndex > 0) {
-            // Ліва частина (до NOT)
             List<String> leftSegment = segment.subList(0, notIndex);
             Set<Integer> leftResult = parseOperandSegment(leftSegment, searchEngine, type);
 
             if (leftResult == null) {
-                return null;
+                return Collections.emptySet();
             }
 
             List<String> rightSegment = segment.subList(notIndex + 1, segment.size());
             Set<Integer> rightResult = parseOperandSegment(rightSegment, searchEngine, type);
 
             if (rightResult == null) {
-                return null;
+                return Collections.emptySet();
             }
 
             // Застосовуємо бінарний NOT (різниця множин)
@@ -191,7 +190,7 @@ public final class QueryParser {
         }
 
         System.out.println("Invalid operand segment: " + String.join(" ", segment));
-        return null;
+        return Collections.emptySet();
     }
 
     private static Set<Integer> applyBinaryOperation(
