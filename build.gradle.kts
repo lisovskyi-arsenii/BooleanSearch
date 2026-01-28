@@ -16,6 +16,7 @@ val jacksonVersion = "2.18.2"
 val lombokVersion = "1.18.42"
 val guavaLibVersion = "33.5.0"
 
+
 dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")

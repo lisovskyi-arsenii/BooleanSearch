@@ -22,11 +22,7 @@ public class ShuntingYard {
         List<String> output = new ArrayList<>();
         Stack<String> operators = new Stack<>();
 
-        String[] tokens = expression
-                .replaceAll("(AND|OR|NOT|\\(|\\))", " $1 ")
-                .trim()
-                .split("\\s+");
-
+        String[] tokens = tokenize(expression);
 
         for (String token : tokens) {
             if (token.isBlank()) {
@@ -48,9 +44,12 @@ public class ShuntingYard {
                 }
                 operators.pop(); // remove left paren
 
+            } else if (token.equals("NOT")) {
+                operators.push(token);
             } else if (op.isPresent() && isLogicalOperator(token)) {
                 while (!operators.isEmpty() &&
                         !operators.peek().equals(SearchOperators.LEFT_PAREN.getOperation()) &&
+                        !operators.peek().equals("NOT") &&
                         getPriority(operators.peek()) >= getPriority(token)) {
                     output.add(operators.pop());
                 }
@@ -58,6 +57,10 @@ public class ShuntingYard {
             } else {
                 // word for search
                 output.add(token);
+
+                while (!operators.isEmpty() && operators.peek().equals("NOT")) {
+                    output.add(operators.pop());
+                }
             }
         }
 
@@ -72,6 +75,13 @@ public class ShuntingYard {
         }
 
         return String.join(" ", output);
+    }
+
+    private static String[] tokenize(String expression) {
+        return expression
+                .replaceAll("(AND|OR|NOT|\\(|\\))", " $1 ")
+                .trim()
+                .split("\\s+");
     }
 
     private static int getPriority(String token) {

@@ -10,7 +10,7 @@ public class InvertedIndex implements Dictionary {
     private final Map<String, Set<Integer>> index = new ConcurrentHashMap<>(); // term -> [document ids]
 
     public void addTerm(String term, int docID) {
-        index.computeIfAbsent(term, k -> ConcurrentHashMap.newKeySet()).add(docID);
+        index.computeIfAbsent(term, _ -> ConcurrentHashMap.newKeySet()).add(docID);
     }
 
     public void loadIndex(Map<String, Set<Integer>> newIndex) {
