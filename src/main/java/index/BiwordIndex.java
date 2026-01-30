@@ -32,6 +32,11 @@ public class BiwordIndex implements Dictionary {
         return Collections.unmodifiableMap(biwordIndex);
     }
 
+    public Optional<Set<Integer>> getBiword(String term1, String term2) {
+        String biword = term1 + " " + term2;
+        return getDocuments(biword);
+    }
+
     @Override
     public Optional<Set<Integer>> getDocuments(String term) {
         Set<Integer> docs = biwordIndex.get(term);

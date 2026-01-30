@@ -13,7 +13,6 @@ public class ShuntingYard {
         throw new UnsupportedOperationException("Utility class");
     }
 
-
     public static String toRPN(String expression) throws IllegalArgumentException {
         if (expression == null || expression.isBlank()) {
             throw new IllegalArgumentException("Expression cannot be null or blank");
@@ -84,7 +83,7 @@ public class ShuntingYard {
                 .split("\\s+");
     }
 
-    private static int getPriority(String token) {
+    private static int getPriority(String token) throws IllegalArgumentException {
         return SearchOperators.fromOperation(token)
                 .map(SearchOperators::getPriority)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid operator: " + token));
