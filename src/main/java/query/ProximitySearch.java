@@ -1,5 +1,6 @@
 package query;
 
+import com.google.common.primitives.UnsignedInteger;
 import core.BooleanSearchEngine;
 import index.BiwordIndex;
 import index.PositionalIndex;

@@ -2,9 +2,11 @@ package menu;
 
 import benchmark.PerformanceBenchmark;
 import core.BooleanSearchEngine;
+import core.SearchService;
 import enums.*;
 import generator.GenerateFiles;
 import lombok.extern.slf4j.Slf4j;
+import query.ProximitySearch;
 import scanner.CustomScanner;
 import query.QueryParser;
 import serialization.SerializationComparison;
@@ -18,6 +20,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static constants.Filenames.DEFAULT_FILENAME;
 import static constants.Filenames.DIRECTORY_PATH;
@@ -29,6 +32,7 @@ import static enums.SearchOperators.*;
 public class MenuController {
     private final CustomScanner scanner;
     private final BooleanSearchEngine searchEngine;
+    private final SearchService searchService;
 
     public MenuController(BooleanSearchEngine searchEngine, CustomScanner scanner) {
         if (scanner == null) {
@@ -39,6 +43,7 @@ public class MenuController {
         }
         this.scanner = scanner;
         this.searchEngine = searchEngine;
+        this.searchService = new SearchService(searchEngine);
     }
 
     public boolean handleUserChoice(int code) throws IllegalArgumentException, IOException {
@@ -47,102 +52,35 @@ public class MenuController {
             System.out.println("Invalid choice.");
             return true;
         }
-        String description = userChoice.get().getDescription();
 
-        return switch (userChoice.get()) {
-            case INDEX_DOCUMENTS -> {
-                System.out.println(description);
-                indexDocuments();
-                yield true;
-            }
-            case REINDEX_DOCUMENTS -> {
-                reindexDocuments();
-                yield true;
-            }
-            case GENERATE_FILES -> {
-                System.out.println("Generate files");
-                generateFiles();
-                yield true;
-            }
-            case LIST_DIRECTORY -> {
-                System.out.println("List directory");
-                listDirectory();
-                yield true;
-            }
-            case CLEAR_ALL_FILES -> {
-                System.out.println("Clear all files");
-                clearAllFiles();
-                yield true;
-            }
-            case SIMPLE_SEARCH -> {
-                System.out.println("Simple search");
-                simpleSearch();
-                yield true;
-            }
-            case AND_SEARCH -> {
-                System.out.println("And search");
-                andSearch();
-                yield true;
-            }
-            case OR_SEARCH -> {
-                System.out.println("Or search");
-                orSearch();
-                yield true;
-            }
-            case NOT_SEARCH -> {
-                System.out.println("Not search");
-                notSearch();
-                yield true;
-            }
-            case ADVANCED_SEARCH -> {
-                System.out.println("Advanced search");
-                advancedSearch();
-                yield true;
-            }
-            case VIEW_STATISTICS -> {
-                System.out.println("View statistics");
-                viewStatistics();
-                yield true;
-            }
-            case SHOW_TOP_TERMS -> {
-                showTopTerms();
-                yield true;
-            }
-            case SAVE_INDEX -> {
-                System.out.println("Save to file");
-                saveIndex();
-                yield true;
-            }
-            case LOAD_INDEX -> {
-                System.out.println("Load from file");
-                loadIndex();
-                yield true;
-            }
-            case COMPARE_FORMATS -> {
-                System.out.println("Compare serialization formats");
-                compareFormats();
-                yield true;
-            }
-            case CLEAR_INDEX -> {
-                System.out.println("Clear index");
-                clearIndex();
-                yield true;
-            }
-            case PRINT_INDEX -> {
-                System.out.println("Print index");
-                printIndex();
-                yield true;
-            }
-            case COMPARE_PERFORMANCE -> {
-                System.out.println("Compare performance");
-                compareBenchmarks();
-                yield true;
-            }
+        System.out.println("\n" + userChoice.get().getDescription());
+
+        switch (userChoice.get()) {
+            case INDEX_DOCUMENTS -> indexDocuments();
+            case REINDEX_DOCUMENTS -> reindexDocuments();
+            case GENERATE_FILES -> generateFiles();
+            case LIST_DIRECTORY -> listDirectory();
+            case CLEAR_ALL_FILES -> clearAllFiles();
+            case SIMPLE_SEARCH -> simpleSearch();
+            case AND_SEARCH -> andSearch();
+            case OR_SEARCH -> orSearch();
+            case NOT_SEARCH -> notSearch();
+            case ADVANCED_SEARCH -> advancedSearch();
+            case PHRASE_SEARCH -> phraseSearch();
+            case PROXIMITY_SEARCH -> proximitySearch();
+            case VIEW_STATISTICS -> viewStatistics();
+            case SHOW_TOP_TERMS -> showTopTerms();
+            case SAVE_INDEX -> saveIndex();
+            case LOAD_INDEX -> loadIndex();
+            case COMPARE_FORMATS -> compareFormats();
+            case CLEAR_INDEX -> clearIndex();
+            case COMPARE_PERFORMANCE -> compareBenchmarks();
             case EXIT -> {
                 System.out.println("Exiting program.");
-                yield false;
+                return false;
             }
-        };
+        }
+        return true;
     }
 
     public void indexDocuments() throws IOException {
@@ -319,11 +257,11 @@ public class MenuController {
 
         var type = typeOptional.get();
         log.debug("Searching for {}", term);
-        Optional<Set<Integer>> result = searchEngine.search(term, type);
+        Optional<Set<Integer>> result = searchService.search(term, type);
 
         result.ifPresentOrElse(
                 ids -> {
-                    List<String> filenames = searchEngine.getDocumentNames(ids);
+                    List<String> filenames = searchService.getDocumentNames(ids);
                     if (filenames.isEmpty()) {
                         System.out.println("No files found");
                         return;
@@ -347,7 +285,7 @@ public class MenuController {
         performSearch(
                 AND,
                 2,
-                terms -> searchEngine.andSearch(terms[0], terms[1], type));
+                terms -> searchService.andSearch(terms[0], terms[1], type));
     }
 
     public void orSearch() {
@@ -362,7 +300,7 @@ public class MenuController {
         performSearch(
                 OR,
                 2,
-                terms -> searchEngine.orSearch(terms[0], terms[1], type));
+                terms -> searchService.orSearch(terms[0], terms[1], type));
     }
 
     public void notSearch() {
@@ -379,7 +317,7 @@ public class MenuController {
                 1,
                 terms -> {
                     Set<Integer> allDocs = searchEngine.getAllDocumentIDs();
-                    return searchEngine.notSearch(terms[0], allDocs, type);
+                    return searchService.notSearch(terms[0], allDocs, type);
                 });
     }
 
@@ -406,7 +344,7 @@ public class MenuController {
 
         result.ifPresentOrElse(
                 ids -> {
-                    List<String> filenames = searchEngine.getDocumentNames(ids);
+                    List<String> filenames = searchService.getDocumentNames(ids);
 
                     if (filenames.isEmpty()) {
                         System.out.println("No files found");
@@ -442,7 +380,7 @@ public class MenuController {
 
         result.ifPresentOrElse(
                 ids -> {
-                    List<String> filenames = searchEngine.getDocumentNames(ids);
+                    List<String> filenames = searchService.getDocumentNames(ids);
 
                     if (filenames.isEmpty()) {
                         System.out.println("No files found");
@@ -455,6 +393,105 @@ public class MenuController {
                 () -> System.out.printf("  No documents found for %s%n", strOperation)
         );
     }
+
+    public void phraseSearch() {
+        System.out.println("Enter phrase to search for: ");
+        String phrase = scanner.parseString();
+
+        if (phrase.isEmpty()) {
+            System.out.println("Phrase cannot be empty");
+            return;
+        }
+
+        System.out.println("Choose search type:");
+        System.out.println("  1. Biword Index");
+        System.out.println("  2. Positional Index");
+        System.out.print("Enter choice: ");
+
+        OptionalInt choiceOpt = scanner.parseInt();
+        if (choiceOpt.isEmpty()) {
+            System.out.println("Invalid choice");
+            return;
+        }
+
+        SearchStructureType type = choiceOpt.getAsInt() == 1
+                ? SearchStructureType.BIWORD
+                : SearchStructureType.POSITIONAL;
+
+        log.debug("Searching phrase '{}' using {}", phrase, type);
+
+        Optional<Set<Integer>> result = searchService.phraseSearch(phrase, type);
+
+        result.ifPresentOrElse(
+                ids -> {
+                    List<String> filenames = searchService.getDocumentNames(ids);
+                    if (filenames.isEmpty()) {
+                        System.out.println("No files found");
+                        return;
+                    }
+                    System.out.printf("Phrase '%s' found in %d file(s):%n", phrase, filenames.size());
+                    filenames.forEach(filename -> System.out.println("  • " + filename));
+                },
+                () -> System.out.printf("Phrase '%s' not found%n", phrase));
+    }
+
+    public void proximitySearch() {
+        System.out.println("Enter first term: ");
+        String term1 = scanner.parseString();
+
+        System.out.println("Enter second term: ");
+        String term2 = scanner.parseString();
+
+        if (term1.isEmpty() || term2.isEmpty()) {
+            System.out.println("Terms cannot be empty");
+            return;
+        }
+
+        System.out.print("Enter maximum distance: ");
+        OptionalInt distanceOpt = scanner.parseInt();
+
+        if (distanceOpt.isEmpty() || distanceOpt.getAsInt() < 1) {
+            System.out.println("Invalid distance");
+            return;
+        }
+
+        int distance = distanceOpt.getAsInt();
+
+        log.debug("Proximity search: '{}' and '{}' within distance {}", term1, term2, distance);
+
+        var matchesOpt = searchService.proximitySearch(term1, term2, distance);
+
+        if (matchesOpt.isEmpty()) {
+            System.out.printf("No matches found for '%s' and '%s' within distance %d%n",
+                    term1, term2, distance);
+            return;
+        }
+
+        var matches = matchesOpt.get();
+
+        // Групуємо за документами
+        Map<Integer, Long> byDoc = matches.stream()
+                .collect(Collectors.groupingBy(
+                        ProximitySearch.ProximityMatch::docId,
+                        Collectors.counting()
+                ));
+
+        System.out.printf("%nFound %d match(es) in %d document(s):%n",
+                matches.size(), byDoc.size());
+
+        List<String> allDocNames = searchService.getDocumentNames(byDoc.keySet());
+
+        for (var entry : byDoc.entrySet()) {
+            int docId = entry.getKey();
+            long count = entry.getValue();
+            String docName = allDocNames.stream()
+                    .filter(name -> searchEngine.getDocumentNames(Set.of(docId)).contains(name))
+                    .findFirst()
+                    .orElse("Unknown");
+            System.out.printf("  • %s (%d match(es))%n", docName, count);
+        }
+    }
+
 
     public void viewStatistics() {
         var typeOptional = getType();

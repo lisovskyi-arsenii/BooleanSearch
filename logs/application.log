@@ -1,14 +1,219 @@
-2026-02-01 18:33:13.837 [main] INFO  main.Main - ================================================================================
-2026-02-01 18:33:13.843 [main] INFO  main.Main - APPLICATION STARTED at 2026-02-01T18:33:13.843407700
-2026-02-01 18:33:13.844 [main] INFO  main.Main - ================================================================================
-2026-02-01 18:33:18.976 [main] INFO  main.Main - ================================================================================
-2026-02-01 18:33:18.976 [main] INFO  main.Main - APPLICATION FINISHED at 2026-02-01T18:33:18.976924400
-2026-02-01 18:33:18.976 [main] INFO  main.Main - ================================================================================
-2026-02-01 19:57:10.325 [main] INFO  main.Main - ================================================================================
-2026-02-01 19:57:10.327 [main] INFO  main.Main - APPLICATION STARTED at 2026-02-01T19:57:10.327196271
-2026-02-01 19:57:10.327 [main] INFO  main.Main - ================================================================================
-2026-02-01 19:57:20.756 [main] INFO  main.MenuController - Indexing from documents
-2026-02-01 19:57:21.586 [main] INFO  main.MenuController - Indexing completed
-2026-02-01 19:57:23.220 [main] INFO  main.Main - ================================================================================
-2026-02-01 19:57:23.220 [main] INFO  main.Main - APPLICATION FINISHED at 2026-02-01T19:57:23.220570837
-2026-02-01 19:57:23.220 [main] INFO  main.Main - ================================================================================
+2026-02-02 00:35:09.261 [main] INFO  main.Main - ================================================================================
+2026-02-02 00:35:09.265 [main] INFO  main.Main - APPLICATION STARTED at 2026-02-02T00:35:09.265950706
+2026-02-02 00:35:09.266 [main] INFO  main.Main - ================================================================================
+2026-02-02 00:35:18.122 [main] INFO  main.Main - ================================================================================
+2026-02-02 00:35:18.122 [main] INFO  main.Main - APPLICATION FINISHED at 2026-02-02T00:35:18.122665743
+2026-02-02 00:35:18.122 [main] INFO  main.Main - ================================================================================
+2026-02-02 00:35:31.192 [main] INFO  main.Main - ================================================================================
+2026-02-02 00:35:31.194 [main] INFO  main.Main - APPLICATION STARTED at 2026-02-02T00:35:31.194041850
+2026-02-02 00:35:31.194 [main] INFO  main.Main - ================================================================================
+2026-02-02 00:35:35.882 [main] INFO  menu.MenuController - Indexing from documents
+2026-02-02 00:35:36.886 [main] INFO  menu.MenuController - Indexing completed
+2026-02-02 00:35:45.114 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.116 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.118 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.119 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.120 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.122 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.123 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.124 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.125 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.126 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.127 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.128 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.129 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.129 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.130 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.131 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.131 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.132 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.133 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.133 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.134 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.135 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.136 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.136 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:35:45.137 [main] ERROR main.Main - Unexpected error occurred
+java.util.NoSuchElementException: null
+	at java.base/java.util.Scanner.throwFor(Scanner.java:975)
+	at java.base/java.util.Scanner.next(Scanner.java:1632)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2297)
+	at java.base/java.util.Scanner.nextInt(Scanner.java:2251)
+	at scanner.CustomScanner.parseInt(CustomScanner.java:19)
+	at main.Main.main(Main.java:36)
+2026-02-02 00:36:07.735 [main] INFO  main.Main - ================================================================================
+2026-02-02 00:36:07.737 [main] INFO  main.Main - APPLICATION STARTED at 2026-02-02T00:36:07.737732745
+2026-02-02 00:36:07.738 [main] INFO  main.Main - ================================================================================
+2026-02-02 00:36:13.404 [main] INFO  menu.MenuController - Indexing from documents
+2026-02-02 00:36:14.368 [main] INFO  menu.MenuController - Indexing completed
+2026-02-02 00:36:16.070 [main] INFO  main.Main - ================================================================================
+2026-02-02 00:36:16.070 [main] INFO  main.Main - APPLICATION FINISHED at 2026-02-02T00:36:16.070562750
+2026-02-02 00:36:16.070 [main] INFO  main.Main - ================================================================================
