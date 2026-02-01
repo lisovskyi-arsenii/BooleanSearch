@@ -1,0 +1,139 @@
+2026-01-28 12:39:21.692 [main] INFO  main.Main - ================================================================================
+2026-01-28 12:39:21.698 [main] INFO  main.Main - APPLICATION STARTED at 2026-01-28T12:39:21.698611600
+2026-01-28 12:39:21.701 [main] INFO  main.Main - ================================================================================
+2026-01-28 12:46:56.100 [main] INFO  main.Main - ================================================================================
+2026-01-28 12:46:56.102 [main] INFO  main.Main - APPLICATION STARTED at 2026-01-28T12:46:56.102524100
+2026-01-28 12:46:56.103 [main] INFO  main.Main - ================================================================================
+2026-01-28 12:47:01.807 [main] INFO  main.MenuController - File large_1399_10.txt deleted
+2026-01-28 12:47:01.811 [main] INFO  main.MenuController - File large_1399_14.txt deleted
+2026-01-28 12:47:01.812 [main] INFO  main.MenuController - File large_1399_18.txt deleted
+2026-01-28 12:47:01.812 [main] INFO  main.MenuController - File large_1399_2.txt deleted
+2026-01-28 12:47:01.813 [main] INFO  main.MenuController - File large_1399_6.txt deleted
+2026-01-28 12:47:01.813 [main] INFO  main.MenuController - File large_1661_11.txt deleted
+2026-01-28 12:47:01.814 [main] INFO  main.MenuController - File large_1661_15.txt deleted
+2026-01-28 12:47:01.814 [main] INFO  main.MenuController - File large_1661_19.txt deleted
+2026-01-28 12:47:01.814 [main] INFO  main.MenuController - File large_1661_3.txt deleted
+2026-01-28 12:47:01.814 [main] INFO  main.MenuController - File large_1661_7.txt deleted
+2026-01-28 12:47:01.815 [main] INFO  main.MenuController - File large_2600_1.txt deleted
+2026-01-28 12:47:01.815 [main] INFO  main.MenuController - File large_2600_13.txt deleted
+2026-01-28 12:47:01.816 [main] INFO  main.MenuController - File large_2600_17.txt deleted
+2026-01-28 12:47:01.816 [main] INFO  main.MenuController - File large_2600_5.txt deleted
+2026-01-28 12:47:01.817 [main] INFO  main.MenuController - File large_2600_9.txt deleted
+2026-01-28 12:47:01.817 [main] INFO  main.MenuController - File large_2701_0.txt deleted
+2026-01-28 12:47:01.817 [main] INFO  main.MenuController - File large_2701_12.txt deleted
+2026-01-28 12:47:01.818 [main] INFO  main.MenuController - File large_2701_16.txt deleted
+2026-01-28 12:47:01.818 [main] INFO  main.MenuController - File large_2701_4.txt deleted
+2026-01-28 12:47:01.818 [main] INFO  main.MenuController - File large_2701_8.txt deleted
+2026-01-28 12:47:01.819 [main] INFO  main.MenuController - Deleted 20 file(s), 0 failed
+2026-01-28 12:47:09.331 [main] INFO  main.Main - ================================================================================
+2026-01-28 12:47:09.332 [main] INFO  main.Main - APPLICATION STARTED at 2026-01-28T12:47:09.332591400
+2026-01-28 12:47:09.333 [main] INFO  main.Main - ================================================================================
+2026-01-28 12:47:23.209 [main] INFO  main.MenuController - Generating OptionalInt[5] large files...
+2026-01-28 12:47:23.426 [main] INFO  generator.GenerateFiles - Generating Large Files (~1-3 MB)
+2026-01-28 12:47:23.437 [virtual-37] INFO  generator.GenerateFiles -   [1] Downloading book 2701...
+2026-01-28 12:47:25.439 [virtual-39] INFO  generator.GenerateFiles -   [2] Downloading book 2600...
+2026-01-28 12:47:25.852 [virtual-37] INFO  generator.GenerateFiles - ✓ Downloaded book 2701 (1211 KB)
+2026-01-28 12:47:26.727 [virtual-39] INFO  generator.GenerateFiles - ✓ Downloaded book 2600 (3216 KB)
+2026-01-28 12:47:27.439 [virtual-41] INFO  generator.GenerateFiles -   [3] Downloading book 1399...
+2026-01-28 12:47:28.197 [virtual-41] INFO  generator.GenerateFiles - ✓ Downloaded book 1399 (1957 KB)
+2026-01-28 12:47:29.439 [virtual-42] INFO  generator.GenerateFiles -   [4] Downloading book 1661...
+2026-01-28 12:47:30.037 [virtual-42] INFO  generator.GenerateFiles - ✓ Downloaded book 1661 (579 KB)
+2026-01-28 12:47:31.439 [virtual-43] INFO  generator.GenerateFiles -   [5] Downloading book 2701...
+2026-01-28 12:47:32.646 [virtual-43] INFO  generator.GenerateFiles - ✓ Downloaded book 2701 (1211 KB)
+2026-01-28 12:47:32.652 [main] INFO  generator.GenerateFiles -   Successfully generated all 5 files
+2026-01-28 13:16:21.327 [main] ERROR core.BooleanSearchEngine - Task execution failed
+java.util.concurrent.ExecutionException: java.lang.NoClassDefFoundError: Could not initialize class tokenization.Tokenizer
+	at java.base/java.util.concurrent.FutureTask.report(FutureTask.java:124)
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:193)
+	at core.BooleanSearchEngine.indexDocuments(BooleanSearchEngine.java:88)
+	at main.TestMain.main(TestMain.java:14)
+Caused by: java.lang.NoClassDefFoundError: Could not initialize class tokenization.Tokenizer
+	at core.BooleanSearchEngine.indexFile(BooleanSearchEngine.java:111)
+	at core.BooleanSearchEngine.lambda$indexDocuments$1(BooleanSearchEngine.java:79)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:545)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:328)
+	at java.base/java.lang.VirtualThread.run(VirtualThread.java:466)
+Caused by: java.lang.ExceptionInInitializerError: Exception java.lang.UnsupportedOperationException [in thread "ForkJoinPool-1-worker-2"]
+	at java.base/java.util.AbstractCollection.add(AbstractCollection.java:253)
+	at util.FileReader.addContentToCollection(FileReader.java:33)
+	at tokenization.StopWordsFilter.addAllStopWordsToList(StopWordsFilter.java:33)
+	at tokenization.StopWordsFilter.<init>(StopWordsFilter.java:18)
+	at tokenization.Tokenizer.<clinit>(Tokenizer.java:13)
+	... 5 common frames omitted
+2026-01-28 13:16:21.330 [main] ERROR core.BooleanSearchEngine - Task execution failed
+java.util.concurrent.ExecutionException: java.lang.ExceptionInInitializerError
+	at java.base/java.util.concurrent.FutureTask.report(FutureTask.java:124)
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:193)
+	at core.BooleanSearchEngine.indexDocuments(BooleanSearchEngine.java:88)
+	at main.TestMain.main(TestMain.java:14)
+Caused by: java.lang.ExceptionInInitializerError: null
+	at core.BooleanSearchEngine.indexFile(BooleanSearchEngine.java:111)
+	at core.BooleanSearchEngine.lambda$indexDocuments$1(BooleanSearchEngine.java:79)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:545)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:328)
+	at java.base/java.lang.VirtualThread.run(VirtualThread.java:466)
+Caused by: java.lang.UnsupportedOperationException: null
+	at java.base/java.util.AbstractCollection.add(AbstractCollection.java:253)
+	at util.FileReader.addContentToCollection(FileReader.java:33)
+	at tokenization.StopWordsFilter.addAllStopWordsToList(StopWordsFilter.java:33)
+	at tokenization.StopWordsFilter.<init>(StopWordsFilter.java:18)
+	at tokenization.Tokenizer.<clinit>(Tokenizer.java:13)
+	... 5 common frames omitted
+2026-01-28 13:16:21.331 [main] ERROR core.BooleanSearchEngine - Task execution failed
+java.util.concurrent.ExecutionException: java.lang.NoClassDefFoundError: Could not initialize class tokenization.Tokenizer
+	at java.base/java.util.concurrent.FutureTask.report(FutureTask.java:124)
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:193)
+	at core.BooleanSearchEngine.indexDocuments(BooleanSearchEngine.java:88)
+	at main.TestMain.main(TestMain.java:14)
+Caused by: java.lang.NoClassDefFoundError: Could not initialize class tokenization.Tokenizer
+	at core.BooleanSearchEngine.indexFile(BooleanSearchEngine.java:111)
+	at core.BooleanSearchEngine.lambda$indexDocuments$1(BooleanSearchEngine.java:79)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:545)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:328)
+	at java.base/java.lang.VirtualThread.run(VirtualThread.java:466)
+Caused by: java.lang.ExceptionInInitializerError: Exception java.lang.UnsupportedOperationException [in thread "ForkJoinPool-1-worker-2"]
+	at java.base/java.util.AbstractCollection.add(AbstractCollection.java:253)
+	at util.FileReader.addContentToCollection(FileReader.java:33)
+	at tokenization.StopWordsFilter.addAllStopWordsToList(StopWordsFilter.java:33)
+	at tokenization.StopWordsFilter.<init>(StopWordsFilter.java:18)
+	at tokenization.Tokenizer.<clinit>(Tokenizer.java:13)
+	... 5 common frames omitted
+2026-01-28 13:16:21.331 [main] ERROR core.BooleanSearchEngine - Task execution failed
+java.util.concurrent.ExecutionException: java.lang.NoClassDefFoundError: Could not initialize class tokenization.Tokenizer
+	at java.base/java.util.concurrent.FutureTask.report(FutureTask.java:124)
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:193)
+	at core.BooleanSearchEngine.indexDocuments(BooleanSearchEngine.java:88)
+	at main.TestMain.main(TestMain.java:14)
+Caused by: java.lang.NoClassDefFoundError: Could not initialize class tokenization.Tokenizer
+	at core.BooleanSearchEngine.indexFile(BooleanSearchEngine.java:111)
+	at core.BooleanSearchEngine.lambda$indexDocuments$1(BooleanSearchEngine.java:79)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:545)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:328)
+	at java.base/java.lang.VirtualThread.run(VirtualThread.java:466)
+Caused by: java.lang.ExceptionInInitializerError: Exception java.lang.UnsupportedOperationException [in thread "ForkJoinPool-1-worker-2"]
+	at java.base/java.util.AbstractCollection.add(AbstractCollection.java:253)
+	at util.FileReader.addContentToCollection(FileReader.java:33)
+	at tokenization.StopWordsFilter.addAllStopWordsToList(StopWordsFilter.java:33)
+	at tokenization.StopWordsFilter.<init>(StopWordsFilter.java:18)
+	at tokenization.Tokenizer.<clinit>(Tokenizer.java:13)
+	... 5 common frames omitted
+2026-01-28 13:16:21.331 [main] ERROR core.BooleanSearchEngine - Task execution failed
+java.util.concurrent.ExecutionException: java.lang.NoClassDefFoundError: Could not initialize class tokenization.Tokenizer
+	at java.base/java.util.concurrent.FutureTask.report(FutureTask.java:124)
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:193)
+	at core.BooleanSearchEngine.indexDocuments(BooleanSearchEngine.java:88)
+	at main.TestMain.main(TestMain.java:14)
+Caused by: java.lang.NoClassDefFoundError: Could not initialize class tokenization.Tokenizer
+	at core.BooleanSearchEngine.indexFile(BooleanSearchEngine.java:111)
+	at core.BooleanSearchEngine.lambda$indexDocuments$1(BooleanSearchEngine.java:79)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:545)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:328)
+	at java.base/java.lang.VirtualThread.run(VirtualThread.java:466)
+Caused by: java.lang.ExceptionInInitializerError: Exception java.lang.UnsupportedOperationException [in thread "ForkJoinPool-1-worker-2"]
+	at java.base/java.util.AbstractCollection.add(AbstractCollection.java:253)
+	at util.FileReader.addContentToCollection(FileReader.java:33)
+	at tokenization.StopWordsFilter.addAllStopWordsToList(StopWordsFilter.java:33)
+	at tokenization.StopWordsFilter.<init>(StopWordsFilter.java:18)
+	at tokenization.Tokenizer.<clinit>(Tokenizer.java:13)
+	... 5 common frames omitted
+2026-01-28 13:16:21.332 [main] ERROR query.PhraseSearch - PhraseSearch: firstTermPositions is empty

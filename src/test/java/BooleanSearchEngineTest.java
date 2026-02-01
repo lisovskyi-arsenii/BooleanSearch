@@ -1,16 +1,16 @@
-//import core.BooleanSearchEngine;
-//import org.junit.jupiter.api.AfterEach;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//
-//import java.io.IOException;
-//import java.util.HashMap;
-//import java.util.Map;
-//import java.util.Set;
-//
-//import static constants.Filenames.*;
-//
-//class BooleanSearchEngineTest {
+import core.BooleanSearchEngine;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import static constants.Filenames.*;
+
+class BooleanSearchEngineTest {
 //    private BooleanSearchEngine searchEngine;
 //
 //    @BeforeEach
@@ -63,4 +63,4 @@
 //    void saveAndLoadDictionaryJSON() throws IOException, ClassNotFoundException {
 //        saveAndLoadDictionary(SERIALIZATION_FILENAME_JSON);
 //    }
-//}
+}
