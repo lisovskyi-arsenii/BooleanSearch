@@ -6,6 +6,7 @@ import enums.SearchStructureType;
 import index.BiwordIndex;
 import index.PositionalIndex;
 import lombok.extern.slf4j.Slf4j;
+import tokenization.Tokenizer;
 
 import java.util.*;
 
@@ -21,17 +22,29 @@ public class PhraseSearch {
         this.biwordIndex = biwordIndex;
     }
 
-    public Optional<Set<Integer>> searchPhraseBiword(List<String> terms) {
-        if (terms == null || terms.isEmpty()) {
-            log.warn("Terms in searchPhraseBiword is null or empty");
+
+    public Optional<Set<Integer>> search(String phrase, SearchStructureType type) {
+        if (phrase == null || phrase.isBlank()) {
+            log.warn("Phrase is null or blank");
             return Optional.empty();
         }
+
+        List<String> terms = Tokenizer.tokenize(phrase);
 
         if (terms.size() < 2) {
             log.debug("Phrase '{}' has less than 2 tokens, cannot form biwords", terms);
             return Optional.empty();
         }
 
+        return switch (type) {
+            case BIWORD -> searchPhraseBiwordInternal(terms);
+            case POSITIONAL -> searchPhrasePositionalInternal(terms);
+            default -> throw new IllegalArgumentException("Invalid type of search structure");
+        };
+    }
+
+
+    private Optional<Set<Integer>> searchPhraseBiwordInternal(List<String> terms) {
         Set<Integer> result = null;
         for (int i = 0; i < terms.size() - 1; i++) {
             if (terms.get(i).isBlank() || terms.get(i + 1).isBlank()) {
@@ -59,16 +72,7 @@ public class PhraseSearch {
         return Optional.ofNullable(result);
     }
 
-    public Optional<Set<Integer>> searchPhrasePositional(List<String> terms) {
-        if (terms == null || terms.isEmpty()) {
-            log.warn("Terms in searchPhrasePositional is null or empty");
-            return Optional.empty();
-        }
-
-        if (terms.size() < 2) {
-            return Optional.empty();
-        }
-
+    private Optional<Set<Integer>> searchPhrasePositionalInternal(List<String> terms) {
         Set<Integer> result = new HashSet<>();
 
         var firstTermData = positionalIndex.getPositions(terms.getFirst());

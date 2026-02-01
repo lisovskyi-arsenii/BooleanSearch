@@ -1,4 +1,4 @@
-package main;
+package menu;
 
 public final class Printer {
     private Printer() {

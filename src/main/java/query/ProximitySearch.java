@@ -19,25 +19,25 @@ public class ProximitySearch {
         this.biwordIndex = biwordIndex;
     }
 
-    public List<ProximityMatch> searchProximity(String term1, String term2, int k) {
+    public Set<ProximityMatch> searchProximity(String term1, String term2, int k) {
         if (term1 == null || term2 == null) {
             log.warn("term1 or term2 is null");
-            return List.of();
+            return Set.of();
         }
 
         if (term1.isBlank() || term2.isBlank()) {
             log.warn("term1 or term2 is blank");
-            return List.of();
+            return Set.of();
         }
 
         var postings1 = positionalIndex.getPositions(term1);
         var postings2 = positionalIndex.getPositions(term2);
 
         if (postings1.isEmpty() || postings2.isEmpty()) {
-            return List.of();
+            return Set.of();
         }
 
-        List<ProximityMatch> result = new ArrayList<>();
+        Set<ProximityMatch> result = new HashSet<>();
 
         var p1 = postings1.get().entrySet().iterator();
         var p2 = postings2.get().entrySet().iterator();
@@ -50,26 +50,18 @@ public class ProximitySearch {
             int docId2 = entry2.getKey();
 
             if (docId1 == docId2) {
-                List<Integer> l = new ArrayList<>();
-
                 var positions1 = entry1.getValue();
                 var positions2 = entry2.getValue();
 
                 for (int pos1 : positions1) {
                     for (int pos2 : positions2) {
                         if (Math.abs(pos1 - pos2) <= k) {
-                            l.add(pos2);
-                        } else if (pos2 > pos1) {
+                            result.add(new ProximityMatch(docId1, pos1, pos2));
+                        }
+
+                        if (pos2 > pos1 + k) {
                             break;
                         }
-                    }
-
-                    while (!l.isEmpty() && Math.abs(l.getFirst() - pos1) > k) {
-                        l.removeFirst();
-                    }
-
-                    for (int ps : l) {
-                        result.add(new ProximityMatch(docId1, pos1, ps));
                     }
                 }
 

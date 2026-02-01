@@ -1,10 +1,11 @@
-package main;
+package menu;
 
 import benchmark.PerformanceBenchmark;
 import core.BooleanSearchEngine;
 import enums.*;
 import generator.GenerateFiles;
 import lombok.extern.slf4j.Slf4j;
+import scanner.CustomScanner;
 import query.QueryParser;
 import serialization.SerializationComparison;
 import statistics.DictionaryStats;

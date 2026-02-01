@@ -1,4 +1,4 @@
-package main;
+package scanner;
 
 import java.util.InputMismatchException;
 import java.util.OptionalInt;

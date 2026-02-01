@@ -1,8 +1,8 @@
 import core.BooleanSearchEngine;
+import enums.SearchStructureType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import query.PhraseSearch;
-import tokenization.Tokenizer;
 
 import java.io.IOException;
 
@@ -22,7 +22,7 @@ class PhraseSearchTest {
     @Test
     void testSearchBiword() {
         String phrase = "common with";
-        var result = search.searchPhraseBiword(Tokenizer.tokenize(phrase));
+        var result = search.search(phrase, SearchStructureType.BIWORD);
         assert(result.isPresent());
     }
 
@@ -45,7 +45,7 @@ class PhraseSearchTest {
         continual repetition of these very impressions, man has lost that sense
         of the full awfulness of the sea which aboriginally belongs to it.
         """;
-        var result = search.searchPhrasePositional(Tokenizer.tokenize(phrase));
+        var result = search.search(phrase, SearchStructureType.POSITIONAL);
         assert(result.isPresent());
     }
 }

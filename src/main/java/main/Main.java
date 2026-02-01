@@ -1,14 +1,16 @@
 package main;
 
 import core.BooleanSearchEngine;
+import menu.MenuController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scanner.CustomScanner;
 
 import java.time.LocalDateTime;
 import java.util.OptionalInt;
 import java.util.Scanner;
 
-import static main.Printer.printMenu;
+import static menu.Printer.printMenu;
 
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);

@@ -33,7 +33,7 @@ public class PositionalIndex implements Dictionary {
         });
     }
 
-    public Optional<Map<Integer, List<Integer>>> getPositions(String term) {
+    public Optional<ConcurrentSkipListMap<Integer, List<Integer>>> getPositions(String term) {
         var map = index.get(term);
         return map != null && !map.isEmpty()
                 ? Optional.of(map)
@@ -86,20 +86,5 @@ public class PositionalIndex implements Dictionary {
     public void clear() {
         index.clear();
     }
-
-//    public void print() {
-//        if (index.isEmpty()) {
-//            System.out.println("Positional index is empty");
-//            return;
-//        }
-//
-//        System.out.println("=== POSITIONAL INDEX ===");
-//        index.forEach((term, docMap) -> {
-//            System.out.println(term + ":");
-//            docMap.forEach((docId, positions) ->
-//                    System.out.printf("  Doc %d: %s%n", docId, positions));
-//        });
-//        System.out.println("========================");
-//    }
 
 }
