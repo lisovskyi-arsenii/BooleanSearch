@@ -19,22 +19,22 @@ public class ProximitySearch {
         this.biwordIndex = biwordIndex;
     }
 
-    public Set<ProximityMatch> searchProximity(String term1, String term2, int k) {
+    public Optional<Set<ProximityMatch>> searchProximity(String term1, String term2, int k) {
         if (term1 == null || term2 == null) {
             log.warn("term1 or term2 is null");
-            return Set.of();
+            return Optional.empty();
         }
 
         if (term1.isBlank() || term2.isBlank()) {
             log.warn("term1 or term2 is blank");
-            return Set.of();
+            return Optional.empty();
         }
 
         var postings1 = positionalIndex.getPositions(term1);
         var postings2 = positionalIndex.getPositions(term2);
 
         if (postings1.isEmpty() || postings2.isEmpty()) {
-            return Set.of();
+            return Optional.empty();
         }
 
         Set<ProximityMatch> result = new HashSet<>();
@@ -74,7 +74,7 @@ public class ProximitySearch {
                 entry2 = p2.hasNext() ? p2.next() : null;
             }
         }
-        return result;
+        return result.isEmpty() ? Optional.empty() : Optional.of(result);
     }
 
     public record ProximityMatch(int docId, int position1, int position2) {}
