@@ -29,6 +29,7 @@ public final class Tokenizer {
             }
         }
 
-        return STOP_WORD_FILTER.filter(tokens);
+//        return STOP_WORD_FILTER.filter(tokens);
+        return tokens;
     }
 }

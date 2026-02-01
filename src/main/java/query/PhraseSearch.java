@@ -42,7 +42,11 @@ public class PhraseSearch {
                 continue;
             }
 
-            var tempResult = searchEngine.andSearch(tokens[i], tokens[i + 1], SearchStructureType.BIWORD);
+            final String biword = tokens[i] + " "  + tokens[i + 1];
+
+            var temp = biwordIndex.getBiword(tokens[i], tokens[i + 1]);
+            System.out.println("Temp: " + temp);
+            var tempResult = searchEngine.search(biword, SearchStructureType.BIWORD);
             if (tempResult.isEmpty()) {
                 log.debug("Phrase " + phrase + " not found");
                 return Optional.empty();
@@ -66,56 +70,12 @@ public class PhraseSearch {
 
     public Optional<Set<Integer>> searchPhrasePositional(List<String> terms) {
         if (terms == null || terms.isEmpty()) {
-            log.error("PhraseSearch: terms is null or empty");
             return Optional.empty();
         }
 
-        if (terms.size() == 1) {
-            return positionalIndex.getDocuments(terms.getFirst());
-        }
+        Set<Integer> result = new HashSet<>();
 
-        Optional<Map<Integer, List<Integer>>> firstTermPositions = positionalIndex.getPositions(terms.getFirst());
 
-        if (firstTermPositions.isEmpty()) {
-            log.error("PhraseSearch: firstTermPositions is empty");
-            return Optional.empty();
-        }
-
-        Set<Integer> resultDocs = new HashSet<>();
-
-        for (var entry : firstTermPositions.get().entrySet()) {
-            int docId = entry.getKey();
-            List<Integer> positions = entry.getValue();
-
-            for (int startPosition : positions) {
-                if (isPhraseAtPosition(terms, docId, startPosition)) {
-                    resultDocs.add(docId);
-                    break;
-                }
-            }
-        }
-
-        if (resultDocs.isEmpty()) {
-            log.debug("Phrase '{}' not found", String.join(" ", terms));
-            return Optional.empty();
-        }
-
-        log.debug("Phrase '{}' found in {} documents",
-                String.join(" ", terms), resultDocs.size());
-        return Optional.of(resultDocs);
-    }
-
-    private boolean isPhraseAtPosition(List<String> terms, int docId, int startPosition) {
-        for (int i = 1; i < terms.size(); i++) {
-            String term = terms.get(i);
-            int expectedPosition = startPosition + i;
-
-            Optional<List<Integer>> termPositions = positionalIndex.getPositionsInDocument(term, docId);
-
-            if (termPositions.isEmpty() || !termPositions.get().contains(expectedPosition)) {
-                return false;
-            }
-        }
-        return true;
+        return Optional.empty();
     }
 }

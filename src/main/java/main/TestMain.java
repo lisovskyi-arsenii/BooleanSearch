@@ -1,6 +1,7 @@
 package main;
 
 import core.BooleanSearchEngine;
+import enums.SearchStructureType;
 import index.BiwordIndex;
 import index.PositionalIndex;
 import query.PhraseSearch;
@@ -16,13 +17,23 @@ import static constants.Filenames.DIRECTORY_PATH;
 public class TestMain {
     public static void main(String[] args) throws IOException {
         BooleanSearchEngine searchEngine = new BooleanSearchEngine();
-        PositionalIndex positionalIndex = new PositionalIndex();
-        BiwordIndex biwordIndex = new BiwordIndex();
-        PhraseSearch phraseSearch = new PhraseSearch(positionalIndex, biwordIndex, searchEngine);
-
         searchEngine.indexDocuments(DIRECTORY_PATH);
 
-        System.out.println(phraseSearch.searchPhraseBiword("document doctor"));
+        var positionalIndex = searchEngine.getPositionalIndex();
+        var biwordIndex = searchEngine.getBiwordIndex();
+        var phraseSearch = new PhraseSearch(positionalIndex, biwordIndex, searchEngine);
+
+        var result = phraseSearch.searchPhraseBiword("book with great ending");
+        if (result.isPresent()) {
+//            System.out.printf("RESULT: %s%n", result.get());
+            var documentNames = searchEngine.getDocumentNames(result.get());
+            System.out.println(documentNames);
+        } else {
+            System.out.println("NO RESULT");
+        }
+
+
+
 
     }
     /**

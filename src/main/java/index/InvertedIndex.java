@@ -1,11 +1,13 @@
 package index;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
+@Getter
 public class InvertedIndex implements Dictionary {
     private final Map<String, Set<Integer>> index = new ConcurrentHashMap<>(); // term -> [document ids]
 
