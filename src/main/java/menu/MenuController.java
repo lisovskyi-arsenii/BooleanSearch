@@ -83,6 +83,16 @@ public class MenuController {
         return true;
     }
 
+    private void showMessage() {
+        if (!isDocumentsIndexed()) {
+            System.out.println("Consider indexing documents first before doing this task!\n".toUpperCase());
+        }
+    }
+
+    private boolean isDocumentsIndexed() {
+        return searchEngine.getIndex().size() != 0;
+    }
+
     public void indexDocuments() throws IOException {
         System.out.println("Enter directory path from where indexing should be done(Press `Enter` to use default): ");
         String directoryPath = scanner.parseString();
@@ -131,7 +141,9 @@ public class MenuController {
         int quantityOfFiles = quantityOpt.getAsInt();
         if (quantityOfFiles <= 0) {
             System.out.println("Number cannot be negative");
+            return;
         }
+
         try {
             log.info("Generating {} {} files...", quantityOpt, fileGenerationType.get().getType());
 
@@ -241,6 +253,7 @@ public class MenuController {
     }
 
     public void simpleSearch() {
+        showMessage();
         System.out.println("Enter term to search for: ");
         String term = scanner.parseString();
 
@@ -274,6 +287,7 @@ public class MenuController {
     }
 
     public void andSearch() {
+        showMessage();
         var typeOptional = getType();
         if (typeOptional.isEmpty()) {
             System.out.println("Type cannot be empty");
@@ -289,6 +303,7 @@ public class MenuController {
     }
 
     public void orSearch() {
+        showMessage();
         var typeOptional = getType();
         if (typeOptional.isEmpty()) {
             System.out.println("Type cannot be empty");
@@ -304,6 +319,7 @@ public class MenuController {
     }
 
     public void notSearch() {
+        showMessage();
         var typeOptional = getType();
         if (typeOptional.isEmpty()) {
             System.out.println("Type cannot be empty");
@@ -322,6 +338,7 @@ public class MenuController {
     }
 
     public void advancedSearch() {
+        showMessage();
         System.out.println("Enter complex boolean query:");
         System.out.println("Examples: 'java AND python', 'rust OR golang', 'data AND NOT test'");
         System.out.print("> ");
@@ -395,6 +412,7 @@ public class MenuController {
     }
 
     public void phraseSearch() {
+        showMessage();
         System.out.println("Enter phrase to search for: ");
         String phrase = scanner.parseString();
 
@@ -414,7 +432,13 @@ public class MenuController {
             return;
         }
 
-        SearchStructureType type = choiceOpt.getAsInt() == 1
+        int choice = choiceOpt.getAsInt();
+        if (choice != 1 && choice != 2) {
+            System.out.println("Invalid choice. Please enter 1 or 2");
+            return;
+        }
+
+        SearchStructureType type = choice == 1
                 ? SearchStructureType.BIWORD
                 : SearchStructureType.POSITIONAL;
 
@@ -424,6 +448,11 @@ public class MenuController {
 
         result.ifPresentOrElse(
                 ids -> {
+                    if (ids.isEmpty()) {
+                        System.out.println("No files found");
+                        return;
+                    }
+
                     List<String> filenames = searchService.getDocumentNames(ids);
                     if (filenames.isEmpty()) {
                         System.out.println("No files found");
@@ -436,6 +465,7 @@ public class MenuController {
     }
 
     public void proximitySearch() {
+        showMessage();
         System.out.println("Enter first term: ");
         String term1 = scanner.parseString();
 
@@ -469,7 +499,6 @@ public class MenuController {
 
         var matches = matchesOpt.get();
 
-        // Групуємо за документами
         Map<Integer, Long> byDoc = matches.stream()
                 .collect(Collectors.groupingBy(
                         ProximitySearch.ProximityMatch::docId,
@@ -480,20 +509,24 @@ public class MenuController {
                 matches.size(), byDoc.size());
 
         List<String> allDocNames = searchService.getDocumentNames(byDoc.keySet());
+        List<Integer> docIdsList = new ArrayList<>(byDoc.keySet());
+
+        Map<Integer, String> docIdToName = new HashMap<>();
+        for (int i = 0; i < docIdsList.size(); i++) {
+            docIdToName.put(docIdsList.get(i), allDocNames.get(i));
+        }
 
         for (var entry : byDoc.entrySet()) {
             int docId = entry.getKey();
             long count = entry.getValue();
-            String docName = allDocNames.stream()
-                    .filter(name -> searchEngine.getDocumentNames(Set.of(docId)).contains(name))
-                    .findFirst()
-                    .orElse("Unknown");
+            String docName = docIdToName.getOrDefault(docId, "Unknown");
             System.out.printf("  • %s (%d match(es))%n", docName, count);
         }
     }
 
 
     public void viewStatistics() {
+        showMessage();
         var typeOptional = getType();
         if (typeOptional.isEmpty()) {
             System.out.println("Type cannot be empty");
@@ -524,6 +557,7 @@ public class MenuController {
     }
 
     public void showTopTerms() {
+        showMessage();
         System.out.print("Enter how many terms you want to show: ");
         OptionalInt topCountOpt = scanner.parseInt();
 
@@ -578,6 +612,7 @@ public class MenuController {
     }
 
     public void saveIndex() {
+        showMessage();
         performFileOperationOnIndex(
                 SAVE,
                 (filepath, extension) -> {
@@ -596,6 +631,7 @@ public class MenuController {
     }
 
     public void loadIndex() {
+        showMessage();
         performFileOperationOnIndex(
                 LOAD,
                 (filepath, extension) -> {
@@ -648,7 +684,8 @@ public class MenuController {
     }
 
     public void compareFormats() {
-        SerializationComparison comparison = null;
+        showMessage();
+        SerializationComparison comparison;
         if (searchEngine.getIndex().size() == 0) {
             System.out.println("Index is empty. Please index some documents first");
             return;
@@ -676,27 +713,9 @@ public class MenuController {
 
 
     public void clearIndex() {
+        showMessage();
         searchEngine.clear();
         System.out.println("Index has been cleared successfully");
-    }
-
-    // TODO: delete this method
-    @Deprecated
-    public void printIndex() {
-        int termCount = searchEngine.getIndex().size();
-
-        if (termCount == 0) {
-            System.out.println("Index is empty. Nothing to print.");
-            return;
-        }
-
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println("INDEX CONTENT");
-        System.out.println("=".repeat(80));
-        System.out.printf("Total terms: %,d%n", termCount);
-        System.out.println("-".repeat(80));
-
-//        searchEngine.printIndex();
     }
 
     public void compareBenchmarks() {

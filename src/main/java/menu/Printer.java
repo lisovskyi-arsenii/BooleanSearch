@@ -2,7 +2,7 @@ package menu;
 
 public final class Printer {
     private Printer() {
-        throw new UnsupportedOperationException("Printer class cannot be instantiated.");
+        throw new UnsupportedOperationException("Printer class cannot be instantiated");
     }
 
     public static void printMenu() {
@@ -22,20 +22,21 @@ public final class Printer {
         System.out.println("    8. OR search (either term)");
         System.out.println("    9. NOT search (exclude term)");
         System.out.println("   10. Advanced search (query parser)");
+        System.out.println("   11. Phrase search");
+        System.out.println("   12. Proximity search");
         System.out.println();
         System.out.println("  STATISTICS:");
-        System.out.println("   11. View index statistics");
-        System.out.println("   12. Show top N terms");
+        System.out.println("   13. View index statistics");
+        System.out.println("   14. Show top N terms");
         System.out.println();
         System.out.println("  SERIALIZATION:");
-        System.out.println("   13. Save index (choose format)");
-        System.out.println("   14. Load index (choose format)");
-        System.out.println("   15. Compare serialization formats");
+        System.out.println("   15. Save index (choose format)");
+        System.out.println("   16. Load index (choose format)");
+        System.out.println("   17. Compare serialization formats");
         System.out.println();
         System.out.println("  UTILITY:");
-        System.out.println("   16. Clear index");
-        System.out.println("   17. Print index");
-        System.out.println("   18. Compare structure types");
+        System.out.println("   18. Clear index");
+        System.out.println("   19. Compare structure types");
         System.out.println();
         System.out.println("    0. Exit");
         System.out.println("=".repeat(80));

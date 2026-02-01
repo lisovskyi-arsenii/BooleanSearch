@@ -1,23 +1,54 @@
 package query;
 
-import com.google.common.primitives.UnsignedInteger;
 import core.BooleanSearchEngine;
 import index.BiwordIndex;
 import index.PositionalIndex;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ProximitySearch {
-    private final BooleanSearchEngine searchEngine;
     private final PositionalIndex positionalIndex;
     private final BiwordIndex biwordIndex;
 
-    public ProximitySearch(PositionalIndex positionalIndex, BiwordIndex biwordIndex, BooleanSearchEngine searchEngine) {
-        this.searchEngine = searchEngine;
+    public ProximitySearch(PositionalIndex positionalIndex, BiwordIndex biwordIndex) {
         this.positionalIndex = positionalIndex;
         this.biwordIndex = biwordIndex;
+    }
+
+    public Optional<Set<Integer>> searchProximityBiword(String term1, String term2, int k) {
+        if (term1 == null || term2 == null) {
+            log.warn("Term1 or term2 is null");
+            return Optional.empty();
+        }
+
+        if (term1.isBlank() || term2.isBlank()) {
+            log.warn("Term1 or term2 is blank");
+            return Optional.empty();
+        }
+
+        if (k < 1) {
+            log.warn("k must be positive");
+            return Optional.empty();
+        }
+        if (k == 1) {
+            return biwordIndex.getBiword(term1, term2);
+        }
+
+        log.debug("k={} > 1, biword index cannot handle this efficiently. Failing back to positional index", k);
+
+        var searchMatchesOpt = searchProximity(term1, term2, k);
+        if (searchMatchesOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Set<Integer> docIds = searchMatchesOpt.get().stream()
+                .map(ProximityMatch::docId)
+                .collect(Collectors.toSet());
+
+        return docIds.isEmpty() ? Optional.empty() : Optional.of(docIds);
     }
 
     public Optional<Set<ProximityMatch>> searchProximity(String term1, String term2, int k) {
@@ -56,13 +87,17 @@ public class ProximitySearch {
 
                 for (int pos1 : positions1) {
                     for (int pos2 : positions2) {
-                        if (Math.abs(pos1 - pos2) <= k) {
-                            result.add(new ProximityMatch(docId1, pos1, pos2));
-                        }
+                        int distance = pos2 - pos1;
 
-                        if (pos2 > pos1 + k) {
+                        if (distance > k) {
                             break;
                         }
+
+                        if (distance < -k) {
+                            continue;
+                        }
+
+                        result.add(new ProximityMatch(docId1, pos1, pos2));
                     }
                 }
 
@@ -78,5 +113,9 @@ public class ProximitySearch {
         return result.isEmpty() ? Optional.empty() : Optional.of(result);
     }
 
-    public record ProximityMatch(int docId, int position1, int position2) {}
+    public record ProximityMatch(int docId, int position1, int position2) {
+        public int distance() {
+            return Math.abs(position1 - position2);
+        }
+    }
 }

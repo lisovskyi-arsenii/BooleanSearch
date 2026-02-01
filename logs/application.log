@@ -217,3 +217,81 @@ java.util.NoSuchElementException: null
 2026-02-02 00:36:16.070 [main] INFO  main.Main - ================================================================================
 2026-02-02 00:36:16.070 [main] INFO  main.Main - APPLICATION FINISHED at 2026-02-02T00:36:16.070562750
 2026-02-02 00:36:16.070 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:45:12.922 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:45:12.924 [main] INFO  main.Main - APPLICATION STARTED at 2026-02-02T01:45:12.924333176
+2026-02-02 01:45:12.925 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:46:05.512 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:46:05.513 [main] INFO  main.Main - APPLICATION FINISHED at 2026-02-02T01:46:05.513267746
+2026-02-02 01:46:05.513 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:49:17.888 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:49:17.891 [main] INFO  main.Main - APPLICATION STARTED at 2026-02-02T01:49:17.891101767
+2026-02-02 01:49:17.891 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:49:53.266 [main] INFO  menu.MenuController - Indexing from documents
+2026-02-02 01:49:54.604 [main] INFO  menu.MenuController - Indexing completed
+2026-02-02 01:50:05.059 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:50:05.060 [main] INFO  main.Main - APPLICATION FINISHED at 2026-02-02T01:50:05.060281490
+2026-02-02 01:50:05.060 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:51:11.663 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:51:11.665 [main] INFO  main.Main - APPLICATION STARTED at 2026-02-02T01:51:11.665941804
+2026-02-02 01:51:11.666 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:51:17.367 [main] INFO  menu.MenuController - Indexing from documents
+2026-02-02 01:51:18.589 [main] INFO  menu.MenuController - Indexing completed
+2026-02-02 01:51:40.886 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:51:40.886 [main] INFO  main.Main - APPLICATION FINISHED at 2026-02-02T01:51:40.886568925
+2026-02-02 01:51:40.886 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:56:37.342 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:56:37.344 [main] INFO  main.Main - APPLICATION STARTED at 2026-02-02T01:56:37.343983026
+2026-02-02 01:56:37.344 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:56:52.242 [main] INFO  menu.MenuController - Indexing from documents
+2026-02-02 01:56:53.482 [main] INFO  menu.MenuController - Indexing completed
+2026-02-02 01:57:01.567 [main] INFO  menu.MenuController - Generating OptionalInt[20] large files...
+2026-02-02 01:57:01.744 [main] INFO  generator.GenerateFiles - Generating Large Files (~1-3 MB)
+2026-02-02 01:57:01.746 [virtual-87] INFO  generator.GenerateFiles -   [14] Downloading book 2600...
+2026-02-02 01:57:01.746 [virtual-90] INFO  generator.GenerateFiles -   [17] Downloading book 2701...
+2026-02-02 01:57:01.746 [virtual-80] INFO  generator.GenerateFiles -   [7] Downloading book 1399...
+2026-02-02 01:57:01.746 [virtual-85] INFO  generator.GenerateFiles -   [12] Downloading book 1661...
+2026-02-02 01:57:01.746 [virtual-82] INFO  generator.GenerateFiles -   [9] Downloading book 2701...
+2026-02-02 01:57:01.746 [virtual-75] INFO  generator.GenerateFiles -   [2] Downloading book 2600...
+2026-02-02 01:57:01.746 [virtual-81] INFO  generator.GenerateFiles -   [8] Downloading book 1661...
+2026-02-02 01:57:01.746 [virtual-83] INFO  generator.GenerateFiles -   [10] Downloading book 2600...
+2026-02-02 01:57:01.748 [virtual-93] INFO  generator.GenerateFiles -   [20] Downloading book 1661...
+2026-02-02 01:57:01.746 [virtual-74] INFO  generator.GenerateFiles -   [1] Downloading book 2701...
+2026-02-02 01:57:01.746 [virtual-76] INFO  generator.GenerateFiles -   [3] Downloading book 1399...
+2026-02-02 01:57:01.746 [virtual-77] INFO  generator.GenerateFiles -   [4] Downloading book 1661...
+2026-02-02 01:57:01.746 [virtual-78] INFO  generator.GenerateFiles -   [5] Downloading book 2701...
+2026-02-02 01:57:01.746 [virtual-88] INFO  generator.GenerateFiles -   [15] Downloading book 1399...
+2026-02-02 01:57:01.746 [virtual-84] INFO  generator.GenerateFiles -   [11] Downloading book 1399...
+2026-02-02 01:57:01.746 [virtual-89] INFO  generator.GenerateFiles -   [16] Downloading book 1661...
+2026-02-02 01:57:01.747 [virtual-92] INFO  generator.GenerateFiles -   [19] Downloading book 1399...
+2026-02-02 01:57:01.746 [virtual-79] INFO  generator.GenerateFiles -   [6] Downloading book 2600...
+2026-02-02 01:57:01.746 [virtual-86] INFO  generator.GenerateFiles -   [13] Downloading book 2701...
+2026-02-02 01:57:01.747 [virtual-91] INFO  generator.GenerateFiles -   [18] Downloading book 2600...
+2026-02-02 01:57:03.695 [virtual-85] INFO  generator.GenerateFiles - ✓ Downloaded book 1661 (579 KB)
+2026-02-02 01:57:03.812 [virtual-81] INFO  generator.GenerateFiles - ✓ Downloaded book 1661 (579 KB)
+2026-02-02 01:57:03.822 [virtual-82] INFO  generator.GenerateFiles - ✓ Downloaded book 2701 (1211 KB)
+2026-02-02 01:57:03.862 [virtual-89] INFO  generator.GenerateFiles - ✓ Downloaded book 1661 (579 KB)
+2026-02-02 01:57:03.985 [virtual-78] INFO  generator.GenerateFiles - ✓ Downloaded book 2701 (1211 KB)
+2026-02-02 01:57:04.354 [virtual-92] INFO  generator.GenerateFiles - ✓ Downloaded book 1399 (1957 KB)
+2026-02-02 01:57:04.450 [virtual-77] INFO  generator.GenerateFiles - ✓ Downloaded book 1661 (579 KB)
+2026-02-02 01:57:04.739 [virtual-93] INFO  generator.GenerateFiles - ✓ Downloaded book 1661 (579 KB)
+2026-02-02 01:57:05.645 [virtual-90] INFO  generator.GenerateFiles - ✓ Downloaded book 2701 (1211 KB)
+2026-02-02 01:57:06.007 [virtual-86] INFO  generator.GenerateFiles - ✓ Downloaded book 2701 (1211 KB)
+2026-02-02 01:57:06.154 [virtual-83] INFO  generator.GenerateFiles - ✓ Downloaded book 2600 (3216 KB)
+2026-02-02 01:57:06.224 [virtual-88] INFO  generator.GenerateFiles - ✓ Downloaded book 1399 (1957 KB)
+2026-02-02 01:57:06.562 [virtual-74] INFO  generator.GenerateFiles - ✓ Downloaded book 2701 (1211 KB)
+2026-02-02 01:57:06.599 [virtual-76] INFO  generator.GenerateFiles - ✓ Downloaded book 1399 (1957 KB)
+2026-02-02 01:57:06.679 [virtual-84] INFO  generator.GenerateFiles - ✓ Downloaded book 1399 (1957 KB)
+2026-02-02 01:57:06.918 [virtual-79] INFO  generator.GenerateFiles - ✓ Downloaded book 2600 (3216 KB)
+2026-02-02 01:57:06.937 [virtual-75] INFO  generator.GenerateFiles - ✓ Downloaded book 2600 (3216 KB)
+2026-02-02 01:57:07.915 [virtual-91] INFO  generator.GenerateFiles - ✓ Downloaded book 2600 (3216 KB)
+2026-02-02 01:57:07.915 [virtual-87] INFO  generator.GenerateFiles - ✓ Downloaded book 2600 (3216 KB)
+2026-02-02 01:57:08.418 [virtual-80] INFO  generator.GenerateFiles - ✓ Downloaded book 1399 (1957 KB)
+2026-02-02 01:57:08.428 [main] INFO  generator.GenerateFiles -   Successfully generated all 20 files
+2026-02-02 01:57:14.983 [main] INFO  menu.MenuController - Reindexing from documents
+2026-02-02 01:57:17.932 [main] INFO  menu.MenuController - Reindex completed
+2026-02-02 01:57:25.947 [main] INFO  menu.MenuController - Listing directory documents
+2026-02-02 01:58:21.307 [main] INFO  core.BooleanSearchEngine - Index saved to serialization.json (format: json, docs: 20, terms: 37208)
+2026-02-02 01:58:21.307 [main] INFO  menu.MenuController - Index was saved into serialization.json.json%n
+2026-02-02 01:58:24.552 [main] INFO  main.Main - ================================================================================
+2026-02-02 01:58:24.553 [main] INFO  main.Main - APPLICATION FINISHED at 2026-02-02T01:58:24.553051753
+2026-02-02 01:58:24.553 [main] INFO  main.Main - ================================================================================

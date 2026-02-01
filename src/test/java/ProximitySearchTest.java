@@ -15,7 +15,14 @@ class ProximitySearchTest {
     void setUp() throws IOException {
         var engine = new BooleanSearchEngine();
         engine.indexDocuments(DIRECTORY_PATH);
-        search = new ProximitySearch(engine.getPositionalIndex(), engine.getBiwordIndex(), engine);
+        search = new ProximitySearch(engine.getPositionalIndex(), engine.getBiwordIndex());
+    }
+
+    @Test
+    void testSearchProximityBiword() {
+        final String phrase = "the quick brown fox jumps";
+
+//        var result = search.searchProximityBiword(phrase, 2);
     }
 
     @Test

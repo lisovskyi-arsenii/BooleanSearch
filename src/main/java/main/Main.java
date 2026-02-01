@@ -34,7 +34,7 @@ public class Main {
             printMenu();
             try {
                 OptionalInt choice = customScanner.parseInt();
-                if (choice.isEmpty()) {
+                if (choice.isEmpty() || choice.getAsInt() < 0) {
                     System.out.println("Invalid input");
                     continue;
                 }

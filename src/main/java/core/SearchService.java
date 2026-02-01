@@ -25,8 +25,8 @@ public class SearchService {
         BiwordIndex biwordIndex = engine.getBiwordIndex();
         PositionalIndex positionalIndex = engine.getPositionalIndex();
 
-        this.phraseSearch = new PhraseSearch(positionalIndex, biwordIndex, engine);
-        this.proximitySearch = new ProximitySearch(positionalIndex, biwordIndex, engine);
+        this.phraseSearch = new PhraseSearch(positionalIndex, biwordIndex);
+        this.proximitySearch = new ProximitySearch(positionalIndex, biwordIndex);
     }
 
 

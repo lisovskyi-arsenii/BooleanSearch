@@ -102,7 +102,7 @@ public final class GenerateFiles {
 
                 Future<Void> future = executor.submit(() -> {
                     try {
-                        Thread.sleep(index * 2000L);
+//                        Thread.sleep(index * 2000L);
                         LOGGER.info("  [{}] Downloading book {}...", index + 1, bookID);
 
                         String text = downloadBook(bookID);
@@ -132,6 +132,7 @@ public final class GenerateFiles {
                     future.get();
                     successCount++;
                 } catch (InterruptedException | ExecutionException e) {
+                    Thread.currentThread().interrupt();
                     failureCount++;
                     LOGGER.error("Task failed: {}", e.getCause().getMessage());
                 }

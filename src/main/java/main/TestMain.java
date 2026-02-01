@@ -1,9 +1,10 @@
 package main;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class TestMain {
     static void main() {
-        int mask = 0xFF;
-        int a = -1233 & mask;
-        System.out.println(a);
+
     }
 }

@@ -16,7 +16,7 @@ class PhraseSearchTest {
     void setUp() throws IOException {
         var engine = new BooleanSearchEngine();
         engine.indexDocuments(DIRECTORY_PATH);
-        search = new PhraseSearch(engine.getPositionalIndex(), engine.getBiwordIndex(), engine);
+        search = new PhraseSearch(engine.getPositionalIndex(), engine.getBiwordIndex());
     }
 
     @Test

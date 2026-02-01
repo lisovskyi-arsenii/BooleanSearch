@@ -21,6 +21,10 @@ public class DocumentRegistry {
         });
     }
 
+    public Set<Integer> getAllDocumentIds() {
+        return Collections.unmodifiableSet(idToFilename.keySet());
+    }
+
     public List<String> getDocumentNames(Set<Integer> docIDs) {
         return docIDs.stream()
                 .map(idToFilename::get)
