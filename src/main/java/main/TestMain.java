@@ -32,8 +32,7 @@ public class TestMain {
 //            System.out.println("NO RESULT");
 //        }
 
-        String phrase = "Steering north-eastward from the Crozetts, we fell in with vast meadows\n" +
-                "of brit, the minute, yellow substance";
+        String phrase = "Steering north-eastward from the Crozetts, we fell in with vast meadows";
         var result = phraseSearch.searchPhrasePositional(phrase);
         if (result.isEmpty()) {
             System.out.println("No phrase found");
