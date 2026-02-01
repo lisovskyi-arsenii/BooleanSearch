@@ -32,7 +32,14 @@ public class TestMain {
 //            System.out.println("NO RESULT");
 //        }
 
-        var result = phraseSearch.searchPhrasePositional("book one");
+        String phrase = "Steering north-eastward from the Crozetts, we fell in with vast meadows\n" +
+                "of brit, the minute, yellow substance";
+        var result = phraseSearch.searchPhrasePositional(phrase);
+        if (result.isEmpty()) {
+            System.out.println("No phrase found");
+            return;
+        }
+
         System.out.println(result.get());
 //        System.out.println(result);
 

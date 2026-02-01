@@ -33,22 +33,16 @@ public class PhraseSearch {
             return Optional.empty();
         }
 
-        System.out.println(Arrays.toString(tokens));
-
         Set<Integer> result = null;
-
         for (int i = 0; i < tokens.length - 1; i++) {
             if (tokens[i].isBlank() || tokens[i + 1].isBlank()) {
                 continue;
             }
 
-            final String biword = tokens[i] + " "  + tokens[i + 1];
-
-            var temp = biwordIndex.getBiword(tokens[i], tokens[i + 1]);
-            System.out.println("Temp: " + temp);
+            final String biword = tokens[i] + " " + tokens[i + 1];
             var tempResult = searchEngine.search(biword, SearchStructureType.BIWORD);
             if (tempResult.isEmpty()) {
-                log.debug("Phrase " + phrase + " not found");
+                log.debug("Phrase {} not found", phrase);
                 return Optional.empty();
             }
 
@@ -57,26 +51,29 @@ public class PhraseSearch {
             } else {
                 result = new HashSet<>(Sets.intersection(result, tempResult.get()));
                 if (result.isEmpty()) {
-                    log.debug("Phrase " + phrase + " not found");
+                    log.debug("Phrase {} not found", phrase);
                     return Optional.empty();
                 }
             }
         }
 
-        System.out.println(Arrays.toString(tokens));
-
         return Optional.ofNullable(result);
     }
 
     public Optional<Set<Integer>> searchPhrasePositional(String phrase) {
-        if (phrase == null) {
-            log.warn("Phrase parameter is null");
+        if (phrase == null || phrase.isBlank()) {
+            log.warn("Phrase parameter is null or blank");
+            return Optional.empty();
+        }
+
+        String[] terms = phrase.split("\\s+");
+
+        if (terms.length < 2) {
             return Optional.empty();
         }
 
         Set<Integer> result = new HashSet<>();
 
-        String[] terms = phrase.split("\\s+");
         var firstTermData = positionalIndex.getPositions(terms[0]);
         if (firstTermData.isEmpty()) {
             return Optional.empty();
