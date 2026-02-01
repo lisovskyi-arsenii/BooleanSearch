@@ -68,14 +68,47 @@ public class PhraseSearch {
         return Optional.ofNullable(result);
     }
 
-    public Optional<Set<Integer>> searchPhrasePositional(List<String> terms) {
-        if (terms == null || terms.isEmpty()) {
+    public Optional<Set<Integer>> searchPhrasePositional(String phrase) {
+        if (phrase == null) {
+            log.warn("Phrase parameter is null");
             return Optional.empty();
         }
 
         Set<Integer> result = new HashSet<>();
 
+        String[] terms = phrase.split("\\s+");
+        var firstTermData = positionalIndex.getPositions(terms[0]);
+        if (firstTermData.isEmpty()) {
+            return Optional.empty();
+        }
 
-        return Optional.empty();
+        for (var entry : firstTermData.get().entrySet()) {
+            int currentDocId = entry.getKey();
+
+            for (var position : entry.getValue()) {
+                if (isCorrectPlace(terms, currentDocId, position)) {
+                    result.add(currentDocId);
+                    break;
+                }
+            }
+        }
+
+        return result.isEmpty() ? Optional.empty() : Optional.of(result);
+    }
+
+    private boolean isCorrectPlace(String[] terms, int currentDocId, int startPosition) {
+        for (int i = 1; i < terms.length; i++) {
+            String currentTerm = terms[i];
+
+            int expectedPosition = startPosition + i;
+
+            var termPositions = positionalIndex.getPositionsInDocument(currentTerm, currentDocId);
+
+            if (termPositions.isEmpty() || !termPositions.get().contains(expectedPosition)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

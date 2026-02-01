@@ -23,17 +23,18 @@ public class TestMain {
         var biwordIndex = searchEngine.getBiwordIndex();
         var phraseSearch = new PhraseSearch(positionalIndex, biwordIndex, searchEngine);
 
-        var result = phraseSearch.searchPhraseBiword("book with great ending");
-        if (result.isPresent()) {
-//            System.out.printf("RESULT: %s%n", result.get());
-            var documentNames = searchEngine.getDocumentNames(result.get());
-            System.out.println(documentNames);
-        } else {
-            System.out.println("NO RESULT");
-        }
+//        var result = phraseSearch.searchPhraseBiword("book with great ending");
+//        if (result.isPresent()) {
+////            System.out.printf("RESULT: %s%n", result.get());
+//            var documentNames = searchEngine.getDocumentNames(result.get());
+//            System.out.println(documentNames);
+//        } else {
+//            System.out.println("NO RESULT");
+//        }
 
-
-
+        var result = phraseSearch.searchPhrasePositional("book one");
+        System.out.println(result.get());
+//        System.out.println(result);
 
     }
     /**
