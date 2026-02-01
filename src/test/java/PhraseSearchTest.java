@@ -2,6 +2,7 @@ import core.BooleanSearchEngine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import query.PhraseSearch;
+import tokenization.Tokenizer;
 
 import java.io.IOException;
 
@@ -19,8 +20,32 @@ class PhraseSearchTest {
     }
 
     @Test
-    void testSearch() {
-        var result = search.searchPhraseBiword("common with");
+    void testSearchBiword() {
+        String phrase = "common with";
+        var result = search.searchPhraseBiword(Tokenizer.tokenize(phrase));
+        assert(result.isPresent());
+    }
+
+    @Test
+    void testSearchPositional() {
+        String phrase =
+        """
+        But though, to landsmen in general, the native inhabitants of the seas
+        have ever been regarded with emotions unspeakably unsocial and
+        repelling; though we know the sea to be an everlasting terra incognita,
+        so that Columbus sailed over numberless unknown worlds to discover his
+        one superficial western one; though, by vast odds, the most terrific of
+        all mortal disasters have immemorially and indiscriminately befallen
+        tens and hundreds of thousands of those who have gone upon the waters;
+        though but a moment’s consideration will teach, that however baby man
+        may brag of his science and skill, and however much, in a flattering
+        future, that science and skill may augment; yet for ever and for ever,
+        to the crack of doom, the sea will insult and murder him, and pulverize
+        the stateliest, stiffest frigate he can make; nevertheless, by the
+        continual repetition of these very impressions, man has lost that sense
+        of the full awfulness of the sea which aboriginally belongs to it.
+        """;
+        var result = search.searchPhrasePositional(Tokenizer.tokenize(phrase));
         assert(result.isPresent());
     }
 }

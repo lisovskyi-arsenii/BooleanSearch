@@ -21,28 +21,27 @@ public class PhraseSearch {
         this.biwordIndex = biwordIndex;
     }
 
-    public Optional<Set<Integer>> searchPhraseBiword(String phrase) {
-        if (phrase == null || phrase.isBlank()) {
+    public Optional<Set<Integer>> searchPhraseBiword(List<String> terms) {
+        if (terms == null || terms.isEmpty()) {
+            log.warn("Terms in searchPhraseBiword is null or empty");
             return Optional.empty();
         }
 
-        String[] tokens = phrase.split("\\s+");
-
-        if (tokens.length < 2) {
-            log.debug("Phrase '{}' has less than 2 tokens, cannot form biwords", phrase);
+        if (terms.size() < 2) {
+            log.debug("Phrase '{}' has less than 2 tokens, cannot form biwords", terms);
             return Optional.empty();
         }
 
         Set<Integer> result = null;
-        for (int i = 0; i < tokens.length - 1; i++) {
-            if (tokens[i].isBlank() || tokens[i + 1].isBlank()) {
+        for (int i = 0; i < terms.size() - 1; i++) {
+            if (terms.get(i).isBlank() || terms.get(i + 1).isBlank()) {
                 continue;
             }
 
-            final String biword = tokens[i] + " " + tokens[i + 1];
+            final String biword = terms.get(i) + " " + terms.get(i + 1);
             var tempResult = searchEngine.search(biword, SearchStructureType.BIWORD);
             if (tempResult.isEmpty()) {
-                log.debug("Phrase {} not found", phrase);
+                log.debug("Phrase {} not found", terms);
                 return Optional.empty();
             }
 
@@ -51,7 +50,7 @@ public class PhraseSearch {
             } else {
                 result = new HashSet<>(Sets.intersection(result, tempResult.get()));
                 if (result.isEmpty()) {
-                    log.debug("Phrase {} not found", phrase);
+                    log.debug("Phrase {} not found", terms);
                     return Optional.empty();
                 }
             }
@@ -60,21 +59,19 @@ public class PhraseSearch {
         return Optional.ofNullable(result);
     }
 
-    public Optional<Set<Integer>> searchPhrasePositional(String phrase) {
-        if (phrase == null || phrase.isBlank()) {
-            log.warn("Phrase parameter is null or blank");
+    public Optional<Set<Integer>> searchPhrasePositional(List<String> terms) {
+        if (terms == null || terms.isEmpty()) {
+            log.warn("Terms in searchPhrasePositional is null or empty");
             return Optional.empty();
         }
 
-        String[] terms = phrase.split("\\s+");
-
-        if (terms.length < 2) {
+        if (terms.size() < 2) {
             return Optional.empty();
         }
 
         Set<Integer> result = new HashSet<>();
 
-        var firstTermData = positionalIndex.getPositions(terms[0]);
+        var firstTermData = positionalIndex.getPositions(terms.getFirst());
         if (firstTermData.isEmpty()) {
             return Optional.empty();
         }
@@ -93,12 +90,11 @@ public class PhraseSearch {
         return result.isEmpty() ? Optional.empty() : Optional.of(result);
     }
 
-    private boolean isCorrectPlace(String[] terms, int currentDocId, int startPosition) {
-        for (int i = 1; i < terms.length; i++) {
-            String currentTerm = terms[i];
+    private boolean isCorrectPlace(List<String> terms, int currentDocId, int startPosition) {
+        for (int i = 1; i < terms.size(); i++) {
+            String currentTerm = terms.get(i);
 
             int expectedPosition = startPosition + i;
-
             var termPositions = positionalIndex.getPositionsInDocument(currentTerm, currentDocId);
 
             if (termPositions.isEmpty() || !termPositions.get().contains(expectedPosition)) {

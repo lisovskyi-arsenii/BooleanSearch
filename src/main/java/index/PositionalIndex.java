@@ -87,19 +87,19 @@ public class PositionalIndex implements Dictionary {
         index.clear();
     }
 
-    public void print() {
-        if (index.isEmpty()) {
-            System.out.println("Positional index is empty");
-            return;
-        }
-
-        System.out.println("=== POSITIONAL INDEX ===");
-        index.forEach((term, docMap) -> {
-            System.out.println(term + ":");
-            docMap.forEach((docId, positions) ->
-                    System.out.printf("  Doc %d: %s%n", docId, positions));
-        });
-        System.out.println("========================");
-    }
+//    public void print() {
+//        if (index.isEmpty()) {
+//            System.out.println("Positional index is empty");
+//            return;
+//        }
+//
+//        System.out.println("=== POSITIONAL INDEX ===");
+//        index.forEach((term, docMap) -> {
+//            System.out.println(term + ":");
+//            docMap.forEach((docId, positions) ->
+//                    System.out.printf("  Doc %d: %s%n", docId, positions));
+//        });
+//        System.out.println("========================");
+//    }
 
 }
