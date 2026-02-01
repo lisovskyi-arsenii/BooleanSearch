@@ -642,6 +642,8 @@ public class MenuController {
         System.out.println("Index has been cleared successfully");
     }
 
+    // TODO: delete this method
+    @Deprecated
     public void printIndex() {
         int termCount = searchEngine.getIndex().size();
 
@@ -656,7 +658,7 @@ public class MenuController {
         System.out.printf("Total terms: %,d%n", termCount);
         System.out.println("-".repeat(80));
 
-        searchEngine.printIndex();
+//        searchEngine.printIndex();
     }
 
     public void compareBenchmarks() {

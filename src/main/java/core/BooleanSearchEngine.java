@@ -357,13 +357,13 @@ public class BooleanSearchEngine implements SearchEngine {
     }
 
     // utility
-    public void printIndex() {
-        index.print();
-    }
-
-    public void printPositionalIndex() {
-        positionalIndex.print();
-    }
+//    public void printIndex() {
+//        index.print();
+//    }
+//
+//    public void printPositionalIndex() {
+//        positionalIndex.print();
+//    }
 
     public void printBiwordIndex() {
         biwordIndex.print();
