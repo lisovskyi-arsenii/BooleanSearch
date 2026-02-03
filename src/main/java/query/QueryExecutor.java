@@ -56,41 +56,4 @@ public class QueryExecutor<T extends Dictionary> {
         docsWithTerm.ifPresent(finalResult::removeAll);
         return finalResult.isEmpty() ? Optional.empty() : Optional.of(finalResult);
     }
-
-    public Optional<Set<Integer>> andSearchMultiple(String... terms) {
-        if (terms == null || terms.length == 0) {
-            return Optional.empty();
-        }
-
-        Optional<Set<Integer>> result = search(terms[0]);
-
-        for (int i = 1; i < terms.length; i++) {
-            if (result.isEmpty()) break;
-
-            Optional<Set<Integer>> nextResult = search(terms[i]);
-            if (nextResult.isEmpty()) {
-                return Optional.empty();
-            }
-
-            Set<Integer> intersection = new HashSet<>(result.get());
-            intersection.retainAll(nextResult.get());
-            result = intersection.isEmpty() ? Optional.empty() : Optional.of(intersection);
-        }
-
-        return result;
-    }
-
-    public Optional<Set<Integer>> orSearchMultiple(String... terms) {
-        if (terms == null || terms.length == 0) {
-            return Optional.empty();
-        }
-
-        Set<Integer> result = new HashSet<>();
-
-        for (String term : terms) {
-            search(term).ifPresent(result::addAll);
-        }
-
-        return result.isEmpty() ? Optional.empty() : Optional.of(result);
-    }
 }

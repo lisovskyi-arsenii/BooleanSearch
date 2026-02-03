@@ -337,12 +337,12 @@ public class BooleanSearchEngine implements SearchEngine {
     }
 
     public Set<Integer> getAllDocumentIDs() {
-        Set<Integer> ids = ConcurrentHashMap.newKeySet();
-        for (var entry : index.entrySet()) {
-            ids.addAll(entry.getValue());
+        lock.readLock().lock();
+        try {
+            return registry.getAllDocumentIds();
+        } finally {
+            lock.readLock().unlock();
         }
-
-        return ids;
     }
 
     public List<String> getDocumentNames(Set<Integer> docIDs) {
@@ -357,13 +357,13 @@ public class BooleanSearchEngine implements SearchEngine {
     }
 
     // utility
-    public void printIndex() {
-        index.print();
-    }
-
-    public void printPositionalIndex() {
-        positionalIndex.print();
-    }
+//    public void printIndex() {
+//        index.print();
+//    }
+//
+//    public void printPositionalIndex() {
+//        positionalIndex.print();
+//    }
 
     public void printBiwordIndex() {
         biwordIndex.print();

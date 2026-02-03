@@ -5,24 +5,25 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 @Slf4j
 @Getter
 public class PositionalIndex implements Dictionary {
     // term -> {docId, position}
-    private final Map<String, Map<Integer, List<Integer>>> index = new ConcurrentHashMap<>();
+    private final Map<String, ConcurrentSkipListMap<Integer, List<Integer>>> index = new ConcurrentHashMap<>();
 
     public void addTerm(String term, int docId, int position) {
-        index.computeIfAbsent(term, _ -> new ConcurrentHashMap<>())
-                .computeIfAbsent(docId, _ -> new ArrayList<>())
+        index.computeIfAbsent(term, _ -> new ConcurrentSkipListMap<>())
+                .computeIfAbsent(docId, _ -> Collections.synchronizedList(new ArrayList<>()))
                 .add(position);
     }
 
-    public void loadIndex(Map<String, Map<Integer, List<Integer>>> newIndex) {
+    public void loadIndex(Map<String, ConcurrentSkipListMap<Integer, List<Integer>>> newIndex) {
         index.clear();
 
         newIndex.forEach((term, positionData) -> {
-            var docMap = new ConcurrentHashMap<Integer, List<Integer>>();
+            var docMap = new ConcurrentSkipListMap<Integer, List<Integer>>();
 
             positionData.forEach((docId, positions) -> {
                 docMap.put(docId, new ArrayList<>(positions));
@@ -32,10 +33,10 @@ public class PositionalIndex implements Dictionary {
         });
     }
 
-    public Optional<Map<Integer, List<Integer>>> getPositions(String term) {
+    public Optional<ConcurrentSkipListMap<Integer, List<Integer>>> getPositions(String term) {
         var map = index.get(term);
         return map != null && !map.isEmpty()
-                ? Optional.of(new HashMap<>(map))
+                ? Optional.of(map)
                 : Optional.empty();
     }
 
@@ -47,7 +48,7 @@ public class PositionalIndex implements Dictionary {
 
         List<Integer> positions = map.get(docId);
         return positions != null && !positions.isEmpty()
-                ? Optional.of(new ArrayList<>(positions))
+                ? Optional.of(positions)
                 : Optional.empty();
     }
 
@@ -84,21 +85,6 @@ public class PositionalIndex implements Dictionary {
     @Override
     public void clear() {
         index.clear();
-    }
-
-    public void print() {
-        if (index.isEmpty()) {
-            System.out.println("Positional index is empty");
-            return;
-        }
-
-        System.out.println("=== POSITIONAL INDEX ===");
-        index.forEach((term, docMap) -> {
-            System.out.println(term + ":");
-            docMap.forEach((docId, positions) ->
-                    System.out.printf("  Doc %d: %s%n", docId, positions));
-        });
-        System.out.println("========================");
     }
 
 }

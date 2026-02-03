@@ -1,7 +1,5 @@
 package query;
 
-import com.google.common.collect.Sets;
-import core.BooleanSearchEngine;
 import enums.SearchStructureType;
 import index.BiwordIndex;
 import index.PositionalIndex;
@@ -9,113 +7,121 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
+import static util.ValidationFunctions.validateStringAndCheckForEmpty;
+
 @Slf4j
 public class PhraseSearch {
-    private final BooleanSearchEngine searchEngine;
     private final PositionalIndex positionalIndex;
     private final BiwordIndex biwordIndex;
 
-    public PhraseSearch(PositionalIndex positionalIndex, BiwordIndex biwordIndex, BooleanSearchEngine searchEngine) {
-        this.searchEngine = searchEngine;
+    public PhraseSearch(PositionalIndex positionalIndex, BiwordIndex biwordIndex) {
         this.positionalIndex = positionalIndex;
         this.biwordIndex = biwordIndex;
     }
 
-    public Optional<Set<Integer>> searchPhraseBiword(String phrase) {
-        if (phrase == null || phrase.isBlank()) {
+
+    public Optional<Set<Integer>> search(String phrase, SearchStructureType type) {
+        var termsOpt = validateStringAndCheckForEmpty(phrase);
+        if (termsOpt.isEmpty()) {
+            log.debug("Terms were not found");
             return Optional.empty();
         }
 
-        String[] tokens = phrase.split("\\s+");
-
-        if (tokens.length < 2) {
-            log.debug("Phrase '{}' has less than 2 tokens, cannot form biwords", phrase);
+        List<String> terms = termsOpt.get();
+        if (terms.size() < 2) {
+            log.debug("Phrase '{}' has less than 2 tokens, cannot do phrase search", terms);
             return Optional.empty();
         }
 
-        System.out.println(Arrays.toString(tokens));
-
-        Set<Integer> result = null;
-
-        for (int i = 0; i < tokens.length - 1; i++) {
-            if (tokens[i].isBlank() || tokens[i + 1].isBlank()) {
-                continue;
+        return switch (type) {
+            case BIWORD -> searchPhraseBiwordInternal(terms);
+            case POSITIONAL -> searchPhrasePositionalInternal(terms);
+            default -> {
+                log.error("Invalid search structure type: {}", type);
+                throw new IllegalArgumentException("Invalid type of search structure: " + type);
             }
+        };
+    }
 
-            var tempResult = searchEngine.andSearch(tokens[i], tokens[i + 1], SearchStructureType.BIWORD);
-            if (tempResult.isEmpty()) {
-                log.debug("Phrase " + phrase + " not found");
+
+    private Optional<Set<Integer>> searchPhraseBiwordInternal(List<String> terms) {
+        String firstTerm = terms.get(0);
+        String secondTerm = terms.get(1);
+
+        if (firstTerm.isBlank() || secondTerm.isBlank()) {
+            log.warn("Found blank term in first biword");
+            return Optional.empty();
+        }
+
+        var firstBiwordResult = biwordIndex.getBiword(firstTerm, secondTerm);
+        if (firstBiwordResult.isEmpty()) {
+            log.debug("First biword '{}' '{}' not found", firstTerm, secondTerm);
+            return Optional.empty();
+        }
+
+        Set<Integer> result = new HashSet<>(firstBiwordResult.get());
+
+        for (int i = 1; i < terms.size() - 1; i++) {
+            String term1 = terms.get(i);
+            String term2 = terms.get(i + 1);
+
+            if (term1.isBlank() || term2.isBlank()) {
+                log.warn("Found blank term in phrase at position {}", i);
                 return Optional.empty();
             }
 
-            if (result == null) {
-                result = new HashSet<>(tempResult.get());
-            } else {
-                result = new HashSet<>(Sets.intersection(result, tempResult.get()));
-                if (result.isEmpty()) {
-                    log.debug("Phrase " + phrase + " not found");
-                    return Optional.empty();
-                }
+            var tempResult = biwordIndex.getBiword(term1, term2);
+
+            if (tempResult.isEmpty()) {
+                log.debug("Phrase {} not found", terms);
+                return Optional.empty();
+            }
+
+            result.retainAll(tempResult.get());
+
+            if (result.isEmpty()) {
+                log.debug("Phrase {} not found", terms);
+                return Optional.empty();
             }
         }
 
-        System.out.println(Arrays.toString(tokens));
-
-        return Optional.ofNullable(result);
+        return Optional.of(result);
     }
 
-    public Optional<Set<Integer>> searchPhrasePositional(List<String> terms) {
-        if (terms == null || terms.isEmpty()) {
-            log.error("PhraseSearch: terms is null or empty");
+    private Optional<Set<Integer>> searchPhrasePositionalInternal(List<String> terms) {
+        Set<Integer> result = new HashSet<>();
+
+        var firstTermData = positionalIndex.getPositions(terms.getFirst());
+        if (firstTermData.isEmpty()) {
             return Optional.empty();
         }
 
-        if (terms.size() == 1) {
-            return positionalIndex.getDocuments(terms.getFirst());
-        }
+        for (var entry : firstTermData.get().entrySet()) {
+            int currentDocId = entry.getKey();
 
-        Optional<Map<Integer, List<Integer>>> firstTermPositions = positionalIndex.getPositions(terms.getFirst());
-
-        if (firstTermPositions.isEmpty()) {
-            log.error("PhraseSearch: firstTermPositions is empty");
-            return Optional.empty();
-        }
-
-        Set<Integer> resultDocs = new HashSet<>();
-
-        for (var entry : firstTermPositions.get().entrySet()) {
-            int docId = entry.getKey();
-            List<Integer> positions = entry.getValue();
-
-            for (int startPosition : positions) {
-                if (isPhraseAtPosition(terms, docId, startPosition)) {
-                    resultDocs.add(docId);
+            for (var position : entry.getValue()) {
+                if (isCorrectPosition(terms, currentDocId, position)) {
+                    result.add(currentDocId);
                     break;
                 }
             }
         }
 
-        if (resultDocs.isEmpty()) {
-            log.debug("Phrase '{}' not found", String.join(" ", terms));
-            return Optional.empty();
-        }
-
-        log.debug("Phrase '{}' found in {} documents",
-                String.join(" ", terms), resultDocs.size());
-        return Optional.of(resultDocs);
+        return result.isEmpty() ? Optional.empty() : Optional.of(result);
     }
 
-    private boolean isPhraseAtPosition(List<String> terms, int docId, int startPosition) {
+    private boolean isCorrectPosition(List<String> terms, int currentDocId, int startPosition) {
         for (int i = 1; i < terms.size(); i++) {
-            String term = terms.get(i);
-            int expectedPosition = startPosition + i;
+            String currentTerm = terms.get(i);
 
-            Optional<List<Integer>> termPositions = positionalIndex.getPositionsInDocument(term, docId);
+            int expectedPosition = startPosition + i;
+            var termPositions = positionalIndex.getPositionsInDocument(currentTerm, currentDocId);
 
             if (termPositions.isEmpty() || !termPositions.get().contains(expectedPosition)) {
                 return false;
             }
         }
+
         return true;
     }
 }
