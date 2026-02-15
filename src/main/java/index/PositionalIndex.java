@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 @Getter
 public class PositionalIndex implements Dictionary {
     // term -> {docId, position}
-    private final Map<String, ConcurrentSkipListMap<Integer, List<Integer>>> index = new ConcurrentHashMap<>();
+    private final Map<String, Map<Integer, List<Integer>>> index = new ConcurrentHashMap<>();
 
     public void addTerm(String term, int docId, int position) {
         index.computeIfAbsent(term, _ -> new ConcurrentSkipListMap<>())
@@ -19,21 +19,12 @@ public class PositionalIndex implements Dictionary {
                 .add(position);
     }
 
-    public void loadIndex(Map<String, ConcurrentSkipListMap<Integer, List<Integer>>> newIndex) {
-        index.clear();
-
-        newIndex.forEach((term, positionData) -> {
-            var docMap = new ConcurrentSkipListMap<Integer, List<Integer>>();
-
-            positionData.forEach((docId, positions) -> {
-                docMap.put(docId, new ArrayList<>(positions));
-            });
-
-            index.put(term, docMap);
-        });
+    public void loadIndex(Map<String, Map<Integer, List<Integer>>> newIndex) {
+        this.index.clear();
+        this.index.putAll(newIndex);
     }
 
-    public Optional<ConcurrentSkipListMap<Integer, List<Integer>>> getPositions(String term) {
+    public Optional<Map<Integer, List<Integer>>> getPositions(String term) {
         var map = index.get(term);
         return map != null && !map.isEmpty()
                 ? Optional.of(map)

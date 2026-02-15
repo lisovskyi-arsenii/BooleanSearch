@@ -11,13 +11,13 @@ public class BinarySerializer implements IndexSerializer {
     private static final int BUFFER_SIZE = 65536;
 
     @Override
-    public void serialize(IndexData indexData, String filepath) throws IOException {
+    public void serialize(IndexData allIndexesData, String filepath) throws IOException {
         try (ObjectOutputStream oos = new ObjectOutputStream(
                 new GZIPOutputStream(
                         new BufferedOutputStream(
                                 new FileOutputStream(filepath), BUFFER_SIZE)))) {
 
-            oos.writeObject(indexData);
+            oos.writeObject(allIndexesData);
         }
     }
 

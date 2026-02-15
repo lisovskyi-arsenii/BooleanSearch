@@ -9,17 +9,6 @@ import java.util.List;
 @Slf4j
 public abstract class AbstractBTree implements WildcardIndex {
     @Override
-    public abstract void buildFromDictionary(Dictionary dictionary);
-    @Override
-    public abstract void addTerm(String term) throws IllegalArgumentException;
-    @Override
-    public abstract boolean contains(String term);
-    @Override
-    public abstract int size();
-    @Override
-    public abstract void clear();
-
-    @Override
     public List<String> search(String wildcard) throws IllegalArgumentException {
         if (wildcard == null || wildcard.isBlank()) {
             return new ArrayList<>();
@@ -32,9 +21,7 @@ public abstract class AbstractBTree implements WildcardIndex {
         }
 
         int starIndex = wildcard.indexOf("*");
-
         validateWildcardStarIndex(starIndex, wildcard);
-
         return searchWildcard(wildcard, starIndex);
     }
 

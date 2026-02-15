@@ -64,7 +64,6 @@ public class ReverseBTree extends AbstractBTree {
         terms.clear();
     }
 
-
     public List<String> findBySuffix(String suffix) {
         if (suffix == null || suffix.isBlank()) {
             return new ArrayList<>(terms);

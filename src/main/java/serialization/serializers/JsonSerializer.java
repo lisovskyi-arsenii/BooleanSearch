@@ -18,15 +18,14 @@ public class JsonSerializer implements IndexSerializer {
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .enable(SerializationFeature.INDENT_OUTPUT)
             .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
-    private static final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {
-    };
+    private static final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
 
     @Override
     public void serialize(IndexData indexData, String filepath) throws IOException {
         Path path = Path.of(filepath);
 
         Map<String, Object> data = new HashMap<>();
-        data.put("index", indexData.index());
+        data.put("index", indexData.positionalIndex());
 
         Map<String, Object> registryMap = new LinkedHashMap<>();
         registryMap.put("filenameToID", indexData.registryData().filenameToId());
@@ -48,13 +47,23 @@ public class JsonSerializer implements IndexSerializer {
 
         var data = MAPPER.readValue(jsonString, typeRef);
 
-        var indexRaw = (Map<String, Object>) data.get("index");
-        Map<String, Set<Integer>> index = new HashMap<>();
+        var positionalIndexRaw = (Map<String, Object>) data.get("index");
+        Map<String, Map<Integer, List<Integer>>> positionalIndex = new HashMap<>();
 
-        if (indexRaw != null) {
-            for (var entry : indexRaw.entrySet()) {
-                var docIDs = (List<Integer>) entry.getValue();
-                index.put(entry.getKey(), new HashSet<>(docIDs));
+        if (positionalIndexRaw != null) {
+            for (var entry : positionalIndexRaw.entrySet()) {
+                String term = entry.getKey();
+                var docPositionsRaw = (Map<String, Object>) entry.getValue();
+
+                Map<Integer, List<Integer>> docPositions = new HashMap<>();
+
+                for (var docEntry : docPositionsRaw.entrySet()) {
+                    int docId = Integer.parseInt(docEntry.getKey());
+                    List<Integer> positions = (List<Integer>) docEntry.getValue();
+                    docPositions.put(docId, new ArrayList<>(positions));
+                }
+
+                positionalIndex.put(term, docPositions);
             }
         }
 
@@ -81,7 +90,7 @@ public class JsonSerializer implements IndexSerializer {
                 nextDocID
         );
 
-        return new IndexData(index, registryData);
+        return new IndexData(positionalIndex, registryData);
     }
 
     @Override

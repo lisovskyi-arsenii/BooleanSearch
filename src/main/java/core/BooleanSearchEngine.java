@@ -33,27 +33,20 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Slf4j
+@Getter
 public class BooleanSearchEngine implements SearchEngine {
-    @Getter
     private final InvertedIndex index;
-    @Getter
     private final BiwordIndex biwordIndex;
-    @Getter
     private final PositionalIndex positionalIndex;
-    @Getter
     private final TermDocumentMatrix matrix;
-    @Getter
     private BTree bTree;
-    @Getter
     private ReverseBTree reverseBTree;
-    @Getter
     private ThreeGramIndex threeGramIndex;
     private final DocumentRegistry registry;
     private final Map<SearchStructureType, QueryExecutor<?>> executors;
     private final Map<SearchStructureType, Dictionary> dictionaries;
     private final AtomicLong totalCollectionSize = new AtomicLong(0);
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
-    @Getter
     private SerializationComparison serializationComparison;
 
 
@@ -137,19 +130,24 @@ public class BooleanSearchEngine implements SearchEngine {
     }
 
     public void buildWildcardIndexes() {
-        log.info("Building wildcard indexes");
+        lock.writeLock().lock();
+        try {
+            log.info("Building wildcard indexes");
 
-        bTree = new BTree();
-        bTree.buildFromDictionary(index);
+            bTree = new BTree();
+            bTree.buildFromDictionary(index);
 
-        reverseBTree = new ReverseBTree();
-        reverseBTree.buildFromDictionary(index);
+            reverseBTree = new ReverseBTree();
+            reverseBTree.buildFromDictionary(index);
 
-        threeGramIndex = new ThreeGramIndex();
-        threeGramIndex.buildFromDictionary(index);
+            threeGramIndex = new ThreeGramIndex();
+            threeGramIndex.buildFromDictionary(index);
 
-        log.info("Wildcard indexes built: BTree={}, ReverseBTree={}, ThreeGram={}",
-                bTree.size(), reverseBTree.size(), threeGramIndex.size());
+            log.info("Wildcard indexes built: BTree={}, ReverseBTree={}, ThreeGram={}",
+                    bTree.size(), reverseBTree.size(), threeGramIndex.size());
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     // searching
@@ -180,31 +178,37 @@ public class BooleanSearchEngine implements SearchEngine {
         return getExecutor(type).notSearch(term, docIDs);
     }
 
-    public Optional<Set<Integer>> wildcardSearch(String wildcardQuery) {
+    public Optional<Map<String, Set<Integer>>> wildcardSearch(String wildcardQuery) {
         Objects.requireNonNull(wildcardQuery, "Wildcard query must be not null");
 
-        if (bTree == null || reverseBTree == null || threeGramIndex == null) {
-            throw new IllegalStateException(
-                    "Wildcard indexes not built. Call buildWildcardIndexes() first."
-            );
+        lock.readLock().lock();
+        try {
+            if (bTree == null || reverseBTree == null || threeGramIndex == null) {
+                throw new IllegalStateException(
+                        "Wildcard indexes not built. Call buildWildcardIndexes() first."
+                );
+            }
+            List<String> matchingTerms;
+
+            if (wildcardQuery.endsWith("*") && wildcardQuery.indexOf("*") == wildcardQuery.length() - 1) {
+                matchingTerms = bTree.search(wildcardQuery);
+            } else if (wildcardQuery.startsWith("*") && wildcardQuery.indexOf("*") == 0) {
+                matchingTerms = reverseBTree.search(wildcardQuery);
+            } else {
+                matchingTerms = threeGramIndex.search(wildcardQuery);
+            }
+
+            Map<String, Set<Integer>> termToDocs = new TreeMap<>();
+            for (String term : matchingTerms) {
+                Optional<Set<Integer>> docs = index.getDocuments(term);
+                docs.ifPresent(documents -> termToDocs.put(term, documents));
+            }
+
+            return termToDocs.isEmpty() ? Optional.empty() : Optional.of(termToDocs);
+
+        } finally {
+            lock.readLock().unlock();
         }
-
-        List<String> matchingTerms;
-
-        if (wildcardQuery.endsWith("*") && wildcardQuery.indexOf("*") == wildcardQuery.length() - 1) {
-            matchingTerms = bTree.search(wildcardQuery);
-        } else if (wildcardQuery.startsWith("*") && wildcardQuery.indexOf("*") == 0) {
-            matchingTerms = reverseBTree.search(wildcardQuery);
-        } else {
-            matchingTerms = threeGramIndex.search(wildcardQuery);
-        }
-
-        Set<Integer> results = new HashSet<>();
-        for (String term: matchingTerms) {
-            index.getDocuments(term).ifPresent(results::addAll);
-        }
-
-        return results.isEmpty() ? Optional.empty() : Optional.of(results);
     }
 
     // serialization/deserialization
@@ -222,7 +226,7 @@ public class BooleanSearchEngine implements SearchEngine {
         lock.readLock().lock();
         try {
             IndexData indexData = new IndexData(
-                    new ConcurrentHashMap<>(index.getIndex()),
+                    new ConcurrentHashMap<>(positionalIndex.getIndex()),
                     registry.exportData()
             );
 
@@ -252,8 +256,7 @@ public class BooleanSearchEngine implements SearchEngine {
             IndexSerializer serializer = getSerializer(typeFormat.get());
             IndexData indexData = serializer.deserialize(filepath);
 
-            index.loadIndex(indexData.index());
-
+            positionalIndex.loadIndex(indexData.positionalIndex());
             registry.loadData(indexData.registryData());
 
             long totalSize = indexData.registryData().filenameToSize().values()
@@ -261,6 +264,9 @@ public class BooleanSearchEngine implements SearchEngine {
                     .mapToLong(Long::longValue)
                     .sum();
             totalCollectionSize.set(totalSize);
+
+            log.info("Rebuilding derived indexes from PositionalIndex");
+            rebuildDerivedIndexes();
 
             log.info("Index loaded from {} (format: {}, docs: {}, terms: {}, next ID: {})",
                     filepath, format, registry.documentCount(), index.size(),
@@ -276,9 +282,7 @@ public class BooleanSearchEngine implements SearchEngine {
         System.out.println("\nMeasuring serialization formats...");
 
         FormatMetrics binaryMetrics = measureFormat(tempFilename, "ser", "binary");
-
         FormatMetrics textMetrics = measureFormat(tempFilename, "txt", "text");
-
         FormatMetrics jsonMetrics = measureFormat(tempFilename, "json", "json");
 
         deleteIfExists(tempFilename + ".ser");
@@ -288,6 +292,52 @@ public class BooleanSearchEngine implements SearchEngine {
         System.out.println("Measurement completed!\n");
 
         return new SerializationComparison(binaryMetrics, textMetrics, jsonMetrics);
+    }
+
+    private void rebuildDerivedIndexes() {
+        index.clear();
+        biwordIndex.clear();
+        matrix.clear();
+
+        // index + matrix
+        for (var termEntry : positionalIndex.getIndex().entrySet()) {
+            String term = termEntry.getKey();
+            Set<Integer> docIds = termEntry.getValue().keySet();
+
+            for (int docId : docIds) {
+                index.addTerm(term, docId);
+                matrix.addTerm(term, docId);
+            }
+        }
+        log.info("INDEX rebuilt: {} terms", index.size());
+
+        // biword
+        Set<Integer> allDocIds = registry.getAllDocumentIds();
+        for (int docId : allDocIds) {
+            TreeMap<Integer, String> positionToTerm = new TreeMap<>();
+
+            for (var termEntry : positionalIndex.getIndex().entrySet()) {
+                Map<Integer, List<Integer>> docPositions = termEntry.getValue();
+                List<Integer> positions = docPositions.get(docId);
+
+                if (positions != null) {
+                    for (int pos : positions) {
+                        positionToTerm.put(pos, termEntry.getKey());
+                    }
+                }
+            }
+
+            positionToTerm.forEach((pos, term) -> {
+                Integer nextPos = positionToTerm.higherKey(pos);
+                if (nextPos != null && nextPos == pos + 1) {
+                    String nextTerm = positionToTerm.get(nextPos);
+                    biwordIndex.addWord(term, nextTerm, docId);
+                }
+            });
+        }
+
+        log.info("Rebuilt: InvertedIndex={}, BiwordIndex={}, Matrix={}",
+                index.size(), biwordIndex.size(), matrix.size());
     }
 
     private FormatMetrics measureFormat(String filename, String extension, String format) throws IOException {
@@ -323,7 +373,6 @@ public class BooleanSearchEngine implements SearchEngine {
         }
     }
 
-
     private IndexSerializer getSerializer(FileSerializationFormat format) {
         return switch (format) {
             case JSON -> new JsonSerializer();
@@ -337,18 +386,26 @@ public class BooleanSearchEngine implements SearchEngine {
     public DictionaryStats getStatistics(SearchStructureType type) {
         lock.readLock().lock();
         try {
-            Dictionary dictionary = dictionaries.get(type);
-
-            return new DictionaryStats(
-                    registry.documentCount(),
-                    dictionary.size(),
-                    dictionary.getTotalTermOccurrences(),
-                    totalCollectionSize.get()
-            );
+            return switch (type) {
+                case INDEX -> statsFor(index);
+                case MATRIX -> statsFor(matrix);
+                case BIWORD -> statsFor(biwordIndex);
+                case POSITIONAL -> statsFor(positionalIndex);
+            };
         } finally {
             lock.readLock().unlock();
         }
     }
+
+    private DictionaryStats statsFor(Dictionary dict) {
+        return new DictionaryStats(
+                registry.documentCount(),
+                dict.size(),
+                dict.getTotalTermOccurrences(),
+                totalCollectionSize.get()
+        );
+    }
+
 
 
     // getters
@@ -390,15 +447,30 @@ public class BooleanSearchEngine implements SearchEngine {
             positionalIndex.clear();
             registry.clear();
             totalCollectionSize.set(0);
+
+            if (bTree != null) {
+                bTree.clear();
+            }
+            if (reverseBTree != null) {
+                reverseBTree.clear();
+            }
+            if (threeGramIndex != null) {
+                threeGramIndex.clear();
+            }
+
+            log.info("All indexes cleared");
         } finally {
             lock.writeLock().unlock();
         }
     }
 
-    private QueryExecutor<?> getExecutor(SearchStructureType type) {
-        if (type == null) {
-            throw new IllegalArgumentException("Type is null");
+    private QueryExecutor<?> getExecutor(SearchStructureType type) throws IllegalArgumentException {
+        Objects.requireNonNull(type, "Type must not be null");
+
+        QueryExecutor<?> executor = executors.get(type);
+        if (executor == null) {
+            throw new IllegalArgumentException("Unknown search structure type: " + type);
         }
-        return executors.get(type);
+        return executor;
     }
 }

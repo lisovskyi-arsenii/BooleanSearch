@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 @Slf4j
 @Getter
 public class ThreeGramIndex implements WildcardIndex {
-    private final int N = 3;
+    private static final int N = 3;
 
     private final Map<String, Set<String>> index = new HashMap<>();
     private final Set<String> terms = new HashSet<>();

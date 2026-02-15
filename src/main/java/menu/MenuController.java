@@ -7,7 +7,8 @@ import enums.*;
 import generator.GenerateFiles;
 import lombok.extern.slf4j.Slf4j;
 import query.ProximitySearch;
-import query.QueryParser;
+import query.ReversePolishNotation;
+import query.ShuntingYard;
 import scanner.CustomScanner;
 import serialization.SerializationComparison;
 import statistics.DictionaryStats;
@@ -102,6 +103,10 @@ public class MenuController {
         log.info("Indexing from {}", directoryPath);
         searchEngine.indexDocuments(directoryPath);
         log.info("Indexing completed");
+
+        System.out.println("\nBuilding wildcard indexes...");
+        searchEngine.buildWildcardIndexes();
+        System.out.println("Wildcard indexes ready");
     }
 
     public void reindexDocuments() throws IOException {
@@ -114,6 +119,10 @@ public class MenuController {
         log.info("Reindexing from {}", directoryPath);
         searchEngine.indexDocuments(directoryPath);
         log.info("Reindex completed");
+
+        System.out.println("\nRebuilding wildcard indexes...");
+        searchEngine.buildWildcardIndexes();
+        System.out.println("Wildcard indexes ready");
     }
 
     public void generateFiles() throws IllegalArgumentException {
@@ -242,19 +251,27 @@ public class MenuController {
     }
 
     private Optional<SearchStructureType> getType() {
-        System.out.println("Enter structure where to search for (index/matrix): ");
-        String structure = scanner.parseString();
+        String[] valid = {"index", "matrix", "biword", "positional"};
+        System.out.printf("Enter structure (%s): ", String.join("/", valid));
 
-        if (structure.isEmpty()) {
-            System.out.println("Structure cannot be empty");
-            return Optional.empty();
-        }
+        String input = scanner.parseString().toLowerCase();
 
-        return SearchStructureType.fromString(structure);
+        return switch (input) {
+            case "index" -> Optional.of(SearchStructureType.INDEX);
+            case "matrix" -> Optional.of(SearchStructureType.MATRIX);
+            case "biword" -> Optional.of(SearchStructureType.BIWORD);
+            case "positional", "position" -> Optional.of(SearchStructureType.POSITIONAL);
+            default -> {
+                System.out.println("Invalid: " + input + ". Use: " + String.join(", ", valid));
+                yield Optional.empty();
+            }
+        };
     }
+
 
     public void simpleSearch() {
         showMessage();
+
         System.out.println("Enter term to search for: ");
         String term = scanner.parseString();
 
@@ -289,6 +306,7 @@ public class MenuController {
 
     public void andSearch() {
         showMessage();
+
         var typeOptional = getType();
         if (typeOptional.isEmpty()) {
             System.out.println("Type cannot be empty");
@@ -305,6 +323,7 @@ public class MenuController {
 
     public void orSearch() {
         showMessage();
+
         var typeOptional = getType();
         if (typeOptional.isEmpty()) {
             System.out.println("Type cannot be empty");
@@ -321,6 +340,7 @@ public class MenuController {
 
     public void notSearch() {
         showMessage();
+
         var typeOptional = getType();
         if (typeOptional.isEmpty()) {
             System.out.println("Type cannot be empty");
@@ -340,8 +360,13 @@ public class MenuController {
 
     public void advancedSearch() {
         showMessage();
+
         System.out.println("Enter complex boolean query:");
-        System.out.println("Examples: 'java AND python', 'rust OR golang', 'data AND NOT test'");
+        System.out.println("Examples:");
+        System.out.println("  'java AND python'");
+        System.out.println("  'rust OR golang'");
+        System.out.println("  'data AND NOT test'");
+        System.out.println("  '(java OR python) AND database'");
         System.out.print("> ");
 
         String query = scanner.parseString();
@@ -358,22 +383,23 @@ public class MenuController {
 
         var type = typeOptional.get();
 
-        var result = QueryParser.parseAndExecute(query, searchEngine, type);
+        try {
+            String rpn = ShuntingYard.toRPN(query);
 
-        result.ifPresentOrElse(
-                ids -> {
-                    List<String> filenames = searchService.getDocumentNames(ids);
+            Set<Integer> ids = ReversePolishNotation.evaluate(rpn, searchEngine, type);
 
-                    if (filenames.isEmpty()) {
-                        System.out.println("No files found");
-                        return;
-                    }
+            if (ids.isEmpty()) {
+                System.out.printf("No documents found for query: %s%n", query);
+                return;
+            }
 
-                    System.out.printf("%nQuery '%s' found in %d file(s):%n", query, filenames.size());
-                    filenames.stream().parallel().forEach(filename -> System.out.println("  • " + filename));
-                },
-                () -> System.out.printf("No documents found for query: %s%n", query)
-        );
+            List<String> filenames= searchService.getDocumentNames(ids);
+            System.out.printf("%nQuery '%s' found in %d file(s):%n", query, filenames.size());
+            filenames.forEach(filename -> System.out.println("  - " + filename));
+        } catch (IllegalArgumentException e) {
+            System.err.println("Invalid query: " + e.getMessage());
+            log.error("Query parsing failed: {}", query, e);
+        }
     }
 
     private void performSearch(
@@ -527,9 +553,64 @@ public class MenuController {
 
     public void wildcardSearch() {
         showMessage();
-        System.out.println("Input wildcard: ");
-        String wildcard = scanner.parseString();
+        System.out.println("\n=== Wildcard Search ===");
+        System.out.println("Supported patterns:");
+        System.out.println("  mon*     - words starting with 'mon' (using BTree)");
+        System.out.println("  *ing     - words ending with 'ing' (using ReverseBTree)");
+        System.out.println("  m*n      - middle wildcard (using 3-gram)");
+        System.out.println("  te*ti*   - multiple wildcards (using 3-gram)");
+        System.out.println();
 
+        System.out.print("Enter wildcard query: ");
+        String query = scanner.parseString().toLowerCase();
+        if (query.isBlank()) {
+            System.out.println("Query cannot be empty");
+            return;
+        }
+
+        try {
+            long startTime = System.nanoTime();
+
+            var resultOpt = searchEngine.wildcardSearch(query);
+
+            long endTime = System.nanoTime();
+            double timeMs = (endTime - startTime) / 1_000_000.0;
+
+            if (resultOpt.isEmpty() || resultOpt.get().isEmpty()) {
+                System.out.println("\nNo documents found");
+                return;
+            }
+
+            Map<String, Set<Integer>> results = resultOpt.get();
+
+            for (var entry : results.entrySet()) {
+                String term = entry.getKey();
+                Set<Integer> docIds = entry.getValue();
+
+                System.out.printf("%-15s → %d documents: %s%n",
+                        term,
+                        docIds.size(),
+                        docIds.stream()
+                                .sorted()
+                                .map(String::valueOf)
+                                .limit(100)
+                                .collect(Collectors.joining(", "))
+                                + (docIds.size() > 5 ? "..." : ""));
+            }
+
+            int totalDocs = results.values().stream()
+                    .flatMap(Set::stream)
+                    .collect(Collectors.toSet()).size();
+
+            System.out.printf("%n📊 Terms found: %d | Unique docs: %d (from %d)%n",
+                    results.size(), totalDocs, searchEngine.getRegistry().documentCount());
+            System.out.printf("%nSearch time: %.2f ms%n", timeMs);
+        } catch (IllegalStateException e) {
+            System.err.println("\nError: " + e.getMessage());
+            System.out.println("Please index documents first and build wildcard indexes.");
+        } catch (Exception e) {
+            System.err.println("\nError: " + e.getMessage());
+        }
     }
 
     public void viewStatistics() {
@@ -543,8 +624,9 @@ public class MenuController {
         var type = typeOptional.get();
         DictionaryStats stats = searchEngine.getStatistics(type);
 
+        String title = typeOptional.get().name() + " STATISTICS";
         System.out.println("\n" + "=".repeat(80));
-        System.out.println("INDEX STATISTICS");
+        System.out.println(title.toUpperCase());
         System.out.println("=".repeat(80));
         System.out.printf("  Documents indexed:      %,d%n", stats.documentsCount());
         System.out.printf("  Unique terms:           %,d%n", stats.uniqueTerms());
@@ -558,6 +640,21 @@ public class MenuController {
                     (double) stats.totalWords() / stats.documentsCount());
             System.out.printf("  Average doc size:       %,d bytes%n",
                     stats.collectionSizeInBytes() / stats.documentsCount());
+        }
+
+        System.out.println("\n" + "-".repeat(80));
+        System.out.println("WILDCARD INDEXES");
+        System.out.println("-".repeat(80));
+
+        if (searchEngine.getBTree() != null) {
+            System.out.printf("  BTree size:             %,d terms%n", searchEngine.getBTree().size());
+            System.out.printf("  ReverseBTree size:      %,d terms%n", searchEngine.getReverseBTree().size());
+            System.out.printf("  ThreeGramIndex size:    %,d terms%n", searchEngine.getThreeGramIndex().size());
+            System.out.printf("  ThreeGram n-grams:      %,d%n",
+                    searchEngine.getThreeGramIndex().getIndex().size());
+        } else {
+            System.out.println("  Wildcard indexes not built");
+            System.out.println("  Use option 1 (Index documents) to build them");
         }
 
         System.out.println("=".repeat(80));
@@ -647,6 +744,11 @@ public class MenuController {
                         String fullPath = filepath + "." + extension;
                         System.out.printf("Index was loaded from %s%n", fullPath);
                         log.info("Index was loaded from {}%n", fullPath);
+
+                        System.out.println("\nRebuilding wildcard indexes");
+                        searchEngine.buildWildcardIndexes();
+                        System.out.println("Wildcard indexes ready");
+
                     } catch (IOException e) {
                         System.err.printf("Failed to load index: %s%n", filepath);
                         log.error("Failed to load index", e);

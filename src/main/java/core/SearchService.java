@@ -61,5 +61,4 @@ public class SearchService {
     public List<String> getDocumentNames(Set<Integer> docIds) {
         return engine.getDocumentNames(docIds);
     }
-
 }
