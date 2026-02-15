@@ -1,11 +1,12 @@
 package query;
 
-import core.BooleanSearchEngine;
 import index.BiwordIndex;
 import index.PositionalIndex;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j

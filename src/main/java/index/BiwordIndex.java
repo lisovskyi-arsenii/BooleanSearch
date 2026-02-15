@@ -38,6 +38,11 @@ public class BiwordIndex implements Dictionary {
     }
 
     @Override
+    public Set<String> getAllTerms() {
+        return Collections.unmodifiableSet(biwordIndex.keySet());
+    }
+
+    @Override
     public Optional<Set<Integer>> getDocuments(String term) {
         Set<Integer> docs = biwordIndex.get(term);
         return docs != null && !docs.isEmpty()

@@ -5,7 +5,10 @@ import index.BiwordIndex;
 import index.PositionalIndex;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import static util.ValidationFunctions.validateStringAndCheckForEmpty;
 

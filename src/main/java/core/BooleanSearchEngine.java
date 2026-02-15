@@ -3,9 +3,8 @@ package core;
 import document.DocumentRegistry;
 import enums.FileSerializationFormat;
 import enums.SearchStructureType;
-import index.BiwordIndex;
-import index.InvertedIndex;
-import index.PositionalIndex;
+import index.*;
+import index.Dictionary;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import matrix.TermDocumentMatrix;
@@ -43,11 +42,15 @@ public class BooleanSearchEngine implements SearchEngine {
     private final PositionalIndex positionalIndex;
     @Getter
     private final TermDocumentMatrix matrix;
+    @Getter
+    private BTree bTree;
+    @Getter
+    private ReverseBTree reverseBTree;
+    @Getter
+    private ThreeGramIndex threeGramIndex;
     private final DocumentRegistry registry;
-    private final QueryExecutor<InvertedIndex> indexQueryExecutor;
-    private final QueryExecutor<TermDocumentMatrix> matrixQueryExecutor;
-    private final QueryExecutor<BiwordIndex> biwordIndexQueryExecutor;
-    private final QueryExecutor<PositionalIndex> positionalIndexQueryExecutor;
+    private final Map<SearchStructureType, QueryExecutor<?>> executors;
+    private final Map<SearchStructureType, Dictionary> dictionaries;
     private final AtomicLong totalCollectionSize = new AtomicLong(0);
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     @Getter
@@ -60,10 +63,18 @@ public class BooleanSearchEngine implements SearchEngine {
         this.positionalIndex = new PositionalIndex();
         this.matrix = new TermDocumentMatrix();
         this.registry = new DocumentRegistry();
-        this.indexQueryExecutor = new QueryExecutor<>(index);
-        this.matrixQueryExecutor = new QueryExecutor<>(matrix);
-        this.biwordIndexQueryExecutor = new QueryExecutor<>(biwordIndex);
-        this.positionalIndexQueryExecutor = new QueryExecutor<>(positionalIndex);
+        this.executors = Map.of(
+                SearchStructureType.INDEX, new QueryExecutor<>(index),
+                SearchStructureType.MATRIX, new QueryExecutor<>(matrix),
+                SearchStructureType.BIWORD, new QueryExecutor<>(biwordIndex),
+                SearchStructureType.POSITIONAL, new QueryExecutor<>(positionalIndex)
+        );
+        this.dictionaries = Map.of(
+                SearchStructureType.INDEX, index,
+                SearchStructureType.MATRIX, matrix,
+                SearchStructureType.BIWORD, biwordIndex,
+                SearchStructureType.POSITIONAL, positionalIndex
+        );
     }
 
     // indexing
@@ -125,55 +136,76 @@ public class BooleanSearchEngine implements SearchEngine {
         }
     }
 
+    public void buildWildcardIndexes() {
+        log.info("Building wildcard indexes");
+
+        bTree = new BTree();
+        bTree.buildFromDictionary(index);
+
+        reverseBTree = new ReverseBTree();
+        reverseBTree.buildFromDictionary(index);
+
+        threeGramIndex = new ThreeGramIndex();
+        threeGramIndex.buildFromDictionary(index);
+
+        log.info("Wildcard indexes built: BTree={}, ReverseBTree={}, ThreeGram={}",
+                bTree.size(), reverseBTree.size(), threeGramIndex.size());
+    }
 
     // searching
     @Override
     public Optional<Set<Integer>> search(String term, SearchStructureType type) {
         Objects.requireNonNull(term, "Term in search() must not be null");
-        return switch (type) {
-            case INDEX -> indexQueryExecutor.search(term);
-            case MATRIX -> matrixQueryExecutor.search(term);
-            case BIWORD -> biwordIndexQueryExecutor.search(term);
-            case POSITIONAL -> positionalIndexQueryExecutor.search(term);
-        };
+        return getExecutor(type).search(term);
     }
 
     @Override
     public Optional<Set<Integer>> andSearch(String term1, String term2, SearchStructureType type) {
         Objects.requireNonNull(term1, "First term in andSearch() must not be null");
         Objects.requireNonNull(term2, "Second term in andSearch() must not be null");
-        return switch (type) {
-            case INDEX -> indexQueryExecutor.andSearch(term1, term2);
-            case MATRIX -> matrixQueryExecutor.andSearch(term1, term2);
-            case BIWORD -> biwordIndexQueryExecutor.andSearch(term1, term2);
-            case POSITIONAL -> positionalIndexQueryExecutor.andSearch(term1, term2);
-        };
+        return getExecutor(type).andSearch(term1, term2);
     }
 
     @Override
     public Optional<Set<Integer>> orSearch(String term1, String term2, SearchStructureType type) {
         Objects.requireNonNull(term1, "First term in orSearch() must not be null");
         Objects.requireNonNull(term2, "Second term in orSearch() must not be null");
-        return switch (type) {
-            case INDEX -> indexQueryExecutor.orSearch(term1, term2);
-            case MATRIX -> matrixQueryExecutor.orSearch(term1, term2);
-            case BIWORD -> biwordIndexQueryExecutor.orSearch(term1, term2);
-            case POSITIONAL -> positionalIndexQueryExecutor.orSearch(term1, term2);
-        };
+        return getExecutor(type).orSearch(term1, term2);
     }
 
     @Override
     public Optional<Set<Integer>> notSearch(String term, Set<Integer> docIDs, SearchStructureType type) {
         Objects.requireNonNull(term, "First term in notSearch() must not be null");
         Objects.requireNonNull(docIDs, "Second term in notSearch() must not be null");
-        return switch (type) {
-            case INDEX -> indexQueryExecutor.notSearch(term, docIDs);
-            case MATRIX -> matrixQueryExecutor.notSearch(term, docIDs);
-            case BIWORD -> biwordIndexQueryExecutor.notSearch(term, docIDs);
-            case POSITIONAL -> positionalIndexQueryExecutor.notSearch(term, docIDs);
-        };
+        return getExecutor(type).notSearch(term, docIDs);
     }
 
+    public Optional<Set<Integer>> wildcardSearch(String wildcardQuery) {
+        Objects.requireNonNull(wildcardQuery, "Wildcard query must be not null");
+
+        if (bTree == null || reverseBTree == null || threeGramIndex == null) {
+            throw new IllegalStateException(
+                    "Wildcard indexes not built. Call buildWildcardIndexes() first."
+            );
+        }
+
+        List<String> matchingTerms;
+
+        if (wildcardQuery.endsWith("*") && wildcardQuery.indexOf("*") == wildcardQuery.length() - 1) {
+            matchingTerms = bTree.search(wildcardQuery);
+        } else if (wildcardQuery.startsWith("*") && wildcardQuery.indexOf("*") == 0) {
+            matchingTerms = reverseBTree.search(wildcardQuery);
+        } else {
+            matchingTerms = threeGramIndex.search(wildcardQuery);
+        }
+
+        Set<Integer> results = new HashSet<>();
+        for (String term: matchingTerms) {
+            index.getDocuments(term).ifPresent(results::addAll);
+        }
+
+        return results.isEmpty() ? Optional.empty() : Optional.of(results);
+    }
 
     // serialization/deserialization
     @Override
@@ -305,23 +337,12 @@ public class BooleanSearchEngine implements SearchEngine {
     public DictionaryStats getStatistics(SearchStructureType type) {
         lock.readLock().lock();
         try {
-            int uniqueTerms = switch (type) {
-                case INDEX -> index.size();
-                case MATRIX -> matrix.size();
-                case BIWORD -> biwordIndex.size();
-                case POSITIONAL -> positionalIndex.size();
-            };
-            int totalWords = switch (type) {
-                case INDEX -> index.getTotalTermOccurrences();
-                case MATRIX -> matrix.getTotalTermOccurrences();
-                case BIWORD -> biwordIndex.getTotalTermOccurrences();
-                case POSITIONAL -> positionalIndex.getTotalTermOccurrences();
-            };
+            Dictionary dictionary = dictionaries.get(type);
 
             return new DictionaryStats(
                     registry.documentCount(),
-                    uniqueTerms,
-                    totalWords,
+                    dictionary.size(),
+                    dictionary.getTotalTermOccurrences(),
                     totalCollectionSize.get()
             );
         } finally {
@@ -356,15 +377,6 @@ public class BooleanSearchEngine implements SearchEngine {
         }
     }
 
-    // utility
-//    public void printIndex() {
-//        index.print();
-//    }
-//
-//    public void printPositionalIndex() {
-//        positionalIndex.print();
-//    }
-
     public void printBiwordIndex() {
         biwordIndex.print();
     }
@@ -381,5 +393,12 @@ public class BooleanSearchEngine implements SearchEngine {
         } finally {
             lock.writeLock().unlock();
         }
+    }
+
+    private QueryExecutor<?> getExecutor(SearchStructureType type) {
+        if (type == null) {
+            throw new IllegalArgumentException("Type is null");
+        }
+        return executors.get(type);
     }
 }

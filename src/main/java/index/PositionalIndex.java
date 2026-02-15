@@ -64,6 +64,7 @@ public class PositionalIndex implements Dictionary {
     }
 
 
+    @Override
     public Set<String> getAllTerms() {
         return Collections.unmodifiableSet(index.keySet());
     }

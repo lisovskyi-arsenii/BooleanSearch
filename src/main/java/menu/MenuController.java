@@ -7,8 +7,8 @@ import enums.*;
 import generator.GenerateFiles;
 import lombok.extern.slf4j.Slf4j;
 import query.ProximitySearch;
-import scanner.CustomScanner;
 import query.QueryParser;
+import scanner.CustomScanner;
 import serialization.SerializationComparison;
 import statistics.DictionaryStats;
 
@@ -68,6 +68,7 @@ public class MenuController {
             case ADVANCED_SEARCH -> advancedSearch();
             case PHRASE_SEARCH -> phraseSearch();
             case PROXIMITY_SEARCH -> proximitySearch();
+            case WILDCARD_SEARCH -> wildcardSearch();
             case VIEW_STATISTICS -> viewStatistics();
             case SHOW_TOP_TERMS -> showTopTerms();
             case SAVE_INDEX -> saveIndex();
@@ -524,6 +525,12 @@ public class MenuController {
         }
     }
 
+    public void wildcardSearch() {
+        showMessage();
+        System.out.println("Input wildcard: ");
+        String wildcard = scanner.parseString();
+
+    }
 
     public void viewStatistics() {
         showMessage();
