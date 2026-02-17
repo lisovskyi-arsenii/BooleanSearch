@@ -181,7 +181,7 @@ public class SPIMI {
             }
         }
 
-        // counter for bytes in file
+        // counter for bytes in a file
         long currentOffset = 0;
 
         try (DataOutputStream out = new DataOutputStream(
