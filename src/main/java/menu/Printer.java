@@ -61,8 +61,7 @@ public final class Printer {
 
     private static void printInMemoryMenu() {
         printSection("INDEXING & MANAGEMENT", List.of(
-                "Reindex documents (clear + rebuild)",
-                "Build wildcard indexes (BTree, ReverseBTree, 3-gram)"
+                "Reindex documents (clear + rebuild)"
         ));
 
         printSection("SEARCH OPERATIONS - All Available", List.of(

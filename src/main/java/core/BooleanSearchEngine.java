@@ -114,13 +114,21 @@ public class BooleanSearchEngine implements SearchEngine {
 
             List<Path> paths = FileWalker.findFiles(directoryPath);
 
+            Map<Path, Integer> docIds = new LinkedHashMap<>();
+            for (Path file : paths) {
+                long fileSize = Files.size(file);
+                int id = registry.registerDocument(file.getFileName().toString(), fileSize);
+                docIds.put(file, id);
+                totalCollectionSize.addAndGet(fileSize);
+            }
+
             try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-                List<Future<?>> futures = paths.stream()
-                        .<Future<?>>map(path -> executor.submit(() -> {
+                List<Future<?>> futures = docIds.entrySet().stream()
+                        .<Future<?>>map(entry -> executor.submit(() -> {
                             try {
-                                indexFile(path);
+                                indexFile(entry.getKey(), entry.getValue());
                             } catch (IOException e) {
-                                log.error("Error indexing files in path {}", path, e);
+                                log.error("Error indexing files in path {}", entry.getKey(), e);
                             }
                         }))
                         .toList();
@@ -172,20 +180,8 @@ public class BooleanSearchEngine implements SearchEngine {
         }
     }
 
-    private void indexFile(Path path) throws IOException {
-        long size = Files.size(path);
-        String filename = path.getFileName().toString();
+    private void indexFile(Path path, int docId) throws IOException {
         String content = Files.readString(path);
-
-        int docId;
-        lock.writeLock().lock();
-        try {
-            docId = registry.registerDocument(filename, Files.size(path));
-        } finally {
-            lock.writeLock().unlock();
-        }
-        totalCollectionSize.addAndGet(size);
-
         List<String> tokens = Tokenizer.tokenize(content);
 
         for (int position = 0; position < tokens.size(); position++) {

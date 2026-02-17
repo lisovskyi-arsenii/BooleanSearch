@@ -2,8 +2,6 @@ package enums;
 
 import lombok.Getter;
 
-import java.util.Optional;
-
 public enum MenuChoice {
     EXIT("Exit"),
     INDEX_DOCUMENTS("Index documents"),
@@ -34,16 +32,5 @@ public enum MenuChoice {
 
     MenuChoice(String description) {
         this.description = description;
-    }
-
-    public int getCode() {
-        return ordinal();
-    }
-
-    public static Optional<MenuChoice> fromCode(int code) {
-        if (code < 0 || code >= values().length) {
-            return Optional.empty();
-        }
-        return Optional.of(values()[code]);
     }
 }

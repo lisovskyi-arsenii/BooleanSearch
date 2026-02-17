@@ -11,539 +11,369 @@ import util.FileWalker;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.*;
 
 @Slf4j
 public class SPIMI {
-    private static final long MEMORY_THRESHOLD_BYTES = (long) Math.max(
-            512 * 1024 * 1024L,
-            Runtime.getRuntime().maxMemory() * 0.7
-    );
 
-    private static final String TEMP_DIR = "temp_blocks";
-    private static final String POSTINGS_FILE = "postings.dat";
-    private static final String OFFSETS_FILE = "offsets.bin";
-    private static final String REGISTRY_FILE = "registry.dat";
+    // Constants
 
-    private static final int DISK_BUFFER_SIZE = 4 * 1024 * 1024; // 4 MB
-    private static final int CHUNK_SIZE = 10 * 1024 * 1024; // 10 MB
+    private static final long MEMORY_THRESHOLD_SIZE =
+            Math.max(512 * 1024 * 1024L, (long) (Runtime.getRuntime().maxMemory() * 0.7));
+
+    private static final int DISK_BUFFER_SIZE = 4 * 1024 * 1024;
     private static final int THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
 
-    // term -> offset in disk
-    private final Map<String, Long> termOffsets = new ConcurrentHashMap<>();
+    private static final String TEMP_DIR      = "temp_blocks";
+    private static final String POSTINGS_FILE = "postings.dat";
+    private static final String OFFSETS_FILE  = "offsets.bin";
+    private static final String REGISTRY_FILE = "registry.dat";
+
+    // State
+
+    // term → byte offset in postings.dat
+    private final ConcurrentHashMap<String, Long> termOffsets = new ConcurrentHashMap<>();
     private final DocumentRegistry globalRegistry = new DocumentRegistry();
 
-    @Getter private final AtomicInteger blocksCreated = new AtomicInteger(0);
-    @Getter private final AtomicInteger documentsIndexed = new AtomicInteger(0);
-    @Getter private final AtomicLong bytesProcessed = new AtomicLong(0);
+    @Getter private final AtomicInteger blocksCreated    = new AtomicInteger();
+    @Getter private final AtomicInteger documentsIndexed = new AtomicInteger();
+    @Getter private final AtomicLong    bytesProcessed   = new AtomicLong();
 
-    private final ThreadLocal<PositionalIndex> threadLocalBlocks = ThreadLocal.withInitial(PositionalIndex::new);
-    private final ThreadLocal<AtomicLong> threadLocalMemory = ThreadLocal.withInitial(() -> new AtomicLong(0));
-
-    private final ConcurrentHashMap<String, AtomicInteger> filePositionsCounters = new ConcurrentHashMap<>();
+    // API
 
     public void buildIndex(String directoryPath) throws IOException {
-        long startTime = System.currentTimeMillis();
-        log.info("Starting SPIMI indexing from: {}", directoryPath);
-        log.info("Memory limit: {} MB", MEMORY_THRESHOLD_BYTES / 1024 / 1024);
+        long start = System.currentTimeMillis();
+        log.info("SPIMI: starting indexing from {}", directoryPath);
+        log.info("Memory threshold: {} MB", MEMORY_THRESHOLD_SIZE / 1024 / 1024);
 
         Files.createDirectories(Paths.get(TEMP_DIR));
+
         List<Path> files = FileWalker.findFiles(directoryPath);
+        if (files.isEmpty()) throw new IOException("No files found in: " + directoryPath);
+        log.info("Found {} files", files.size());
 
-        if (files.isEmpty()) {
-            throw new IOException("No files found in directory: " + directoryPath);
-        }
+        List<String> blockFiles = buildBlocks(files);
+        mergeBlocks(blockFiles);
+        persistRegistry();
+        persistOffsets();
+        deleteTempDir();
 
-        log.info("Found {} files to index", files.size());
-
-        List<String> blockFiles = createBlocks(files);
-        mergeBlocksWithOffsets(blockFiles);
-
-        saveRegistry();
-        saveOffsetsMap();
-        cleanupTempFiles();
-
-        long endTime = System.currentTimeMillis();
+        long elapsed      = System.currentTimeMillis() - start;
         long postingsSize = Files.size(Paths.get(POSTINGS_FILE));
-        long offsetsSize = Files.size(Paths.get(OFFSETS_FILE));
+        long offsetsSize  = Files.size(Paths.get(OFFSETS_FILE));
         long registrySize = Files.size(Paths.get(REGISTRY_FILE));
 
-        IndexMetadata metadata = new IndexMetadata(
+        IndexMetadata meta = new IndexMetadata(
                 termOffsets.size(),
                 globalRegistry.documentCount(),
                 bytesProcessed.get(),
                 postingsSize + offsetsSize + registrySize,
                 blocksCreated.get(),
-                endTime - startTime,
+                elapsed,
                 POSTINGS_FILE
         );
-
-        log.info("SPIMI indexing finished in {} ms", endTime - startTime);
-        printStatistics(metadata);
+        log.info("SPIMI completed in {} ms", elapsed);
+        printStats(meta);
     }
 
-    private List<String> createBlocks(List<Path> files) throws IOException {
-        List<String> createdBlocks = Collections.synchronizedList(new ArrayList<>());
+    private List<String> buildBlocks(List<Path> files) throws IOException {
+        Queue<String> createdBlocks = new ConcurrentLinkedQueue<>();
 
-        BlockingQueue<FileChunk> workQueue = new LinkedBlockingQueue<>();
-
+        Map<Path, Integer> docIds = new LinkedHashMap<>();
         for (Path file : files) {
-            long fileSize = Files.size(file);
-            String filename = file.getFileName().toString();
-
-            int docId = globalRegistry.registerDocument(filename, fileSize);
-            filePositionsCounters.put(filename, new AtomicInteger(0));
-
-            if (fileSize > CHUNK_SIZE) {
-                long numChunks = (fileSize + CHUNK_SIZE - 1) / CHUNK_SIZE;
-
-                for (long i = 0; i < numChunks; i++) {
-                    long startOffset = i * CHUNK_SIZE;
-                    long endOffset = Math.min((i + 1) * CHUNK_SIZE, fileSize);
-
-                    workQueue.add(new FileChunk(file, docId, filename, startOffset, endOffset, i));
-                }
-            } else {
-                workQueue.add(new FileChunk(file, docId, filename, 0, fileSize, 0));
-            }
+            int id = globalRegistry.registerDocument(
+                    file.getFileName().toString(), Files.size(file));
+            docIds.put(file, id);
         }
 
-        int totalChunks = workQueue.size();
-        log.info("Total chunks to process: {}", totalChunks);
-
-        try (var executor = Executors.newWorkStealingPool(THREAD_POOL_SIZE)) {
+        try (var pool = Executors.newFixedThreadPool(THREAD_POOL_SIZE)) {
             List<Future<?>> futures = new ArrayList<>();
 
-            for (var file : files) {
-                Future<?> future = executor.submit(() -> {
+            for (var entry : docIds.entrySet()) {
+                Path file  = entry.getKey();
+                int  docId = entry.getValue();
+
+                futures.add(pool.submit(() -> {
                     try {
-                        while (true) {
-                            var chunk = workQueue.poll(100, TimeUnit.MILLISECONDS);
-
-                            if (chunk == null) {
-                                if (workQueue.isEmpty()) {
-                                    break;
-                                }
-                                continue;
-                            }
-                            processFile(chunk, createdBlocks);
-                        }
-                    } catch (Exception e) {
-                        log.error("Failed to process file {}", file, e);
+                        indexFile(file, docId, createdBlocks);
+                    } catch (IOException e) {
+                        log.error("Error processing file {}", file, e);
                     }
-                });
-                futures.add(future);
+                }));
             }
 
-            for (var future : futures) {
-                try {
-                    future.get();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new IOException("Indexing interrupted", e);
-                } catch (ExecutionException e) {
-                    throw new IOException("Processing of files failed", e);
-                }
-            }
-
-            executor.shutdown();
+            awaitAll(futures);
         }
 
-        log.info("Block creation completed");
-        return createdBlocks;
+        log.info("Blocks created: {}", createdBlocks.size());
+        return new ArrayList<>(createdBlocks);
     }
 
-    private void processFile(FileChunk chunk, List<String> createdBlocks) throws IOException {
-        var localBlock = threadLocalBlocks.get();
-        var localMemory = threadLocalMemory.get();
+    private void indexFile(Path file, int docId, Queue<String> out) throws IOException {
+        PositionalIndex block  = new PositionalIndex();
+        long            memUse = 0;
+        int             pos    = 0;
 
-        long bytesRead = 0;
-        long targetBytes = chunk.endOffset - chunk.startOffset;
+        long localThreshold = MEMORY_THRESHOLD_SIZE / THREAD_POOL_SIZE;
 
-        try (BufferedReader reader = createReader(chunk.file)) {
-            if (chunk.startOffset > 0) {
-                reader.skip(chunk.startOffset);
-            }
-
+        try (BufferedReader reader = openReader(file)) {
             String line;
-            while ((line = reader.readLine()) != null && bytesRead < targetBytes) {
+            while ((line = reader.readLine()) != null) {
                 if (line.isBlank()) continue;
 
-                bytesRead += line.getBytes(StandardCharsets.UTF_8).length + 1;
-
-                var tokens = Tokenizer.tokenize(line);
-
-                for (var token : tokens) {
+                for (String token : Tokenizer.tokenize(line)) {
                     if (token.isBlank()) continue;
 
-                    int position = filePositionsCounters.get(chunk.filename).getAndIncrement();
+                    block.addTerm(token, docId, pos++);
+                    memUse += estimateTokenMemory(token);
 
-                    localBlock.addTerm(token, chunk.docId, position);
-
-                    long memoryUsage = estimatedMemory(token);
-                    localMemory.addAndGet(memoryUsage);
-
-                    if (localMemory.get() >= MEMORY_THRESHOLD_BYTES / THREAD_POOL_SIZE) {
-                        flushBlock(localBlock, createdBlocks);
-
-                        localBlock = new PositionalIndex();
-                        threadLocalBlocks.set(localBlock);
-                        localMemory.set(0);
+                    if (memUse >= localThreshold) {
+                        out.add(saveBlock(block));
+                        block  = new PositionalIndex();
+                        memUse = 0;
                     }
+                }
+
+                bytesProcessed.addAndGet(
+                        line.getBytes(StandardCharsets.UTF_8).length + 1L
+                );
+            }
+        }
+
+        if (block.size() > 0) {
+            out.add(saveBlock(block));
+        }
+
+        int count = documentsIndexed.incrementAndGet();
+        if (count % 100 == 0) {
+            log.info("Processed {} files ({} MB)",
+                    count, bytesProcessed.get() / (1024 * 1024));
+        }
+    }
+
+    private void mergeBlocks(List<String> blockFiles) throws IOException {
+        if (blockFiles.isEmpty()) { log.warn("No blocks to merge"); return; }
+        log.info("K-way merge of {} blocks...", blockFiles.size());
+
+        PriorityQueue<BlockReader> heap =
+                new PriorityQueue<>(Comparator.comparing(BlockReader::peekTerm));
+
+        for (String f : blockFiles) {
+            BlockReader reader = new BlockReader(f);
+            if (reader.hasNext()) heap.add(reader); else reader.close();
+        }
+
+        long offset = 0;
+
+        try (DataOutputStream out = bufferedOutput(POSTINGS_FILE)) {
+            while (!heap.isEmpty()) {
+                String term = heap.peek().peekTerm();
+
+                Map<Integer, List<Integer>> merged = new TreeMap<>();
+                while (!heap.isEmpty() && heap.peek().peekTerm().equals(term)) {
+                    BlockReader r = heap.poll();
+                    r.nextPostings().forEach((docId, positions) ->
+                            merged.computeIfAbsent(docId, k -> new ArrayList<>())
+                                    .addAll(positions));
+                    if (r.hasNext()) heap.add(r); else r.close();
+                }
+
+                termOffsets.put(term, offset);
+                offset += writeTerm(out, term, merged);
+
+                if (termOffsets.size() % 10_000 == 0) {
+                    log.info("Merged {} terms (offset: {} bytes)",
+                            termOffsets.size(), offset);
                 }
             }
         }
 
-        if (localBlock.size() > 0) {
-            flushBlock(localBlock, createdBlocks);
-            threadLocalBlocks.set(new PositionalIndex());
-            localMemory.set(0);
-        }
-
-        bytesProcessed.addAndGet(targetBytes);
-
-        if (chunk.chunkIndex == 0 || chunk.endOffset == Files.size(chunk.file)) {
-            int count = documentsIndexed.incrementAndGet();
-            if (count % 100 == 0) {
-                log.info("Processed {} files... ({} MB processed)",
-                        count, bytesProcessed.get() / (1024 * 1024));
-            }
-        }
+        log.info("Merge complete: {} unique terms", termOffsets.size());
     }
 
-    private void flushBlock(PositionalIndex block, List<String> createdBlocks) throws IOException {
-        synchronized (createdBlocks) {
-            String blockFile = saveBlockToDisk(block);
-            createdBlocks.add(blockFile);
-        }
-    }
+    private String saveBlock(PositionalIndex index) throws IOException {
+        int    id   = blocksCreated.getAndIncrement();
+        String path = TEMP_DIR + "/block_" + id + ".bin";
 
-    private long estimatedMemory(String term) {
-        return 40 + 24 + (term.length() * 2L) + 32 + 40 + 16;
-    }
-
-    private String saveBlockToDisk(PositionalIndex index) throws IOException {
-        int blockId = blocksCreated.getAndIncrement();
-        String filename = TEMP_DIR + "/block_" + blockId + ".bin";
-
-        Map<String, Map<Integer, List<Integer>>> indexMap = index.getIndex();
-        List<String> sortedTerms = new ArrayList<>(indexMap.keySet());
-        Collections.sort(sortedTerms);
+        Map<String, Map<Integer, List<Integer>>> idx = index.getIndex();
+        List<String> terms = new ArrayList<>(idx.keySet());
+        Collections.sort(terms);
 
         try (DataOutputStream out = new DataOutputStream(
-                new BufferedOutputStream(new FileOutputStream(filename), 65536))) {
-
-            for (String term : sortedTerms) {
-                Map<Integer, List<Integer>> postings = indexMap.get(term);
-                out.writeUTF(term);
-                out.writeInt(postings.size());
-
-                for (var docEntry : postings.entrySet()) {
-                    out.writeInt(docEntry.getKey());
-                    List<Integer> positions = docEntry.getValue();
-                    out.writeInt(positions.size());
-                    for (int pos : positions) {
-                        out.writeInt(pos);
-                    }
-                }
+                new BufferedOutputStream(new FileOutputStream(path), 65_536))) {
+            for (String term : terms) {
+                writeTermEntry(out, term, idx.get(term));
             }
         }
 
-        log.info("Block {} saved: {} terms", blockId, sortedTerms.size());
-        return filename;
+        log.debug("Block {} saved: {} terms", id, terms.size());
+        return path;
     }
 
-    private record FileChunk (
-            Path file,
-            int docId,
-            String filename,
-            long startOffset,
-            long endOffset,
-            long chunkIndex
-    ) {}
-
-    private void mergeBlocksWithOffsets(List<String> blockFiles) throws IOException {
-        log.info("Starting K-way merge of {} blocks...", blockFiles.size());
-
-        if (blockFiles.isEmpty()) {
-            log.warn("No block files found");
-            return;
+    private int writeTerm(DataOutputStream out,
+                          String term,
+                          Map<Integer, List<Integer>> postings) throws IOException {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        try (DataOutputStream tmp = new DataOutputStream(buf)) {
+            writeTermEntry(tmp, term, postings);
         }
-
-        PriorityQueue<BlockReader> queue = new PriorityQueue<>(
-                Comparator.comparing(BlockReader::peekTerm)
-        );
-
-        for (String file : blockFiles) {
-            BlockReader reader = new BlockReader(file);
-            if (reader.hasNext()) {
-                queue.add(reader);
-            } else {
-                reader.close();
-            }
-        }
-
-        // counter for bytes in a file
-        long currentOffset = 0;
-
-        try (DataOutputStream out = new DataOutputStream(
-                new BufferedOutputStream(new FileOutputStream(POSTINGS_FILE), DISK_BUFFER_SIZE))) {
-
-            while (!queue.isEmpty()) {
-                String term = queue.peek().peekTerm();
-                Map<Integer, List<Integer>> mergedPostings = new TreeMap<>();
-
-                while (!queue.isEmpty() && queue.peek().peekTerm().equals(term)) {
-                    BlockReader reader = queue.poll();
-                    var postings = reader.nextPostings();
-
-                    for (var entry : postings.entrySet()) {
-                        mergedPostings.computeIfAbsent(entry.getKey(), k -> new ArrayList<>())
-                                .addAll(entry.getValue());
-                    }
-
-                    if (reader.hasNext()) {
-                        queue.add(reader);
-                    } else {
-                        reader.close();
-                    }
-                }
-
-                termOffsets.put(term, currentOffset);
-
-                int bytesWritten = writeTermToDisk(out, term, mergedPostings);
-
-                // зсунути offset на вже записану кількість байтів
-                currentOffset += bytesWritten;
-
-                mergedPostings.clear();
-
-                if (termOffsets.size() % 10000 == 0) {
-                    log.info("Merged {} terms... (offset: {} bytes)",
-                            termOffsets.size(), currentOffset);
-                }
-            }
-        }
-
-        log.info("K-way merge complete: {} unique terms", termOffsets.size());
-    }
-
-    private int writeTermToDisk(DataOutputStream out, String term,
-                                 Map<Integer, List<Integer>> postings) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream temp = new DataOutputStream(baos);
-
-        temp.writeUTF(term);
-        temp.writeInt(postings.size());
-
-        for (var entry : postings.entrySet()) {
-            temp.writeInt(entry.getKey());
-            List<Integer> positions = entry.getValue();
-            temp.writeInt(positions.size());
-            for (int pos : positions) {
-                temp.writeInt(pos);
-            }
-        }
-
-        byte[] data = baos.toByteArray();
+        byte[] data = buf.toByteArray();
         out.write(data);
         return data.length;
     }
 
-    private void saveRegistry() throws IOException {
-        try (ObjectOutputStream oos = new ObjectOutputStream(
-                new BufferedOutputStream(new FileOutputStream(REGISTRY_FILE)))) {
-            oos.writeObject(globalRegistry.exportData());
+    private void writeTermEntry(DataOutputStream out,
+                                String term,
+                                Map<Integer, List<Integer>> postings) throws IOException {
+        out.writeUTF(term);
+        out.writeInt(postings.size());
+        for (var entry : postings.entrySet()) {
+            out.writeInt(entry.getKey());
+            List<Integer> pos = entry.getValue();
+            out.writeInt(pos.size());
+            for (int p : pos) out.writeInt(p);
         }
+    }
+
+    private void persistRegistry() throws IOException {
+        writeObject(REGISTRY_FILE, globalRegistry.exportData());
         log.info("Registry saved: {} documents", globalRegistry.documentCount());
     }
 
-    private void saveOffsetsMap() throws IOException {
-        try (ObjectOutputStream oos = new ObjectOutputStream(
-                new BufferedOutputStream(new FileOutputStream(OFFSETS_FILE)))) {
-            oos.writeObject(termOffsets);
-        }
-
-        long offsetsSize = Files.size(Paths.get(OFFSETS_FILE));
-        log.info("Offsets map saved: {} terms, {} MB",
-                termOffsets.size(), offsetsSize / (1024.0 * 1024.0));
+    private void persistOffsets() throws IOException {
+        writeObject(OFFSETS_FILE, termOffsets);
+        log.info("Offsets saved: {} terms", termOffsets.size());
     }
 
     public static Map<String, Long> loadOffsets() throws IOException, ClassNotFoundException {
-        try (ObjectInputStream ois = new ObjectInputStream(
-                new BufferedInputStream(new FileInputStream(OFFSETS_FILE)))) {
-            @SuppressWarnings("unchecked")
-            Map<String, Long> offsets = (Map<String, Long>) ois.readObject();
-            return offsets;
-        }
+        return readObject(OFFSETS_FILE);
     }
-
 
     public static RegistryData loadRegistry() throws IOException, ClassNotFoundException {
-        try (ObjectInputStream ois = new ObjectInputStream(
-                new BufferedInputStream(new FileInputStream(REGISTRY_FILE)))) {
-            return (RegistryData) ois.readObject();
+        return readObject(REGISTRY_FILE);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T readObject(String path) throws IOException, ClassNotFoundException {
+        try (ObjectInputStream in = new ObjectInputStream(
+                new BufferedInputStream(new FileInputStream(path)))) {
+            return (T) in.readObject();
         }
     }
 
-    private BufferedReader createReader(Path file) throws IOException {
-        int bufferSize = 64 * 1024; // 64 KB
-        String name = file.getFileName().toString().toLowerCase();
-
-        InputStream is = new BufferedInputStream(Files.newInputStream(file), bufferSize);
-
-        if (name.endsWith(".bz2")) {
-            is = new BZip2CompressorInputStream(is);
+    private static void writeObject(String path, Object obj) throws IOException {
+        try (ObjectOutputStream out = new ObjectOutputStream(
+                new BufferedOutputStream(new FileOutputStream(path)))) {
+            out.writeObject(obj);
         }
-        return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
     }
 
-    private void printStatistics(IndexMetadata metadata) {
-        double durationSec = metadata.indexingTimeMs() / 1000.0;
-        double mbProcessed = metadata.totalBytesProcessed() / (1024.0 * 1024.0);
-        double gbProcessed = mbProcessed / 1024.0;
-        double mbPerSec = mbProcessed / durationSec;
-        double indexSizeMB = metadata.finalIndexSize() / (1024.0 * 1024.0);
-        double memoryThresholdMB = MEMORY_THRESHOLD_BYTES / (1024.0 * 1024.0);
-
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println("SPIMI INDEXING RESULTS");
-        System.out.println("=".repeat(80));
-        System.out.println("\n📊 COLLECTION STATISTICS:");
-        System.out.printf("  Documents indexed:     %,d%n", metadata.documentsCount());
-        System.out.printf("  Unique terms:          %,d%n", metadata.uniqueTerms());
-        System.out.printf("  Avg terms per doc:     %,.0f%n",
-                metadata.uniqueTerms() / (double) metadata.documentsCount());
-
-        System.out.println("\n💾 DATA PROCESSING:");
-        System.out.printf("  Raw data processed:    %.2f GB (%.2f MB)%n", gbProcessed, mbProcessed);
-        System.out.printf("  Final index size:      %.2f MB%n", indexSizeMB);
-        System.out.printf("  Compression ratio:     %.2f%%%n", metadata.compressionRatio());
-
-        System.out.println("\n🔧 SPIMI PARAMETERS:");
-        System.out.printf("  Memory threshold:      %.2f MB%n", memoryThresholdMB);
-        System.out.printf("  Blocks created:        %d%n", metadata.blocksCreated());
-        System.out.printf("  Avg block size:        %.2f MB%n",
-                (mbProcessed / metadata.blocksCreated()));
-
-        System.out.println("\n⏱️  PERFORMANCE:");
-        System.out.printf("  Total time:            %.2f sec (%.2f min)%n",
-                durationSec, durationSec / 60.0);
-        System.out.printf("  Throughput:            %.2f MB/sec%n", mbPerSec);
-        System.out.printf("  Avg time per doc:      %.2f ms%n",
-                metadata.indexingTimeMs() / (double) metadata.documentsCount());
-        System.out.printf("  Docs per second:       %.2f%n",
-                metadata.documentsCount() / durationSec);
-
-        System.out.println("\n📁 OUTPUT FILES:");
-        System.out.printf("  Index file:            %s (%.2f MB)%n",
-                metadata.indexPath(), indexSizeMB);
-        System.out.printf("  Registry file:         %s%n", REGISTRY_FILE);
-
-        System.out.println("\n" + "=".repeat(80));
+    private BufferedReader openReader(Path file) throws IOException {
+        InputStream raw = new BufferedInputStream(Files.newInputStream(file), 64 * 1024);
+        if (file.getFileName().toString().toLowerCase().endsWith(".bz2")) {
+            raw = new BZip2CompressorInputStream(raw);
+        }
+        return new BufferedReader(new InputStreamReader(raw, StandardCharsets.UTF_8));
     }
 
-    private void cleanupTempFiles() {
-        try {
-            Path tempPath = Paths.get(TEMP_DIR);
+    private DataOutputStream bufferedOutput(String path) throws IOException {
+        return new DataOutputStream(
+                new BufferedOutputStream(new FileOutputStream(path), DISK_BUFFER_SIZE));
+    }
 
-            if (!Files.exists(tempPath)) {
-                log.info("Temp directory does not exist, nothing to clean");
-                return;
+    private long estimateTokenMemory(String token) {
+        return 40L + (token.length() * 2L) + 80L;
+    }
+
+    private void awaitAll(List<Future<?>> futures) throws IOException {
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Indexing interrupted", e);
+            } catch (ExecutionException e) {
+                throw new IOException("File processing failed", e);
             }
+        }
+    }
 
-            try (var stream = Files.walk(tempPath)) {
-                long filesDeleted = stream
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .filter(File::delete)
-                        .count();
-
-                log.info("Temporary files cleaned up: {} items deleted", filesDeleted);
-            }
-
+    private void deleteTempDir() {
+        try (var stream = Files.walk(Paths.get(TEMP_DIR))) {
+            long n = stream.sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .filter(File::delete)
+                    .count();
+            log.info("Temporary files deleted: {}", n);
         } catch (IOException e) {
-            log.warn("Failed to cleanup temp files: {}", e.getMessage());
+            log.warn("Failed to delete temporary files: {}", e.getMessage());
         }
+    }
+
+    private void printStats(IndexMetadata m) {
+        double sec   = m.indexingTimeMs() / 1000.0;
+        double mb    = m.totalBytesProcessed() / (1024.0 * 1024.0);
+        double idxMb = m.finalIndexSize()       / (1024.0 * 1024.0);
+
+        System.out.println("\n" + "=".repeat(72));
+        System.out.println("SPIMI RESULTS");
+        System.out.println("=".repeat(72));
+        System.out.printf("  Documents:       %,d%n",     m.documentsCount());
+        System.out.printf("  Unique terms:    %,d%n",     m.uniqueTerms());
+        System.out.printf("  Data processed:  %.2f MB%n", mb);
+        System.out.printf("  Index size:      %.2f MB%n", idxMb);
+        System.out.printf("  Blocks created:  %d%n",      m.blocksCreated());
+        System.out.printf("  Time:            %.2f sec%n", sec);
+        System.out.printf("  Throughput:      %.2f MB/s%n", mb / sec);
+        System.out.println("=".repeat(72));
     }
 
     private static class BlockReader implements AutoCloseable {
         private final DataInputStream in;
-        private final String filename;
-        private volatile String currentTerm;
+        private String currentTerm;
         private Map<Integer, List<Integer>> currentPostings;
-        private volatile boolean closed = false;
 
-        public BlockReader(String filename) throws IOException {
-            this.filename = filename;
+        BlockReader(String path) throws IOException {
             this.in = new DataInputStream(
-                    new BufferedInputStream(new FileInputStream(filename), DISK_BUFFER_SIZE));
-            readNext();
+                    new BufferedInputStream(new FileInputStream(path), DISK_BUFFER_SIZE));
+            advance();
         }
 
-        private void readNext() {
-            if (closed) {
-                currentTerm = null;
-                return;
-            }
-
+        private void advance() {
             try {
-                    currentTerm = in.readUTF();
-                    int docCount = in.readInt();
-                    currentPostings = new ConcurrentHashMap<>();
-
-                    for (int i = 0; i < docCount; i++) {
-                        int docId = in.readInt();
-                        int posCount = in.readInt();
-                        List<Integer> positions = new ArrayList<>(posCount);
-                        for (int j = 0; j < posCount; j++) {
-                            positions.add(in.readInt());
-                        }
-                        currentPostings.put(docId, positions);
-                    }
+                currentTerm = in.readUTF();
+                int docCount = in.readInt();
+                currentPostings = new HashMap<>(docCount * 2);
+                for (int i = 0; i < docCount; i++) {
+                    int docId    = in.readInt();
+                    int posCount = in.readInt();
+                    List<Integer> positions = new ArrayList<>(posCount);
+                    for (int j = 0; j < posCount; j++) positions.add(in.readInt());
+                    currentPostings.put(docId, positions);
+                }
             } catch (EOFException _) {
-                    currentTerm = null;
-                    currentPostings = null;
+                currentTerm     = null;
+                currentPostings = null;
             } catch (IOException e) {
                 log.error("Error reading block", e);
-                currentTerm = null;
+                currentTerm     = null;
                 currentPostings = null;
             }
         }
 
-        public boolean hasNext() {
-            return currentTerm != null && !closed;
-        }
+        boolean hasNext()  { return currentTerm != null; }
+        String  peekTerm() { return currentTerm; }
 
-        public String peekTerm() {
-            return currentTerm;
-        }
-
-        public Map<Integer, List<Integer>> nextPostings() {
-            var postings = currentPostings;
-            readNext();
-            return postings;
+        Map<Integer, List<Integer>> nextPostings() {
+            var p = currentPostings;
+            advance();
+            return p;
         }
 
         @Override
-        public void close() throws IOException {
-            if (!closed) {
-                closed = true;
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (IOException e) {
-                        log.error("Error closing block", e);
-                        throw e;
-                    }
-                }
-            }
-        }
+        public void close() throws IOException { in.close(); }
     }
 }

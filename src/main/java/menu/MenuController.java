@@ -27,6 +27,7 @@ import static constants.Filenames.DEFAULT_FILENAME;
 import static constants.Filenames.DIRECTORY_PATH;
 import static enums.FileOperation.LOAD;
 import static enums.FileOperation.SAVE;
+import static enums.MenuChoice.*;
 import static enums.SearchOperators.*;
 
 @Slf4j
@@ -46,15 +47,14 @@ public class MenuController {
     }
 
     public boolean handleUserChoice(int code) throws IllegalArgumentException, IOException {
-        var userChoice = MenuChoice.fromCode(code);
-        if (userChoice.isEmpty()) {
+        var userChoice = ModeMenuMapping.resolveChoice(code, searchEngine.getCurrentMode());
+        if (userChoice == null) {
             System.out.println("Invalid choice.");
             return true;
         }
+        System.out.println("\n" + userChoice.getDescription());
 
-        System.out.println("\n" + userChoice.get().getDescription());
-
-        switch (userChoice.get()) {
+        switch (userChoice) {
             case INDEX_DOCUMENTS -> indexDocuments();
             case REINDEX_DOCUMENTS -> reindexDocuments();
             case INDEX_LARGE_DOCUMENTS -> indexLargeCollection();
@@ -82,6 +82,7 @@ public class MenuController {
                 searchEngine.close();
                 return false;
             }
+            default -> System.out.println("Invalid input choice");
         }
         return true;
     }
