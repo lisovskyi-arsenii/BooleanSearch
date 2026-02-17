@@ -60,7 +60,6 @@ public class BooleanSearchEngine implements SearchEngine {
     private final AtomicLong totalCollectionSize = new AtomicLong(0);
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private SerializationComparison serializationComparison;
-    private final SPIMI spimi;
 
     // Disk-based mode
     private final SPIMI spimi;
@@ -165,33 +164,6 @@ public class BooleanSearchEngine implements SearchEngine {
         }
     }
 
-    public void indexLargeCollection(String directoryPath) throws IOException {
-        Objects.requireNonNull(directoryPath, "Directory path must not be null");
-
-        lock.writeLock().lock();
-        try {
-            IndexData indexData = spimi.buildIndex(directoryPath);
-
-            positionalIndex.loadIndex(indexData.positionalIndex());
-            registry.loadData(indexData.registryData());
-
-            long totalSize = indexData.registryData().filenameToSize().values()
-                    .stream()
-                    .mapToLong(Long::longValue)
-                    .sum();
-            totalCollectionSize.set(totalSize);
-
-            log.info("Rebuilding derived indexes from PositionalIndex");
-            rebuildDerivedIndexes();
-
-            log.info("Large collection indexed: {} docs, {} terms",
-                    registry.documentCount(), index.size());
-
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
     private void indexFile(Path path) throws IOException {
         long size = Files.size(path);
         String filename = path.getFileName().toString();
@@ -277,10 +249,10 @@ public class BooleanSearchEngine implements SearchEngine {
         long postingsSize = Files.size(Path.of(postingsFilename));
 
         log.info("✅ Disk-based mode enabled!");
-        log.info(String.format("   Offsets in RAM:    %.2f MB (%d terms)",
-                offsetsSize / (1024.0 * 1024.0), termOffsets.size()));
-        log.info(String.format("   Postings on disk:  %.2f MB",
-                postingsSize / (1024.0 * 1024.0)));
+        log.info("   Offsets in RAM:    {} MB ({} terms)",
+                offsetsSize / (1024.0 * 1024.0), termOffsets.size());
+        log.info("   Postings on disk:  {} MB",
+                postingsSize / (1024.0 * 1024.0));
     }
 
     private Optional<Set<Integer>> searchFromDisk(String term) throws IOException {
@@ -315,6 +287,7 @@ public class BooleanSearchEngine implements SearchEngine {
             throws IOException {
         Long offset = termOffsets.get(term);
         if (offset == null) {
+            log.debug("Term '{}' not found in dictionary", term);
             return Optional.empty();
         }
 
@@ -356,11 +329,11 @@ public class BooleanSearchEngine implements SearchEngine {
         lock.readLock().lock();
         try {
             return switch (currentMode) {
-                case IndexingMode.NOT_INIT -> {
+                case NOT_INIT -> {
                     System.out.println("Index not initialized. Call indexDocuments() or indexLargeDocuments() first");
                     yield Optional.empty();
                 }
-                case IndexingMode.DISK_BASED -> searchFromDisk(term);
+                case DISK_BASED -> searchFromDisk(term);
                 default -> getExecutor(type).search(term);
             };
         } catch (IOException e) {
@@ -383,7 +356,7 @@ public class BooleanSearchEngine implements SearchEngine {
             return Optional.empty();
         }
 
-        Set<Integer> result = new HashSet<>(docs1.get());
+        var result = new HashSet<>(docs1.get());
         result.retainAll(docs2.get());
 
         return result.isEmpty() ? Optional.empty() : Optional.of(result);
@@ -401,7 +374,7 @@ public class BooleanSearchEngine implements SearchEngine {
             return Optional.empty();
         }
 
-        Set<Integer> result = new HashSet<>();
+        var result = new HashSet<Integer>();
         docs1.ifPresent(result::addAll);
         docs2.ifPresent(result::addAll);
 
@@ -419,13 +392,13 @@ public class BooleanSearchEngine implements SearchEngine {
             return Optional.of(new HashSet<>(docIDs));
         }
 
-        Set<Integer> result = new HashSet<>(docIDs);
+        var result = new HashSet<>(docIDs);
         result.removeAll(termDocs.get());
 
         return result.isEmpty() ? Optional.empty() : Optional.of(result);
     }
 
-    public Optional<Set<Integer>> phraseSearch(String... terms) {
+    public Optional<Set<Integer>> phraseSearch(String[] terms, SearchStructureType type) {
         lock.readLock().lock();
         try {
             if (currentMode == IndexingMode.NOT_INIT) {
@@ -437,41 +410,88 @@ public class BooleanSearchEngine implements SearchEngine {
                 return Optional.empty();
             }
 
-            // Отримуємо позиції (з пам'яті або з диска)
-            List<Map<Integer, List<Integer>>> allPostings = new ArrayList<>();
-
-            for (String term : terms) {
-                Optional<Map<Integer, List<Integer>>> postings =
-                        currentMode == IndexingMode.IN_MEMORY ?
-                                getPositionsFromMemory(term) :
-                                searchFromDiskWithPositions(term);
-
-                if (postings.isEmpty()) {
-                    return Optional.empty();
-                }
-                allPostings.add(postings.get());
+            if (type == SearchStructureType.BIWORD) {
+                return phraseSearchWithBiword(terms);
             }
 
-            Set<Integer> commonDocs = new HashSet<>(allPostings.get(0).keySet());
-            for (int i = 1; i < allPostings.size(); i++) {
-                commonDocs.retainAll(allPostings.get(i).keySet());
-            }
-
-            Set<Integer> result = new HashSet<>();
-            for (int docId : commonDocs) {
-                if (isPhraseInDocument(docId, allPostings)) {
-                    result.add(docId);
-                }
-            }
-
-            return result.isEmpty() ? Optional.empty() : Optional.of(result);
-
+            return phraseSearchWithPositions(terms);
         } catch (IOException e) {
             log.error("Phrase search failed", e);
             return Optional.empty();
         } finally {
             lock.readLock().unlock();
         }
+    }
+
+    private Optional<Set<Integer>> phraseSearchWithBiword(String[] terms) {
+        if (currentMode != IndexingMode.IN_MEMORY) {
+            System.out.println("Biword search is only available in RAM-based mode");
+            System.out.println("Use Positional Index instead");
+            return Optional.empty();
+        }
+
+        if (terms.length < 2) {
+            System.out.println("Biword search requires at least two terms");
+            return Optional.empty();
+        }
+
+        String biword = terms[0] + " " + terms[1];
+        var result = biwordIndex.getDocuments(biword)
+                .orElse(new HashSet<>());
+
+        if (result.isEmpty()) {
+            return Optional.empty();
+        }
+
+        for (int i = 1; i < terms.length - 1; i++) {
+            String currentBiword = terms[i] + " " + terms[i + 1];
+            var docsOpt = biwordIndex.getDocuments(currentBiword);
+
+            if (docsOpt.isEmpty()) {
+                return Optional.empty();
+            }
+
+            result.retainAll(docsOpt.get());
+
+            if (result.isEmpty()) {
+                return Optional.empty();
+            }
+        }
+
+        return Optional.of(result);
+    }
+
+    private Optional<Set<Integer>> phraseSearchWithPositions(String[] terms) throws IOException {
+        List<Map<Integer, List<Integer>>> allPostings = new ArrayList<>();
+
+        for (String term : terms) {
+            var postings = currentMode == IndexingMode.IN_MEMORY ?
+                                    getPositionsFromMemory(term) :
+                                    searchFromDiskWithPositions(term);
+
+            if (postings.isEmpty()) {
+                return Optional.empty();
+            }
+            allPostings.add(postings.get());
+        }
+
+        var commonDocs = new HashSet<Integer>(allPostings.getFirst().keySet());
+        for (int i = 1; i < allPostings.size(); i++) {
+            commonDocs.retainAll(allPostings.get(i).keySet());
+        }
+
+        if (commonDocs.isEmpty()) {
+            return Optional.empty();
+        }
+
+        var result = new HashSet<Integer>();
+        for (int docId : commonDocs) {
+            if (isPhraseInDocument(docId, allPostings)) {
+                result.add(docId);
+            }
+        }
+
+        return result.isEmpty() ? Optional.empty() : Optional.of(result);
     }
 
     private Optional<Map<Integer, List<Integer>>> getPositionsFromMemory(String term) {
@@ -507,12 +527,12 @@ public class BooleanSearchEngine implements SearchEngine {
 
         lock.readLock().lock();
         try {
-            if (currentMode == IndexingMode.NOT_INIT) {
+            if (currentMode == NOT_INIT) {
                 log.warn("Wildcard search called on uninitialized index");
                 return Optional.empty();
             }
 
-            if (currentMode == IndexingMode.IN_MEMORY
+            if (currentMode == IN_MEMORY
                     && (bTree == null || reverseBTree == null || threeGramIndex == null)) {
                     throw new IllegalStateException(
                             "Wildcard indexes not built. Call buildWildcardIndexes() first."

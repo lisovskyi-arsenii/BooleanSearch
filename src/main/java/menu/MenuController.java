@@ -3,7 +3,6 @@ package menu;
 import benchmark.CompressionBenchmark;
 import benchmark.PerformanceBenchmark;
 import core.BooleanSearchEngine;
-import core.SearchService;
 import enums.*;
 import generator.GenerateFiles;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +33,6 @@ import static enums.SearchOperators.*;
 public class MenuController {
     private final CustomScanner scanner;
     private final BooleanSearchEngine searchEngine;
-    private final SearchService searchService;
 
     public MenuController(BooleanSearchEngine searchEngine, CustomScanner scanner) {
         if (scanner == null) {
@@ -45,7 +43,6 @@ public class MenuController {
         }
         this.scanner = scanner;
         this.searchEngine = searchEngine;
-        this.searchService = new SearchService(searchEngine);
     }
 
     public boolean handleUserChoice(int code) throws IllegalArgumentException, IOException {
@@ -82,6 +79,7 @@ public class MenuController {
             case COMPRESSION_PERFORMANCE -> compareCompression();
             case EXIT -> {
                 System.out.println("Exiting program.");
+                searchEngine.close();
                 return false;
             }
         }
@@ -95,7 +93,7 @@ public class MenuController {
     }
 
     private boolean isDocumentsIndexed() {
-        return searchEngine.getIndex().size() != 0;
+        return searchEngine.getCurrentMode() != BooleanSearchEngine.IndexingMode.NOT_INIT;
     }
 
     public void indexDocuments() throws IOException {
@@ -117,8 +115,7 @@ public class MenuController {
         String directoryPath = scanner.parseString();
         if (directoryPath.isEmpty()) directoryPath = DIRECTORY_PATH;
 
-        searchEngine.getIndex().clear();
-        searchEngine.getMatrix().clear();
+        searchEngine.clear();
         log.info("Reindexing from {}", directoryPath);
         searchEngine.indexDocuments(directoryPath);
         log.info("Reindex completed");
@@ -322,11 +319,11 @@ public class MenuController {
 
         var type = typeOptional.get();
         log.debug("Searching for {}", term);
-        Optional<Set<Integer>> result = searchService.search(term, type);
+        Optional<Set<Integer>> result = searchEngine.search(term, type);
 
         result.ifPresentOrElse(
                 ids -> {
-                    List<String> filenames = searchService.getDocumentNames(ids);
+                    List<String> filenames = searchEngine.getDocumentNames(ids);
                     if (filenames.isEmpty()) {
                         System.out.println("No files found");
                         return;
@@ -352,7 +349,7 @@ public class MenuController {
         performSearch(
                 AND,
                 2,
-                terms -> searchService.andSearch(terms[0], terms[1], type));
+                terms -> searchEngine.andSearch(terms[0], terms[1], type));
     }
 
     public void orSearch() {
@@ -369,7 +366,7 @@ public class MenuController {
         performSearch(
                 OR,
                 2,
-                terms -> searchService.orSearch(terms[0], terms[1], type));
+                terms -> searchEngine.orSearch(terms[0], terms[1], type));
     }
 
     public void notSearch() {
@@ -388,7 +385,7 @@ public class MenuController {
                 1,
                 terms -> {
                     Set<Integer> allDocs = searchEngine.getAllDocumentIDs();
-                    return searchService.notSearch(terms[0], allDocs, type);
+                    return searchEngine.notSearch(terms[0], allDocs, type);
                 });
     }
 
@@ -427,7 +424,7 @@ public class MenuController {
                 return;
             }
 
-            List<String> filenames= searchService.getDocumentNames(ids);
+            List<String> filenames= searchEngine.getDocumentNames(ids);
             System.out.printf("%nQuery '%s' found in %d file(s):%n", query, filenames.size());
             filenames.forEach(filename -> System.out.println("  - " + filename));
         } catch (IllegalArgumentException e) {
@@ -458,7 +455,7 @@ public class MenuController {
 
         result.ifPresentOrElse(
                 ids -> {
-                    List<String> filenames = searchService.getDocumentNames(ids);
+                    List<String> filenames = searchEngine.getDocumentNames(ids);
 
                     if (filenames.isEmpty()) {
                         System.out.println("No files found");
@@ -505,7 +502,9 @@ public class MenuController {
 
         log.debug("Searching phrase '{}' using {}", phrase, type);
 
-        Optional<Set<Integer>> result = searchService.phraseSearch(phrase, type);
+        String[] parts = phrase.split("\\s+");
+
+        Optional<Set<Integer>> result = searchEngine.phraseSearch(parts, type);
 
         result.ifPresentOrElse(
                 ids -> {
@@ -514,7 +513,7 @@ public class MenuController {
                         return;
                     }
 
-                    List<String> filenames = searchService.getDocumentNames(ids);
+                    List<String> filenames = searchEngine.getDocumentNames(ids);
                     if (filenames.isEmpty()) {
                         System.out.println("No files found");
                         return;
@@ -550,7 +549,7 @@ public class MenuController {
 
         log.debug("Proximity search: '{}' and '{}' within distance {}", term1, term2, distance);
 
-        var matchesOpt = searchService.proximitySearch(term1, term2, distance);
+        var matchesOpt = searchEngine.proximitySearch(term1, term2, distance);
 
         if (matchesOpt.isEmpty()) {
             System.out.printf("No matches found for '%s' and '%s' within distance %d%n",
