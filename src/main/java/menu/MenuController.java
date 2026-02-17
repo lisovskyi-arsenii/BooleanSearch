@@ -1,5 +1,6 @@
 package menu;
 
+import benchmark.CompressionBenchmark;
 import benchmark.PerformanceBenchmark;
 import core.BooleanSearchEngine;
 import core.SearchService;
@@ -59,6 +60,7 @@ public class MenuController {
         switch (userChoice.get()) {
             case INDEX_DOCUMENTS -> indexDocuments();
             case REINDEX_DOCUMENTS -> reindexDocuments();
+            case INDEX_LARGE_DOCUMENTS -> indexLargeCollection();
             case GENERATE_FILES -> generateFiles();
             case LIST_DIRECTORY -> listDirectory();
             case CLEAR_ALL_FILES -> clearAllFiles();
@@ -77,6 +79,7 @@ public class MenuController {
             case COMPARE_FORMATS -> compareFormats();
             case CLEAR_INDEX -> clearIndex();
             case COMPARE_PERFORMANCE -> compareBenchmarks();
+            case COMPRESSION_PERFORMANCE -> compareCompression();
             case EXIT -> {
                 System.out.println("Exiting program.");
                 return false;
@@ -123,6 +126,37 @@ public class MenuController {
         System.out.println("\nRebuilding wildcard indexes...");
         searchEngine.buildWildcardIndexes();
         System.out.println("Wildcard indexes ready");
+    }
+
+    public void indexLargeCollection() {
+        System.out.println("\n=== SPIMI Large Collection Indexing ===");
+        System.out.println("This method is optimized for collections larger than RAM");
+        System.out.println("Files will be processed in 50MB blocks");
+        System.out.println();
+
+        System.out.print("Enter directory path (Press Enter for default): ");
+        String directoryPath = scanner.parseString();
+        if (directoryPath.isEmpty()) {
+            directoryPath = DIRECTORY_PATH;
+        }
+
+        try {
+            log.info("Starting SPIMI indexing from {}", directoryPath);
+
+            searchEngine.indexLargeCollection(directoryPath);
+
+            System.out.println("\n✅ Large collection indexed successfully!");
+            System.out.println("Building wildcard indexes...");
+
+            searchEngine.buildWildcardIndexes();
+
+            System.out.println("✅ Wildcard indexes ready");
+            System.out.println("\nYou can now search the indexed collection");
+
+        } catch (IOException e) {
+            System.err.println("\n❌ Indexing failed: " + e.getMessage());
+            log.error("SPIMI indexing failed", e);
+        }
     }
 
     public void generateFiles() throws IllegalArgumentException {
@@ -623,6 +657,10 @@ public class MenuController {
 
         var type = typeOptional.get();
         DictionaryStats stats = searchEngine.getStatistics(type);
+        if (stats == null) {
+            System.out.println("No statistics available for this type");
+            return;
+        }
 
         String title = typeOptional.get().name() + " STATISTICS";
         System.out.println("\n" + "=".repeat(80));
@@ -843,6 +881,11 @@ public class MenuController {
 
         PerformanceBenchmark benchmark = new PerformanceBenchmark(searchEngine);
         benchmark.runAllBenchmarks(testTerms);
+    }
+
+    public void compareCompression() {
+        CompressionBenchmark benchmark = new CompressionBenchmark();
+        benchmark.runAllBenchmarks(searchEngine.getIndex());
     }
 
 }

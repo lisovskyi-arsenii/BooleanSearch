@@ -8,6 +8,7 @@ public enum MenuChoice {
     EXIT("Exit"),
     INDEX_DOCUMENTS("Index documents"),
     REINDEX_DOCUMENTS("Re-index"),
+    INDEX_LARGE_DOCUMENTS("Index large collection of documents"),
     GENERATE_FILES("Generate files"),
     LIST_DIRECTORY("List directory"),
     CLEAR_ALL_FILES("Clear all files"),
@@ -25,7 +26,8 @@ public enum MenuChoice {
     LOAD_INDEX("Load index"),
     COMPARE_FORMATS("Compare formats"),
     CLEAR_INDEX("Clear index"),
-    COMPARE_PERFORMANCE("Compare performance");
+    COMPARE_PERFORMANCE("Compare performance"),
+    COMPRESSION_PERFORMANCE("Compression performance");
 
     @Getter
     private final String description;

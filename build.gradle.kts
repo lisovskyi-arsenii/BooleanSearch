@@ -30,6 +30,8 @@ dependencies {
 
     implementation(fileTree("libs") {include ( "*.jar") })
 
+    implementation("org.apache.commons:commons-compress:1.26.0")
+
     compileOnly("org.projectlombok:lombok:${lombokVersion}")
     annotationProcessor("org.projectlombok:lombok:${lombokVersion}")
 

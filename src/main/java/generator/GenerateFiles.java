@@ -26,7 +26,8 @@ public final class GenerateFiles {
     private static final String DIRECTORY_MEDIUM = "medium";
     private static final String DIRECTORY_LARGE = "large";
     private static final HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
+            .connectTimeout(Duration.ofSeconds(30))
+            .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
 
     private GenerateFiles() {

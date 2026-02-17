@@ -19,6 +19,7 @@ public final class Printer {
         printSection("INDEXING", List.of(
                 "Index documents from directory",
                 "Reindex (clear + index)",
+                "Index large collection (SPIMI)",
                 "Generate files",
                 "List files",
                 "Clear all files"
@@ -48,7 +49,8 @@ public final class Printer {
 
         printSection("UTILITY", List.of(
                 "Clear index",
-                "Compare structure types"
+                "Compare structure types",
+                "Compare compression ratios"
         ));
 
         System.out.println();
