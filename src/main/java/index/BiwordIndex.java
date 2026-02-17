@@ -1,13 +1,11 @@
 package index;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-@Getter
 public class BiwordIndex implements Dictionary {
     // term1 + term2 -> [docIds]
     private final Map<String, Set<Integer>> biwordIndex = new ConcurrentHashMap<>();
@@ -65,17 +63,5 @@ public class BiwordIndex implements Dictionary {
     @Override
     public void clear() {
         biwordIndex.clear();
-    }
-
-    public void print() {
-        if (biwordIndex.isEmpty()) {
-            System.out.println("Biword index is empty");
-            return;
-        }
-
-        System.out.println("=== BIWORD INDEX ===");
-        biwordIndex.forEach((biword, docIds) ->
-                System.out.printf("'%s': %s%n", biword, docIds));
-        System.out.println("====================");
     }
 }

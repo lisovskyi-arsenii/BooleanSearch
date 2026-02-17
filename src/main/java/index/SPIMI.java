@@ -15,29 +15,43 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class SPIMI {
-    private static final long MEMORY_THRESHOLD_BYTES = 150 * 1024 * 1024L;
+    private static final long MEMORY_THRESHOLD_BYTES = (long) Math.max(
+            512 * 1024 * 1024L,
+            Runtime.getRuntime().maxMemory() * 0.7
+    );
+
     private static final String TEMP_DIR = "temp_blocks";
     private static final String POSTINGS_FILE = "postings.dat";
     private static final String OFFSETS_FILE = "offsets.bin";
     private static final String REGISTRY_FILE = "registry.dat";
 
-    // term -> offset in disk
-    private final Map<String, Long> termOffsets = new HashMap<>();
+    private static final int DISK_BUFFER_SIZE = 4 * 1024 * 1024; // 4 MB
+    private static final int CHUNK_SIZE = 10 * 1024 * 1024; // 10 MB
+    private static final int THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
 
+    // term -> offset in disk
+    private final Map<String, Long> termOffsets = new ConcurrentHashMap<>();
     private final DocumentRegistry globalRegistry = new DocumentRegistry();
 
     @Getter private final AtomicInteger blocksCreated = new AtomicInteger(0);
     @Getter private final AtomicInteger documentsIndexed = new AtomicInteger(0);
     @Getter private final AtomicLong bytesProcessed = new AtomicLong(0);
 
+    private final ThreadLocal<PositionalIndex> threadLocalBlocks = ThreadLocal.withInitial(PositionalIndex::new);
+    private final ThreadLocal<AtomicLong> threadLocalMemory = ThreadLocal.withInitial(() -> new AtomicLong(0));
+
+    private final ConcurrentHashMap<String, AtomicInteger> filePositionsCounters = new ConcurrentHashMap<>();
+
     public void buildIndex(String directoryPath) throws IOException {
         long startTime = System.currentTimeMillis();
         log.info("Starting SPIMI indexing from: {}", directoryPath);
+        log.info("Memory limit: {} MB", MEMORY_THRESHOLD_BYTES / 1024 / 1024);
 
         Files.createDirectories(Paths.get(TEMP_DIR));
         List<Path> files = FileWalker.findFiles(directoryPath);
@@ -53,7 +67,6 @@ public class SPIMI {
 
         saveRegistry();
         saveOffsetsMap();
-
         cleanupTempFiles();
 
         long endTime = System.currentTimeMillis();
@@ -76,64 +89,143 @@ public class SPIMI {
     }
 
     private List<String> createBlocks(List<Path> files) throws IOException {
-        List<String> createdBlocks = new ArrayList<>();
-        PositionalIndex currentBlock = new PositionalIndex();
-        Runtime runtime = Runtime.getRuntime();
+        List<String> createdBlocks = Collections.synchronizedList(new ArrayList<>());
 
-        int processedFiles = 0;
-        int termsInBlock = 0;
+        BlockingQueue<FileChunk> workQueue = new LinkedBlockingQueue<>();
 
         for (Path file : files) {
-            String filename = file.getFileName().toString();
             long fileSize = Files.size(file);
+            String filename = file.getFileName().toString();
+
             int docId = globalRegistry.registerDocument(filename, fileSize);
+            filePositionsCounters.put(filename, new AtomicInteger(0));
 
-            try (BufferedReader reader = createReader(file)) {
-                String line;
-                int position = 0;
-                while ((line = reader.readLine()) != null) {
-                    if (line.isBlank()) continue;
+            if (fileSize > CHUNK_SIZE) {
+                long numChunks = (fileSize + CHUNK_SIZE - 1) / CHUNK_SIZE;
 
-                    for (String token : Tokenizer.tokenize(line)) {
-                        currentBlock.addTerm(token, docId, position++);
-                        termsInBlock++;
+                for (long i = 0; i < numChunks; i++) {
+                    long startOffset = i * CHUNK_SIZE;
+                    long endOffset = Math.min((i + 1) * CHUNK_SIZE, fileSize);
 
-                        if (termsInBlock % 10000 == 0) {
-                            long usedMemory = runtime.totalMemory() - runtime.freeMemory();
-                            if (usedMemory >= MEMORY_THRESHOLD_BYTES) {
-                                log.info("Memory threshold reached ({} MB). Flushing block with {} terms",
-                                        usedMemory / (1024 * 1024), currentBlock.size());
+                    workQueue.add(new FileChunk(file, docId, filename, startOffset, endOffset, i));
+                }
+            } else {
+                workQueue.add(new FileChunk(file, docId, filename, 0, fileSize, 0));
+            }
+        }
 
-                                createdBlocks.add(saveBlockToDisk(currentBlock));
-                                currentBlock = new PositionalIndex();
-                                termsInBlock = 0;
-                                //
-                                Thread.yield();
+        int totalChunks = workQueue.size();
+        log.info("Total chunks to process: {}", totalChunks);
+
+        try (var executor = Executors.newWorkStealingPool(THREAD_POOL_SIZE)) {
+            List<Future<?>> futures = new ArrayList<>();
+
+            for (var file : files) {
+                Future<?> future = executor.submit(() -> {
+                    try {
+                        while (true) {
+                            var chunk = workQueue.poll(100, TimeUnit.MILLISECONDS);
+
+                            if (chunk == null) {
+                                if (workQueue.isEmpty()) {
+                                    break;
+                                }
+                                continue;
                             }
+                            processFile(chunk, createdBlocks);
                         }
+                    } catch (Exception e) {
+                        log.error("Failed to process file {}", file, e);
+                    }
+                });
+                futures.add(future);
+            }
+
+            for (var future : futures) {
+                try {
+                    future.get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException("Indexing interrupted", e);
+                } catch (ExecutionException e) {
+                    throw new IOException("Processing of files failed", e);
+                }
+            }
+
+            executor.shutdown();
+        }
+
+        log.info("Block creation completed");
+        return createdBlocks;
+    }
+
+    private void processFile(FileChunk chunk, List<String> createdBlocks) throws IOException {
+        var localBlock = threadLocalBlocks.get();
+        var localMemory = threadLocalMemory.get();
+
+        long bytesRead = 0;
+        long targetBytes = chunk.endOffset - chunk.startOffset;
+
+        try (BufferedReader reader = createReader(chunk.file)) {
+            if (chunk.startOffset > 0) {
+                reader.skip(chunk.startOffset);
+            }
+
+            String line;
+            while ((line = reader.readLine()) != null && bytesRead < targetBytes) {
+                if (line.isBlank()) continue;
+
+                bytesRead += line.getBytes(StandardCharsets.UTF_8).length + 1;
+
+                var tokens = Tokenizer.tokenize(line);
+
+                for (var token : tokens) {
+                    if (token.isBlank()) continue;
+
+                    int position = filePositionsCounters.get(chunk.filename).getAndIncrement();
+
+                    localBlock.addTerm(token, chunk.docId, position);
+
+                    long memoryUsage = estimatedMemory(token);
+                    localMemory.addAndGet(memoryUsage);
+
+                    if (localMemory.get() >= MEMORY_THRESHOLD_BYTES / THREAD_POOL_SIZE) {
+                        flushBlock(localBlock, createdBlocks);
+
+                        localBlock = new PositionalIndex();
+                        threadLocalBlocks.set(localBlock);
+                        localMemory.set(0);
                     }
                 }
-            } catch (Exception e) {
-                log.error("Error indexing file: {}", filename, e);
-                System.err.println("Error indexing file: " + filename);
-            }
-
-            bytesProcessed.addAndGet(fileSize);
-            documentsIndexed.incrementAndGet();
-            processedFiles++;
-
-            if (processedFiles % 50 == 0) {
-                log.info("Processed {} / {} files", processedFiles, files.size());
             }
         }
 
-        if (currentBlock.size() > 0) {
-            createdBlocks.add(saveBlockToDisk(currentBlock));
+        if (localBlock.size() > 0) {
+            flushBlock(localBlock, createdBlocks);
+            threadLocalBlocks.set(new PositionalIndex());
+            localMemory.set(0);
         }
 
-        log.info("Block creation complete: {} blocks created", createdBlocks.size());
+        bytesProcessed.addAndGet(targetBytes);
 
-        return createdBlocks;
+        if (chunk.chunkIndex == 0 || chunk.endOffset == Files.size(chunk.file)) {
+            int count = documentsIndexed.incrementAndGet();
+            if (count % 100 == 0) {
+                log.info("Processed {} files... ({} MB processed)",
+                        count, bytesProcessed.get() / (1024 * 1024));
+            }
+        }
+    }
+
+    private void flushBlock(PositionalIndex block, List<String> createdBlocks) throws IOException {
+        synchronized (createdBlocks) {
+            String blockFile = saveBlockToDisk(block);
+            createdBlocks.add(blockFile);
+        }
+    }
+
+    private long estimatedMemory(String term) {
+        return 40 + 24 + (term.length() * 2L) + 32 + 40 + 16;
     }
 
     private String saveBlockToDisk(PositionalIndex index) throws IOException {
@@ -167,8 +259,22 @@ public class SPIMI {
         return filename;
     }
 
+    private record FileChunk (
+            Path file,
+            int docId,
+            String filename,
+            long startOffset,
+            long endOffset,
+            long chunkIndex
+    ) {}
+
     private void mergeBlocksWithOffsets(List<String> blockFiles) throws IOException {
         log.info("Starting K-way merge of {} blocks...", blockFiles.size());
+
+        if (blockFiles.isEmpty()) {
+            log.warn("No block files found");
+            return;
+        }
 
         PriorityQueue<BlockReader> queue = new PriorityQueue<>(
                 Comparator.comparing(BlockReader::peekTerm)
@@ -178,6 +284,8 @@ public class SPIMI {
             BlockReader reader = new BlockReader(file);
             if (reader.hasNext()) {
                 queue.add(reader);
+            } else {
+                reader.close();
             }
         }
 
@@ -185,7 +293,7 @@ public class SPIMI {
         long currentOffset = 0;
 
         try (DataOutputStream out = new DataOutputStream(
-                new BufferedOutputStream(new FileOutputStream(POSTINGS_FILE), 65536))) {
+                new BufferedOutputStream(new FileOutputStream(POSTINGS_FILE), DISK_BUFFER_SIZE))) {
 
             while (!queue.isEmpty()) {
                 String term = queue.peek().peekTerm();
@@ -243,11 +351,8 @@ public class SPIMI {
             }
         }
 
-        // записуємо у файл
         byte[] data = baos.toByteArray();
         out.write(data);
-
-        // повертаємо розмір
         return data.length;
     }
 
@@ -288,14 +393,15 @@ public class SPIMI {
     }
 
     private BufferedReader createReader(Path file) throws IOException {
+        int bufferSize = 64 * 1024; // 64 KB
         String name = file.getFileName().toString().toLowerCase();
+
+        InputStream is = new BufferedInputStream(Files.newInputStream(file), bufferSize);
+
         if (name.endsWith(".bz2")) {
-            log.debug("Decompressing .bz2 file: {}", name);
-            return new BufferedReader(new InputStreamReader(
-                    new BZip2CompressorInputStream(Files.newInputStream(file)),
-                    StandardCharsets.UTF_8));
+            is = new BZip2CompressorInputStream(is);
         }
-        return Files.newBufferedReader(file, StandardCharsets.UTF_8);
+        return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
     }
 
     private void printStatistics(IndexMetadata metadata) {
@@ -367,23 +473,30 @@ public class SPIMI {
         }
     }
 
-    private static class BlockReader {
+    private static class BlockReader implements AutoCloseable {
         private final DataInputStream in;
-        private String currentTerm;
+        private final String filename;
+        private volatile String currentTerm;
         private Map<Integer, List<Integer>> currentPostings;
+        private volatile boolean closed = false;
 
         public BlockReader(String filename) throws IOException {
+            this.filename = filename;
             this.in = new DataInputStream(
-                    new BufferedInputStream(new FileInputStream(filename), 65536));
+                    new BufferedInputStream(new FileInputStream(filename), DISK_BUFFER_SIZE));
             readNext();
         }
 
         private void readNext() {
+            if (closed) {
+                currentTerm = null;
+                return;
+            }
+
             try {
-                if (in.available() > 0) {
                     currentTerm = in.readUTF();
                     int docCount = in.readInt();
-                    currentPostings = new HashMap<>();
+                    currentPostings = new ConcurrentHashMap<>();
 
                     for (int i = 0; i < docCount; i++) {
                         int docId = in.readInt();
@@ -394,21 +507,18 @@ public class SPIMI {
                         }
                         currentPostings.put(docId, positions);
                     }
-                } else {
+            } catch (EOFException _) {
                     currentTerm = null;
-                    in.close();
-                }
-            } catch (IOException _) {
+                    currentPostings = null;
+            } catch (IOException e) {
+                log.error("Error reading block", e);
                 currentTerm = null;
-                try {
-                    in.close();
-                } catch (IOException _) {
-                }
+                currentPostings = null;
             }
         }
 
         public boolean hasNext() {
-            return currentTerm != null;
+            return currentTerm != null && !closed;
         }
 
         public String peekTerm() {
@@ -421,9 +531,18 @@ public class SPIMI {
             return postings;
         }
 
+        @Override
         public void close() throws IOException {
-            if (in != null) {
-                in.close();
+            if (!closed) {
+                closed = true;
+                if (in != null) {
+                    try {
+                        in.close();
+                    } catch (IOException e) {
+                        log.error("Error closing block", e);
+                        throw e;
+                    }
+                }
             }
         }
     }

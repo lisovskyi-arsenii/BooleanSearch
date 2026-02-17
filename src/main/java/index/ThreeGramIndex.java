@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -11,8 +12,8 @@ import java.util.regex.Pattern;
 public class ThreeGramIndex implements WildcardIndex {
     private static final int N = 3;
 
-    private final Map<String, Set<String>> index = new HashMap<>();
-    private final Set<String> terms = new HashSet<>();
+    private final Map<String, Set<String>> index = new ConcurrentHashMap<>();
+    private final Set<String> terms = ConcurrentHashMap.newKeySet();
 
     @Override
     public void buildFromDictionary(Dictionary dictionary) throws IllegalArgumentException {
@@ -89,7 +90,6 @@ public class ThreeGramIndex implements WildcardIndex {
         index.clear();
         terms.clear();
     }
-
 
     public List<String> extractNGrams(String wildcardQuery) {
         List<String> nGrams = new ArrayList<>();

@@ -1,16 +1,6 @@
 package main;
 
-import compression.FrontCoding;
-import compression.VariableByteCode;
-import core.BooleanSearchEngine;
-
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import static compression.GammaCode.encodeNumber;
-import static constants.Filenames.DIRECTORY_PATH;
 
 public class TestMain {
     public static void main(String[] args) {

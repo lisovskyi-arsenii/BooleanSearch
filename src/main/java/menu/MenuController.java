@@ -142,16 +142,16 @@ public class MenuController {
 
             searchEngine.indexLargeCollection(directoryPath);
 
-            System.out.println("\n✅ Large collection indexed successfully!");
+            System.out.println("\n  Large collection indexed successfully!");
             System.out.println("Building wildcard indexes...");
 
             searchEngine.buildWildcardIndexes();
 
-            System.out.println("✅ Wildcard indexes ready");
+            System.out.println("    Wildcard indexes ready");
             System.out.println("\nYou can now search the indexed collection");
 
         } catch (IOException e) {
-            System.err.println("\n❌ Indexing failed: " + e.getMessage());
+            System.err.println("\n  Indexing failed: " + e.getMessage());
             log.error("SPIMI indexing failed", e);
         }
     }
@@ -502,9 +502,7 @@ public class MenuController {
 
         log.debug("Searching phrase '{}' using {}", phrase, type);
 
-        String[] parts = phrase.split("\\s+");
-
-        Optional<Set<Integer>> result = searchEngine.phraseSearch(parts, type);
+        Optional<Set<Integer>> result = searchEngine.phraseSearch(phrase, type);
 
         result.ifPresentOrElse(
                 ids -> {
@@ -549,7 +547,7 @@ public class MenuController {
 
         log.debug("Proximity search: '{}' and '{}' within distance {}", term1, term2, distance);
 
-        var matchesOpt = searchEngine.proximitySearch(term1, term2, distance);
+        var matchesOpt = searchEngine.proximitySearchDetailed(term1, term2, distance);
 
         if (matchesOpt.isEmpty()) {
             System.out.printf("No matches found for '%s' and '%s' within distance %d%n",
@@ -568,7 +566,7 @@ public class MenuController {
         System.out.printf("%nFound %d match(es) in %d document(s):%n",
                 matches.size(), byDoc.size());
 
-        List<String> allDocNames = searchService.getDocumentNames(byDoc.keySet());
+        List<String> allDocNames = searchEngine.getDocumentNames(byDoc.keySet());
         List<Integer> docIdsList = new ArrayList<>(byDoc.keySet());
 
         Map<Integer, String> docIdToName = new HashMap<>();

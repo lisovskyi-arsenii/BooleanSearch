@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 
 @Slf4j
 @Getter
@@ -14,7 +13,7 @@ public class PositionalIndex implements Dictionary {
     private final Map<String, Map<Integer, List<Integer>>> index = new ConcurrentHashMap<>();
 
     public void addTerm(String term, int docId, int position) {
-        index.computeIfAbsent(term, _ -> new ConcurrentSkipListMap<>())
+        index.computeIfAbsent(term, _ -> new ConcurrentHashMap<>())
                 .computeIfAbsent(docId, _ -> Collections.synchronizedList(new ArrayList<>()))
                 .add(position);
     }
@@ -53,7 +52,6 @@ public class PositionalIndex implements Dictionary {
 
         return Optional.of(map.keySet());
     }
-
 
     @Override
     public Set<String> getAllTerms() {

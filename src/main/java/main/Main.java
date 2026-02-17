@@ -29,7 +29,7 @@ public class Main {
 
         boolean running = true;
         while (running) {
-            printMenu();
+            printMenu(searchEngine.getCurrentMode());
             try {
                 OptionalInt choice = customScanner.parseInt();
                 if (choice.isEmpty() || choice.getAsInt() < 0) {

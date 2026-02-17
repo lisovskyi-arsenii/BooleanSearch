@@ -40,6 +40,7 @@ public class ProximitySearch {
 
         log.debug("k={} > 1, biword index cannot handle this efficiently. Failing back to positional index", k);
 
+        // fallback to positional index
         var searchMatchesOpt = searchProximity(term1, term2, k);
         if (searchMatchesOpt.isEmpty()) {
             return Optional.empty();

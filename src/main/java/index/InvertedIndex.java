@@ -61,9 +61,4 @@ public class InvertedIndex implements Dictionary {
     public void clear() {
         index.clear();
     }
-
-//    public void print() {
-//        index.forEach((term, docID) ->
-//                System.out.println(term + ": " + docID));
-//    }
 }

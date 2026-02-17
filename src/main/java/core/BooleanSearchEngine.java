@@ -8,6 +8,8 @@ import index.Dictionary;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import matrix.TermDocumentMatrix;
+import query.PhraseSearch;
+import query.ProximitySearch;
 import query.QueryExecutor;
 import serialization.FormatMetrics;
 import serialization.SerializationComparison;
@@ -35,6 +37,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Getter
@@ -61,6 +64,9 @@ public class BooleanSearchEngine implements SearchEngine {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private SerializationComparison serializationComparison;
 
+    private final PhraseSearch phraseSearch;
+    private final ProximitySearch proximitySearch;
+
     // Disk-based mode
     private final SPIMI spimi;
     private RandomAccessFile postingsFile;
@@ -74,6 +80,8 @@ public class BooleanSearchEngine implements SearchEngine {
         this.matrix = new TermDocumentMatrix();
         this.registry = new DocumentRegistry();
         this.spimi = new SPIMI();
+        this.phraseSearch = new PhraseSearch(positionalIndex, biwordIndex);
+        this.proximitySearch = new ProximitySearch(positionalIndex, biwordIndex);
         this.executors = Map.of(
                 SearchStructureType.INDEX, new QueryExecutor<>(index),
                 SearchStructureType.MATRIX, new QueryExecutor<>(matrix),
@@ -103,35 +111,35 @@ public class BooleanSearchEngine implements SearchEngine {
                 return;
             }
             currentMode = IndexingMode.IN_MEMORY;
+
+            List<Path> paths = FileWalker.findFiles(directoryPath);
+
+            try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+                List<Future<?>> futures = paths.stream()
+                        .<Future<?>>map(path -> executor.submit(() -> {
+                            try {
+                                indexFile(path);
+                            } catch (IOException e) {
+                                log.error("Error indexing files in path {}", path, e);
+                            }
+                        }))
+                        .toList();
+
+                for (Future<?> future : futures) {
+                    try {
+                        future.get();
+                    } catch (ExecutionException | InterruptedException e) {
+                        log.error("Task execution failed", e);
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+
+            log.info("Documents indexed in IN-MEMORY mode");
+            log.info("   Documents: {}, Terms: {}", registry.documentCount(), index.size());
         } finally {
             lock.writeLock().unlock();
         }
-
-        List<Path> paths = FileWalker.findFiles(directoryPath);
-
-        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            List<Future<?>> futures = paths.stream()
-                    .<Future<?>>map(path -> executor.submit(() -> {
-                        try {
-                            indexFile(path);
-                        } catch (IOException e) {
-                            log.error("Error indexing files in path {}", path, e);
-                        }
-                    }))
-                    .toList();
-
-            for (Future<?> future : futures) {
-                try {
-                    future.get();
-                } catch (ExecutionException | InterruptedException e) {
-                    log.error("Task execution failed", e);
-                    Thread.currentThread().interrupt();
-                }
-            }
-        }
-
-        log.info("Documents indexed in IN-MEMORY mode");
-        log.info("   Documents: {}, Terms: {}", registry.documentCount(), index.size());
     }
 
     public void indexLargeCollection(String directoryPath) throws IOException {
@@ -140,7 +148,7 @@ public class BooleanSearchEngine implements SearchEngine {
         lock.writeLock().lock();
         try {
             if (currentMode == IndexingMode.IN_MEMORY) {
-                System.out.println("⚠️ Current mode is IN-MEMORY.");
+                System.out.println("   Current mode is IN-MEMORY.");
                 System.out.println("   Call clear() first to switch to DISK-BASED mode.");
                 return;
             }
@@ -151,7 +159,7 @@ public class BooleanSearchEngine implements SearchEngine {
             enableDiskBasedMode();
             currentMode = IndexingMode.DISK_BASED;
 
-            log.info("✅ Large collection indexed successfully!");
+            log.info("   Large collection indexed successfully!");
             log.info("   Mode: DISK-BASED (Random Access)");
             log.info("   Documents: {}", registry.documentCount());
             log.info("   Terms: {}", termOffsets.size());
@@ -173,10 +181,10 @@ public class BooleanSearchEngine implements SearchEngine {
         lock.writeLock().lock();
         try {
             docId = registry.registerDocument(filename, Files.size(path));
-            totalCollectionSize.addAndGet(size);
         } finally {
             lock.writeLock().unlock();
         }
+        totalCollectionSize.addAndGet(size);
 
         List<String> tokens = Tokenizer.tokenize(content);
 
@@ -198,13 +206,13 @@ public class BooleanSearchEngine implements SearchEngine {
         lock.writeLock().lock();
         try {
             if (currentMode == IndexingMode.NOT_INIT) {
-                System.out.println("⚠️Index not initialized.");
+                System.out.println("  Index not initialized.");
                 System.out.println("  Call indexDocuments() first.");
                 return;
             }
 
             if (currentMode == IndexingMode.DISK_BASED) {
-                System.out.println("ℹ️Wildcard search works automatically in DISK-BASED mode.");
+                System.out.println("  Wildcard search works automatically in DISK-BASED mode.");
                 System.out.println("  No need to build separate wildcard indexes.");
                 return;
             }
@@ -234,28 +242,43 @@ public class BooleanSearchEngine implements SearchEngine {
     private void enableDiskBasedMode() throws IOException, ClassNotFoundException {
         log.info("Enabling disk-based mode...");
 
-        // Завантажуємо тільки offsets (маленький файл)
-        termOffsets = SPIMI.loadOffsets();
+        RandomAccessFile tempFile = null;
+        try {
+            // Завантажуємо тільки offsets (маленький файл)
+            termOffsets = SPIMI.loadOffsets();
 
-        // Завантажуємо registry
-        RegistryData registryData = SPIMI.loadRegistry();
-        registry.loadData(registryData);
+            // Завантажуємо registry
+            RegistryData registryData = SPIMI.loadRegistry();
+            registry.loadData(registryData);
 
-        // Відкриваємо postings.dat для Random Access
-        var postingsFilename = "postings.dat";
-        postingsFile = new RandomAccessFile(postingsFilename, "r");
+            // Відкриваємо postings.dat для Random Access
+            var postingsFilename = "postings.dat";
+            tempFile = new RandomAccessFile(postingsFilename, "r");
 
-        long offsetsSize = Files.size(Path.of("offsets.bin"));
-        long postingsSize = Files.size(Path.of(postingsFilename));
+            postingsFile = tempFile;
 
-        log.info("✅ Disk-based mode enabled!");
-        log.info("   Offsets in RAM:    {} MB ({} terms)",
-                offsetsSize / (1024.0 * 1024.0), termOffsets.size());
-        log.info("   Postings on disk:  {} MB",
-                postingsSize / (1024.0 * 1024.0));
+            long offsetsSize = Files.size(Path.of("offsets.bin"));
+            long postingsSize = Files.size(Path.of(postingsFilename));
+
+            log.info("   Disk-based mode enabled!");
+            log.info("   Offsets in RAM:    {} MB ({} terms)",
+                    offsetsSize / (1024.0 * 1024.0), termOffsets.size());
+            log.info("   Postings on disk:  {} MB",
+                    postingsSize / (1024.0 * 1024.0));
+        } catch (IOException | ClassNotFoundException e) {
+            if (tempFile != null) {
+                try {
+                    tempFile.close();
+                } catch (IOException closeEx) {
+                    log.warn("Failed to close temporary file", closeEx);
+                }
+            }
+            throw e;
+        }
+
     }
 
-    private Optional<Set<Integer>> searchFromDisk(String term) throws IOException {
+    private Optional<Set<Integer>> searchFromDisk(String term) throws IOException, IllegalStateException {
         Long offset = termOffsets.get(term);
         if (offset == null) {
             log.debug("Term '{}' not found in dictionary", term);
@@ -264,6 +287,10 @@ public class BooleanSearchEngine implements SearchEngine {
 
         fileLock.lock();
         try {
+            if (postingsFile == null) {
+                throw new IllegalStateException("Postings file has not been initialized");
+            }
+
             postingsFile.seek(offset);
             postingsFile.readUTF();
             int docCount = postingsFile.readInt();
@@ -284,7 +311,7 @@ public class BooleanSearchEngine implements SearchEngine {
     }
 
     private Optional<Map<Integer, List<Integer>>> searchFromDiskWithPositions(String term)
-            throws IOException {
+            throws IOException, IllegalStateException {
         Long offset = termOffsets.get(term);
         if (offset == null) {
             log.debug("Term '{}' not found in dictionary", term);
@@ -293,8 +320,11 @@ public class BooleanSearchEngine implements SearchEngine {
 
         fileLock.lock();
         try {
-            postingsFile.seek(offset);
+            if (postingsFile == null) {
+                throw new IllegalStateException("Postings file has not been initialized");
+            }
 
+            postingsFile.seek(offset);
             postingsFile.readUTF();
             int docCount = postingsFile.readInt();
 
@@ -398,128 +428,161 @@ public class BooleanSearchEngine implements SearchEngine {
         return result.isEmpty() ? Optional.empty() : Optional.of(result);
     }
 
-    public Optional<Set<Integer>> phraseSearch(String[] terms, SearchStructureType type) {
+    public Optional<Set<Integer>> phraseSearch(String phrase, SearchStructureType type) {
+        Objects.requireNonNull(phrase, "Phrase must not be null");
+        Objects.requireNonNull(type, "Type must not be null");
+
+        if (phrase.isBlank()) {
+            log.warn("Phrase is blank");
+            return Optional.empty();
+        }
+
+        lock.readLock().lock();
+        IndexingMode mode;
+        try {
+            mode = currentMode;
+        } finally {
+            lock.readLock().unlock();
+        }
+
+        if (mode == IndexingMode.NOT_INIT) {
+            log.warn("Phrase search called on uninitialized index");
+            return Optional.empty();
+        }
+
+        if (mode == IndexingMode.DISK_BASED) {
+            String[] terms = phrase.split("\\s+");
+            try {
+                return phraseSearchOnDisk(terms);
+            } catch (IOException e) {
+                log.error("Disk phrase search failed for term: {}", phrase, e);
+                return Optional.empty();
+            }
+        }
+
         lock.readLock().lock();
         try {
-            if (currentMode == IndexingMode.NOT_INIT) {
-                log.warn("Phrase search called on uninitialized index");
-                return Optional.empty();
-            }
-
-            if (terms.length == 0) {
-                return Optional.empty();
-            }
-
-            if (type == SearchStructureType.BIWORD) {
-                return phraseSearchWithBiword(terms);
-            }
-
-            return phraseSearchWithPositions(terms);
-        } catch (IOException e) {
-            log.error("Phrase search failed", e);
-            return Optional.empty();
+            return phraseSearch.search(phrase, type);
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    private Optional<Set<Integer>> phraseSearchWithBiword(String[] terms) {
-        if (currentMode != IndexingMode.IN_MEMORY) {
-            System.out.println("Biword search is only available in RAM-based mode");
-            System.out.println("Use Positional Index instead");
-            return Optional.empty();
-        }
-
-        if (terms.length < 2) {
-            System.out.println("Biword search requires at least two terms");
-            return Optional.empty();
-        }
-
-        String biword = terms[0] + " " + terms[1];
-        var result = biwordIndex.getDocuments(biword)
-                .orElse(new HashSet<>());
-
-        if (result.isEmpty()) {
-            return Optional.empty();
-        }
-
-        for (int i = 1; i < terms.length - 1; i++) {
-            String currentBiword = terms[i] + " " + terms[i + 1];
-            var docsOpt = biwordIndex.getDocuments(currentBiword);
-
-            if (docsOpt.isEmpty()) {
-                return Optional.empty();
-            }
-
-            result.retainAll(docsOpt.get());
-
-            if (result.isEmpty()) {
-                return Optional.empty();
-            }
-        }
-
-        return Optional.of(result);
-    }
-
-    private Optional<Set<Integer>> phraseSearchWithPositions(String[] terms) throws IOException {
+    private Optional<Set<Integer>> phraseSearchOnDisk(String[] phrases) throws IOException {
         List<Map<Integer, List<Integer>>> allPostings = new ArrayList<>();
 
-        for (String term : terms) {
-            var postings = currentMode == IndexingMode.IN_MEMORY ?
-                                    getPositionsFromMemory(term) :
-                                    searchFromDiskWithPositions(term);
-
-            if (postings.isEmpty()) {
-                return Optional.empty();
-            }
+        for (var phrase : phrases) {
+            var postings = searchFromDiskWithPositions(phrase);
+            if (postings.isEmpty()) return Optional.empty();
             allPostings.add(postings.get());
         }
 
-        var commonDocs = new HashSet<Integer>(allPostings.getFirst().keySet());
+        var commonDocs = new HashSet<>(allPostings.getFirst().keySet());
         for (int i = 1; i < allPostings.size(); i++) {
             commonDocs.retainAll(allPostings.get(i).keySet());
-        }
-
-        if (commonDocs.isEmpty()) {
-            return Optional.empty();
+            if (commonDocs.isEmpty()) return Optional.empty();
         }
 
         var result = new HashSet<Integer>();
         for (int docId : commonDocs) {
-            if (isPhraseInDocument(docId, allPostings)) {
-                result.add(docId);
+            List<Integer> firstPositions = allPostings.getFirst().get(docId);
+            for (int startPos : firstPositions) {
+                boolean isPhrase = true;
+                for (int i = 1; i < allPostings.size(); i++) {
+                    List<Integer> nextPositions = allPostings.get(i).get(docId);
+                    if (!nextPositions.contains(startPos + i)) {
+                        isPhrase = false;
+                        break;
+                    }
+                }
+                if (isPhrase) {
+                    result.add(docId);
+                    break;
+                }
             }
         }
 
         return result.isEmpty() ? Optional.empty() : Optional.of(result);
     }
 
-    private Optional<Map<Integer, List<Integer>>> getPositionsFromMemory(String term) {
-        Map<Integer, List<Integer>> postings = positionalIndex.getIndex().get(term);
-        return (postings == null || postings.isEmpty()) ?
-                Optional.empty() :
-                Optional.of(postings);
+    public Optional<Set<Integer>> proximitySearch(
+            String term1,
+            String term2,
+            int k) {
+
+        Objects.requireNonNull(term1, "Term1 must not be null");
+        Objects.requireNonNull(term2, "Term2 must not be null");
+
+        if (term1.isBlank() || term2.isBlank()) {
+            log.warn("Terms cannot be blank");
+            return Optional.empty();
+        }
+
+        if (k < 1) {
+            log.warn("k must be positive, got: {}", k);
+            return Optional.empty();
+        }
+
+        lock.readLock().lock();
+        IndexingMode mode;
+        try {
+            mode = currentMode;
+        } finally {
+            lock.readLock().unlock();
+        }
+
+        if (mode == IndexingMode.NOT_INIT) {
+            log.warn("Proximity search called on uninitialized index");
+            return Optional.empty();
+        }
+
+        if (mode == IndexingMode.DISK_BASED) {
+            System.out.println("⚠️ Proximity search not supported in DISK_BASED mode");
+            return Optional.empty();
+        }
+
+        lock.readLock().lock();
+        try {
+            // if k == 1 use biword (no distance between them)
+            if (k == 1) {
+                return proximitySearch.searchProximityBiword(term1, term2, k);
+            }
+
+            // if k > 1 use positional index
+            var matchesOpt = proximitySearch.searchProximity(term1, term2, k);
+            if (matchesOpt.isEmpty()) {
+                return Optional.empty();
+            }
+
+            Set<Integer> docIds = matchesOpt.get().stream()
+                    .map(ProximitySearch.ProximityMatch::docId)
+                    .collect(Collectors.toSet());
+
+            return docIds.isEmpty() ? Optional.empty() : Optional.of(docIds);
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
-    private boolean isPhraseInDocument(int docId, List<Map<Integer, List<Integer>>> allPostings) {
-        List<Integer> firstTermPositions = allPostings.getFirst().get(docId);
+    public Optional<Set<ProximitySearch.ProximityMatch>> proximitySearchDetailed(
+            String term1,
+            String term2,
+            int k) {
 
-        for (int startPos : firstTermPositions) {
-            boolean isPhrase = true;
+        Objects.requireNonNull(term1, "Term1 must not be null");
+        Objects.requireNonNull(term2, "Term2 must not be null");
 
-            for (int i = 1; i < allPostings.size(); i++) {
-                List<Integer> positions = allPostings.get(i).get(docId);
-                if (!positions.contains(startPos + i)) {
-                    isPhrase = false;
-                    break;
-                }
+        lock.readLock().lock();
+        try {
+            if (currentMode != IndexingMode.IN_MEMORY) {
+                log.warn("Detailed proximity search only works in IN_MEMORY mode");
+                return Optional.empty();
             }
 
-            if (isPhrase) {
-                return true;
-            }
+            return proximitySearch.searchProximity(term1, term2, k);
+        } finally {
+            lock.readLock().unlock();
         }
-        return false;
     }
 
     public Optional<Map<String, Set<Integer>>> wildcardSearch(String wildcardQuery) {
@@ -527,18 +590,17 @@ public class BooleanSearchEngine implements SearchEngine {
 
         lock.readLock().lock();
         try {
-            if (currentMode == NOT_INIT) {
+            if (currentMode == IndexingMode.NOT_INIT) {
                 log.warn("Wildcard search called on uninitialized index");
                 return Optional.empty();
             }
 
-            if (currentMode == IN_MEMORY
+            if (currentMode == IndexingMode.IN_MEMORY
                     && (bTree == null || reverseBTree == null || threeGramIndex == null)) {
                     throw new IllegalStateException(
                             "Wildcard indexes not built. Call buildWildcardIndexes() first."
                     );
-                }
-
+            }
 
             List<String> matchingTerms = findMatchingTerms(wildcardQuery);
             Map<String, Set<Integer>> termToDocs = new TreeMap<>();
@@ -581,9 +643,8 @@ public class BooleanSearchEngine implements SearchEngine {
                         .sorted()
                         .toList();
             } else {
-                String pattern = wildcardQuery.replace("*", ".*");
                 return termOffsets.keySet().stream()
-                        .filter(term -> term.matches(pattern))
+                        .filter(term -> matchesWildcard(wildcardQuery, term))
                         .sorted()
                         .toList();
             }
@@ -597,6 +658,35 @@ public class BooleanSearchEngine implements SearchEngine {
                 return threeGramIndex.search(wildcardQuery);
             }
         }
+    }
+
+    private boolean matchesWildcard(String pattern, String term) {
+        int p = 0, t = 0;
+        int starIdx = -1;
+        int match = 0;
+
+        while (t < term.length()) {
+            if (p < pattern.length() && (pattern.charAt(p) == term.charAt(t) || pattern.charAt(p) == '?')) {
+                p++;
+                t++;
+            } else if (p < pattern.length() && pattern.charAt(p) == '*') {
+                starIdx = p;
+                match = t;
+                p++;
+            } else if (starIdx != -1) {
+                p = starIdx + 1;
+                match++;
+                t = match;
+            } else {
+                return false;
+            }
+        }
+
+        while (p < pattern.length() && pattern.charAt(p) == '*') {
+            p++;
+        }
+
+        return p == pattern.length();
     }
 
     // ============================================================================
@@ -646,7 +736,7 @@ public class BooleanSearchEngine implements SearchEngine {
 
         lock.writeLock().lock();
         try {
-            if (currentMode != IndexingMode.IN_MEMORY) {
+            if (currentMode == IndexingMode.DISK_BASED) {
                 System.out.println("Cannot loadIndex() in DISK_BASED mode. Call clear() first.");
                 return;
             }
@@ -672,6 +762,8 @@ public class BooleanSearchEngine implements SearchEngine {
             log.info("Rebuilding derived indexes from PositionalIndex");
             rebuildDerivedIndexes();
 
+            currentMode = IndexingMode.IN_MEMORY;
+
             log.info("Index loaded from {} (format: {}, docs: {}, terms: {}, next ID: {})",
                     filepath, format, registry.documentCount(), index.size(),
                     indexData.registryData().nextDocID());
@@ -686,6 +778,9 @@ public class BooleanSearchEngine implements SearchEngine {
             return null;
         }
 
+        String snapshotPath = "temp_snapshot.ser";
+        saveIndex(snapshotPath, "ser");
+
         String tempFilename = "temp_comparison";
 
         System.out.println("\nMeasuring serialization formats...");
@@ -694,9 +789,16 @@ public class BooleanSearchEngine implements SearchEngine {
         FormatMetrics textMetrics = measureFormat(tempFilename, "txt", "text");
         FormatMetrics jsonMetrics = measureFormat(tempFilename, "json", "json");
 
+        try {
+            loadIndex(snapshotPath, "ser");
+        } catch (ClassNotFoundException e) {
+            throw new IOException("Failed to restore index snapshot", e);
+        }
+
         deleteIfExists(tempFilename + ".ser");
         deleteIfExists(tempFilename + ".txt");
         deleteIfExists(tempFilename + ".json");
+        deleteIfExists(snapshotPath);
 
         System.out.println("Measurement completed!\n");
 
@@ -766,25 +868,28 @@ public class BooleanSearchEngine implements SearchEngine {
         log.info("INDEX rebuilt: {} terms", index.size());
 
         // biword
-        Set<Integer> allDocIds = registry.getAllDocumentIds();
-        for (int docId : allDocIds) {
-            TreeMap<Integer, String> positionToTerm = new TreeMap<>();
+        Map<Integer, TreeMap<Integer, String>> docContentReconstructed = new HashMap<>();
 
-            for (var termEntry : positionalIndex.getIndex().entrySet()) {
-                Map<Integer, List<Integer>> docPositions = termEntry.getValue();
-                List<Integer> positions = docPositions.get(docId);
-
-                if (positions != null) {
-                    for (int pos : positions) {
-                        positionToTerm.put(pos, termEntry.getKey());
-                    }
+        for (var termEntry : positionalIndex.getIndex().entrySet()) {
+            String term = termEntry.getKey();
+            for (var docEntry : termEntry.getValue().entrySet()) {
+                int docId = docEntry.getKey();
+                for (int pos : docEntry.getValue()) {
+                    docContentReconstructed
+                            .computeIfAbsent(docId, k -> new TreeMap<>())
+                            .put(pos, term);
                 }
             }
+        }
 
-            positionToTerm.forEach((pos, term) -> {
-                Integer nextPos = positionToTerm.higherKey(pos);
-                if (nextPos != null && nextPos == pos + 1) {
-                    String nextTerm = positionToTerm.get(nextPos);
+        for (var entry : docContentReconstructed.entrySet()) {
+            int docId = entry.getKey();
+            TreeMap<Integer, String> content = entry.getValue();
+
+            content.forEach((pos, term) -> {
+                Integer nextPos = content.higherKey(pos);
+                if (nextPos != null && nextPos.equals(pos + 1)) {
+                    String nextTerm = content.get(nextPos);
                     biwordIndex.addWord(term, nextTerm, docId);
                 }
             });
@@ -955,14 +1060,11 @@ public class BooleanSearchEngine implements SearchEngine {
                     log.warn("Error closing postings file", e);
                 }
                 postingsFile = null;
+                currentMode = IndexingMode.NOT_INIT;
             }
         } finally {
             lock.writeLock().unlock();
         }
-    }
-
-    public boolean isDiskBasedMode() {
-        return currentMode == IndexingMode.DISK_BASED;
     }
 
     private QueryExecutor<?> getExecutor(SearchStructureType type) throws IllegalArgumentException {
