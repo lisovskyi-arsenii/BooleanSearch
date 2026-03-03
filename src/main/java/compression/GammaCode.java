@@ -1,11 +1,17 @@
 package compression;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-public class GammaCode {
+public final class GammaCode {
+    private GammaCode() {
+        throw new UnsupportedOperationException("GammaCode class is utility class - cannot create instance of it");
+    }
+
     private static class BitWriter {
-        private final List<Byte> bytes = new ArrayList<>();
+        private byte[] bytes = new byte[256];
+        private int size;
         private int currentByte = 0;
         private int bitPosition = 0;
 
@@ -17,7 +23,10 @@ public class GammaCode {
             bitPosition++;
 
             if (bitPosition == 8) {
-                bytes.add((byte) currentByte);
+                if (size == bytes.length) {
+                    bytes = Arrays.copyOf(bytes, bytes.length * 2);
+                }
+                bytes[size++] = (byte) currentByte;
                 currentByte = 0;
                 bitPosition = 0;
             }
@@ -25,14 +34,12 @@ public class GammaCode {
 
         public byte[] toByteArray() {
             if (bitPosition > 0) {
-                bytes.add((byte) currentByte);
+                if (size == bytes.length) {
+                    bytes = Arrays.copyOf(bytes, bytes.length + 1);
+                }
+                bytes[size++] = (byte) currentByte;
             }
-
-            byte[] result = new byte[bytes.size()];
-            for (int i = 0; i < result.length; i++) {
-                result[i] = bytes.get(i);
-            }
-            return result;
+            return Arrays.copyOf(bytes, size);
         }
     }
 

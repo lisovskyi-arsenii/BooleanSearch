@@ -8,7 +8,11 @@ import java.util.Collections;
 import java.util.List;
 
 @Slf4j
-public class FrontCoding {
+public final class FrontCoding {
+    private FrontCoding() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
     public record CompressedDictionary(List<String> blocks, int originalSize, int compressedSize) {
         public double getCompressionRatio() {
             return (double) compressedSize / originalSize * 100;
@@ -81,12 +85,21 @@ public class FrontCoding {
                 String[] parts = entry.split(":", 2);
                 if (parts.length < 2) continue;
 
-                int prefixLength = Integer.parseInt(parts[0]);
-                String suffix = parts[1];
+                try {
+                    int prefixLength = Integer.parseInt(parts[0]);
+                    String suffix = parts[1];
 
-                String term = previous.substring(0, prefixLength) + suffix;
-                terms.add(term);
-                previous = term;
+                    if (prefixLength > previous.length()) {
+                        log.warn("Invalid prefix length");
+                        continue;
+                    }
+
+                    String term = previous.substring(0, prefixLength) + suffix;
+                    terms.add(term);
+                    previous = term;
+                } catch (NumberFormatException e) {
+                    log.warn("Skipping invalid entry: {}", entry, e);
+                }
             }
         }
 

@@ -4,26 +4,43 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class VariableByteCode {
+public final class VariableByteCode {
+    private VariableByteCode() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
     public static byte[] encode(List<Integer> numbers) {
         if (numbers.isEmpty()) {
             return new byte[0];
         }
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
         for (int num : numbers) {
-            while (num >= 128) {
-                byte chunk = (byte) (num & 0x7F);
-                baos.write(chunk);
-                num >>>= 7;
-            }
+            encodeNumber(num, baos);
+        }
+        return baos.toByteArray();
+    }
 
-            byte lastChunk = (byte) (num | 0x80);
-            baos.write(lastChunk);
+    private static void encodeNumber(int num, ByteArrayOutputStream baos) {
+        if (num < 0) {
+            throw new IllegalArgumentException("VByte supports only non-negative integers");
         }
 
-        return baos.toByteArray();
+        int[] chunks = new int[5];
+        int count = 0;
+
+        do {
+            chunks[count++] = num & 0x7F;
+            num >>>= 7;
+        } while (num != 0);
+
+        for (int i = count - 1; i >= 0; i--) {
+            int b = chunks[i];
+            if (i == 0) {
+                b |= 0x80;
+            }
+            baos.write(b);
+        }
     }
 
     public static byte[] encodeWithGaps(List<Integer> sortedNumbers) {
@@ -45,17 +62,14 @@ public class VariableByteCode {
     public static List<Integer> decode(byte[] encoded) {
         List<Integer> numbers = new ArrayList<>();
         int current = 0;
-        int shift = 0;
 
         for (byte b : encoded) {
-            if ((b & 0x80) == 0) {
-                current |= (b & 0x7F) << shift;
-                shift += 7;
-            } else {
-                current |= (b & 0x7F) << shift;
+            int val = b & 0xFF;
+            current = (current << 7) | (val & 0x7F);
+
+            if ((val & 0x80) != 0) {
                 numbers.add(current);
                 current = 0;
-                shift = 0;
             }
         }
 
