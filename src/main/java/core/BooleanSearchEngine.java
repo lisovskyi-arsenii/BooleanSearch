@@ -1,10 +1,10 @@
 package core;
 
+import index.*;
+import index.Dictionary;
 import document.DocumentRegistry;
 import enums.FileSerializationFormat;
 import enums.SearchStructureType;
-import index.*;
-import index.Dictionary;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import matrix.TermDocumentMatrix;

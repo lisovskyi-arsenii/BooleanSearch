@@ -29,13 +29,18 @@ public class SPIMI {
 
     private static final String TEMP_DIR      = "temp_blocks";
     private static final String POSTINGS_FILE = "postings.dat";
-    private static final String OFFSETS_FILE  = "offsets.bin";
+//    private static final String OFFSETS_FILE  = "offsets.bin";
     private static final String REGISTRY_FILE = "registry.dat";
+//    private static final String DICT_FILE = "dictionary.dat";
+    private static final String SPARSE_OFFSETS_FILE = "sparse_offsets.bin";
+    private static final int SPARSE_INTERVAL = 128;
 
     // State
 
     // term → byte offset in postings.dat
     private final ConcurrentHashMap<String, Long> termOffsets = new ConcurrentHashMap<>();
+    private final TreeMap<String, Long> sparseOffsets = new TreeMap<>();
+    private RandomAccessFile dictionaryFile;
     private final DocumentRegistry globalRegistry = new DocumentRegistry();
 
     @Getter private final AtomicInteger blocksCreated    = new AtomicInteger();
@@ -63,14 +68,14 @@ public class SPIMI {
 
         long elapsed      = System.currentTimeMillis() - start;
         long postingsSize = Files.size(Paths.get(POSTINGS_FILE));
-        long offsetsSize  = Files.size(Paths.get(OFFSETS_FILE));
+//        long offsetsSize  = Files.size(Paths.get(OFFSETS_FILE));
         long registrySize = Files.size(Paths.get(REGISTRY_FILE));
 
         IndexMetadata meta = new IndexMetadata(
                 termOffsets.size(),
                 globalRegistry.documentCount(),
                 bytesProcessed.get(),
-                postingsSize + offsetsSize + registrySize,
+                postingsSize + registrySize,
                 blocksCreated.get(),
                 elapsed,
                 POSTINGS_FILE
@@ -166,12 +171,19 @@ public class SPIMI {
             if (reader.hasNext()) heap.add(reader); else reader.close();
         }
 
-        long offset = 0;
+        TreeMap<String, Long> sparseIndex = new TreeMap<>();
+        int uniqueTerms     = 0;
+        long postingsOffset = 0;
+        long dictOffset     = 0;
 
-        try (DataOutputStream out = bufferedOutput(POSTINGS_FILE)) {
+        try (DataOutputStream postingsOut  = bufferedOutput(POSTINGS_FILE);
+        DataOutputStream dictOut      = bufferedOutput(DICT_FILE);
+        DataOutputStream positionsOut = bufferedOutput(POSITIONS_FILE)) {
+
             while (!heap.isEmpty()) {
                 String term = heap.peek().peekTerm();
 
+                // Collect and merge postings for `term` from all blocks that have it
                 Map<Integer, List<Integer>> merged = new TreeMap<>();
                 while (!heap.isEmpty() && heap.peek().peekTerm().equals(term)) {
                     BlockReader r = heap.poll();
@@ -181,16 +193,36 @@ public class SPIMI {
                     if (r.hasNext()) heap.add(r); else r.close();
                 }
 
-                termOffsets.put(term, offset);
-                offset += writeTerm(out, term, merged);
+                // ── postings.dat ──────────────────────────────────────────────
+                int postingsWritten = writeTermToPostings(postingsOut, term, merged);
 
-                if (termOffsets.size() % 10_000 == 0) {
-                    log.info("Merged {} terms (offset: {} bytes)",
-                            termOffsets.size(), offset);
+                // ── dictionary.dat ────────────────────────────────────────────
+                // Entry: [2b termLen][term UTF-8 bytes][8b offset in postings.dat]
+                byte[] termBytes = term.getBytes(StandardCharsets.UTF_8);
+                dictOut.writeShort(termBytes.length);
+                dictOut.write(termBytes);
+                dictOut.writeLong(postingsOffset);
+                int dictEntrySize = Short.BYTES + termBytes.length + Long.BYTES;
+
+                // ── positions.dat ─────────────────────────────────────────────
+                // Record where this dictionary entry starts — used for binary search
+                positionsOut.writeLong(dictOffset);
+
+                // Advance offsets
+                postingsOffset += postingsWritten;
+                dictOffset     += dictEntrySize;
+                uniqueTerms++;
+
+                if (uniqueTerms % 10_000 == 0) {
+                    log.info("Merged {} terms (postings: {} MB, dict: {} KB)",
+                            uniqueTerms,
+                            postingsOffset  / (1024 * 1024),
+                            dictOffset      / 1024);
                 }
             }
         }
 
+        writeObject(SPARSE_OFFSETS_FILE, sparseIndex);
         log.info("Merge complete: {} unique terms", termOffsets.size());
     }
 
