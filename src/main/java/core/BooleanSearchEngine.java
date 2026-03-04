@@ -56,6 +56,7 @@ public class BooleanSearchEngine implements SearchEngine {
     private final TermDocumentMatrix matrix;
     private BTree bTree;
     private ReverseBTree reverseBTree;
+    private PermutermIndex permutermIndex;
     private ThreeGramIndex threeGramIndex;
     private final DocumentRegistry registry;
     private final Map<SearchStructureType, QueryExecutor<?>> executors;
@@ -221,11 +222,14 @@ public class BooleanSearchEngine implements SearchEngine {
             reverseBTree = new ReverseBTree();
             reverseBTree.buildFromDictionary(index);
 
+            permutermIndex = new PermutermIndex();
+            permutermIndex.buildFromDictionary(index);
+
             threeGramIndex = new ThreeGramIndex();
             threeGramIndex.buildFromDictionary(index);
 
-            log.info("Wildcard indexes built: BTree={}, ReverseBTree={}, ThreeGram={}",
-                    bTree.size(), reverseBTree.size(), threeGramIndex.size());
+            log.info("Wildcard indexes built: BTree={}, ReverseBTree={}, PermutermIndex={} ThreeGram={}",
+                    bTree.size(), reverseBTree.size(), permutermIndex.size(), threeGramIndex.size());
         } finally {
             lock.writeLock().unlock();
         }
@@ -645,12 +649,12 @@ public class BooleanSearchEngine implements SearchEngine {
                         .toList();
             }
         } else {
-            // RAM-based
-            if (endsWithWildcard) {
-                return bTree.search(wildcardQuery);
-            } else if (startsWithWildcard) {
-                return reverseBTree.search(wildcardQuery);
+            long starCount = wildcardQuery.chars().filter(c -> c == '*').count();
+            if (starCount == 1) {
+                // one * - permuterm, two or more - threeGram
+                return permutermIndex.search(wildcardQuery);
             } else {
+                // кілька '*' — тільки 3-gram справляється
                 return threeGramIndex.search(wildcardQuery);
             }
         }
@@ -1027,6 +1031,9 @@ public class BooleanSearchEngine implements SearchEngine {
             }
             if (reverseBTree != null) {
                 reverseBTree.clear();
+            }
+            if (permutermIndex != null) {
+                permutermIndex.clear();
             }
             if (threeGramIndex != null) {
                 threeGramIndex.clear();

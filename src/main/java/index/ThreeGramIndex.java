@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 @Slf4j
 @Getter
 public class ThreeGramIndex implements WildcardIndex {
+    private static final char MARKER = '$';
     private static final int N = 3;
 
     private final Map<String, Set<String>> index = new ConcurrentHashMap<>();
@@ -93,7 +94,7 @@ public class ThreeGramIndex implements WildcardIndex {
 
     public List<String> extractNGrams(String wildcardQuery) {
         List<String> nGrams = new ArrayList<>();
-        String edited = "$" + wildcardQuery + "$";
+        String edited = MARKER + wildcardQuery + MARKER;
 
         for (int i = 0; i <= edited.length() - N; i++) {
             String subStr = edited.substring(i, i + N);
