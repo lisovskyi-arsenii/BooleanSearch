@@ -245,7 +245,7 @@ public class BooleanSearchEngine implements SearchEngine {
         RandomAccessFile tempFile = null;
         try {
             // Завантажуємо тільки offsets (маленький файл)
-            termOffsets = SPIMI.loadOffsets();
+            termOffsets = SPIMI.loadSparseOffsets();
 
             // Завантажуємо registry
             RegistryData registryData = SPIMI.loadRegistry();

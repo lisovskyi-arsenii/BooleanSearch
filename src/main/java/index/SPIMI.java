@@ -27,27 +27,24 @@ public class SPIMI {
     private static final int DISK_BUFFER_SIZE = 4 * 1024 * 1024;
     private static final int THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
 
-    private static final String TEMP_DIR      = "temp_blocks";
-    private static final String POSTINGS_FILE = "postings.dat";
-//    private static final String OFFSETS_FILE  = "offsets.bin";
-    private static final String REGISTRY_FILE = "registry.dat";
-//    private static final String DICT_FILE = "dictionary.dat";
+    private static final String TEMP_DIR            = "temp_blocks";
+    private static final String POSTINGS_FILE       = "postings.dat";
+    private static final String DICT_FILE           = "dictionary.dat";
+    private static final String POSITIONS_FILE      = "positions.dat";
+    private static final String REGISTRY_FILE       = "registry.dat";
     private static final String SPARSE_OFFSETS_FILE = "sparse_offsets.bin";
     private static final int SPARSE_INTERVAL = 128;
 
     // State
 
-    // term → byte offset in postings.dat
-    private final ConcurrentHashMap<String, Long> termOffsets = new ConcurrentHashMap<>();
-    private final TreeMap<String, Long> sparseOffsets = new TreeMap<>();
-    private RandomAccessFile dictionaryFile;
-    private final DocumentRegistry globalRegistry = new DocumentRegistry();
+    private final TreeMap<String, Long> sparseOffsets       = new TreeMap<>();
+    private final DocumentRegistry globalRegistry           = new DocumentRegistry();
 
-    @Getter private final AtomicInteger blocksCreated    = new AtomicInteger();
-    @Getter private final AtomicInteger documentsIndexed = new AtomicInteger();
-    @Getter private final AtomicLong    bytesProcessed   = new AtomicLong();
+    @Getter private final AtomicInteger blocksCreated       = new AtomicInteger();
+    @Getter private final AtomicInteger documentsIndexed    = new AtomicInteger();
+    @Getter private final AtomicLong    bytesProcessed      = new AtomicLong();
 
-    // API
+    // Methods
 
     public void buildIndex(String directoryPath) throws IOException {
         long start = System.currentTimeMillis();
@@ -61,18 +58,17 @@ public class SPIMI {
         log.info("Found {} files", files.size());
 
         List<String> blockFiles = buildBlocks(files);
-        mergeBlocks(blockFiles);
+        int uniqueTerms = mergeBlocks(blockFiles);
         persistRegistry();
-        persistOffsets();
+        persistSparseOffset();
         deleteTempDir();
 
         long elapsed      = System.currentTimeMillis() - start;
         long postingsSize = Files.size(Paths.get(POSTINGS_FILE));
-//        long offsetsSize  = Files.size(Paths.get(OFFSETS_FILE));
         long registrySize = Files.size(Paths.get(REGISTRY_FILE));
 
         IndexMetadata meta = new IndexMetadata(
-                termOffsets.size(),
+                uniqueTerms,
                 globalRegistry.documentCount(),
                 bytesProcessed.get(),
                 postingsSize + registrySize,
@@ -159,8 +155,11 @@ public class SPIMI {
         }
     }
 
-    private void mergeBlocks(List<String> blockFiles) throws IOException {
-        if (blockFiles.isEmpty()) { log.warn("No blocks to merge"); return; }
+    private int mergeBlocks(List<String> blockFiles) throws IOException {
+        if (blockFiles.isEmpty()) {
+            log.warn("No blocks to merge"); return 0;
+        }
+
         log.info("K-way merge of {} blocks...", blockFiles.size());
 
         PriorityQueue<BlockReader> heap =
@@ -168,17 +167,18 @@ public class SPIMI {
 
         for (String f : blockFiles) {
             BlockReader reader = new BlockReader(f);
-            if (reader.hasNext()) heap.add(reader); else reader.close();
+            if (reader.hasNext()) heap.add(reader);
+            else reader.close();
         }
 
-        TreeMap<String, Long> sparseIndex = new TreeMap<>();
         int uniqueTerms     = 0;
         long postingsOffset = 0;
         long dictOffset     = 0;
+        sparseOffsets.clear();
 
         try (DataOutputStream postingsOut  = bufferedOutput(POSTINGS_FILE);
-        DataOutputStream dictOut      = bufferedOutput(DICT_FILE);
-        DataOutputStream positionsOut = bufferedOutput(POSITIONS_FILE)) {
+             DataOutputStream dictOut      = bufferedOutput(DICT_FILE);
+             DataOutputStream positionsOut = bufferedOutput(POSITIONS_FILE)) {
 
             while (!heap.isEmpty()) {
                 String term = heap.peek().peekTerm();
@@ -193,10 +193,10 @@ public class SPIMI {
                     if (r.hasNext()) heap.add(r); else r.close();
                 }
 
-                // ── postings.dat ──────────────────────────────────────────────
-                int postingsWritten = writeTermToPostings(postingsOut, term, merged);
+                // postings.dat
+                int postingsWritten = writeTermPostings(postingsOut, merged);
 
-                // ── dictionary.dat ────────────────────────────────────────────
+                // dictionary.dat
                 // Entry: [2b termLen][term UTF-8 bytes][8b offset in postings.dat]
                 byte[] termBytes = term.getBytes(StandardCharsets.UTF_8);
                 dictOut.writeShort(termBytes.length);
@@ -204,9 +204,13 @@ public class SPIMI {
                 dictOut.writeLong(postingsOffset);
                 int dictEntrySize = Short.BYTES + termBytes.length + Long.BYTES;
 
-                // ── positions.dat ─────────────────────────────────────────────
+                // positions.dat
                 // Record where this dictionary entry starts — used for binary search
                 positionsOut.writeLong(dictOffset);
+
+                if (uniqueTerms % SPARSE_INTERVAL == 0) {
+                    sparseOffsets.put(term, dictOffset);
+                }
 
                 // Advance offsets
                 postingsOffset += postingsWritten;
@@ -222,8 +226,8 @@ public class SPIMI {
             }
         }
 
-        writeObject(SPARSE_OFFSETS_FILE, sparseIndex);
-        log.info("Merge complete: {} unique terms", termOffsets.size());
+        log.info("Merge complete: {} unique terms", uniqueTerms);
+        return uniqueTerms;
     }
 
     private String saveBlock(PositionalIndex index) throws IOException {
@@ -245,13 +249,19 @@ public class SPIMI {
         return path;
     }
 
-    private int writeTerm(DataOutputStream out,
-                          String term,
-                          Map<Integer, List<Integer>> postings) throws IOException {
+    private int writeTermPostings(DataOutputStream out,
+                                  Map<Integer, List<Integer>> postings) throws IOException {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         try (DataOutputStream tmp = new DataOutputStream(buf)) {
-            writeTermEntry(tmp, term, postings);
+            tmp.writeInt(postings.size());
+            for (var entry : postings.entrySet()) {
+                tmp.writeInt(entry.getKey());
+                List<Integer> pos = entry.getValue();
+                tmp.writeInt(pos.size());
+                for (int p : pos) tmp.writeInt(p);
+            }
         }
+
         byte[] data = buf.toByteArray();
         out.write(data);
         return data.length;
@@ -270,18 +280,62 @@ public class SPIMI {
         }
     }
 
+    private Map<Integer, List<Integer>> lookup(String term) throws IOException {
+        Map.Entry<String, Long> floor = sparseOffsets.floorEntry(term);
+        Map.Entry<String, Long> ceil  = sparseOffsets.higherEntry(term);
+
+        long rangeStart = (floor != null) ? floor.getValue() : 0L;
+        long rangeEnd   = (ceil != null)  ? ceil.getValue()  : Files.size(Paths.get(DICT_FILE));
+
+        try (RandomAccessFile dictFile = new RandomAccessFile(DICT_FILE, "r")) {
+            dictFile.seek(rangeStart);
+
+            while (dictFile.getFilePointer() < rangeEnd) {
+                int termLen         = dictFile.readShort() & 0xFFFF;
+                byte[] termBytes    = new byte[termLen];
+                dictFile.readFully(termBytes);
+                String candidate    = new String(termBytes, StandardCharsets.UTF_8);
+                long postOff        = dictFile.readLong();
+
+                int cmp = candidate.compareTo(term);
+                if (cmp == 0) return readPostings(postOff);
+                if (cmp > 0) break;
+            }
+        }
+
+        return Collections.emptyMap();
+    }
+
+    private Map<Integer, List<Integer>> readPostings(long offset) throws IOException {
+        try (RandomAccessFile postFile = new RandomAccessFile(POSTINGS_FILE, "r")) {
+            postFile.seek(offset);
+            int docCount = postFile.readInt();
+            Map<Integer, List<Integer>> result = LinkedHashMap.newLinkedHashMap(docCount * 2);
+            for (int i = 0; i < docCount; i++) {
+                int docId       = postFile.readInt();
+                int posCount    = postFile.readInt();
+                List<Integer> positions = new ArrayList<>(posCount);
+                for (int j = 0; j < posCount; j++) {
+                    positions.add(postFile.readInt());
+                }
+                result.put(docId, positions);
+            }
+            return result;
+        }
+    }
+
     private void persistRegistry() throws IOException {
         writeObject(REGISTRY_FILE, globalRegistry.exportData());
         log.info("Registry saved: {} documents", globalRegistry.documentCount());
     }
 
-    private void persistOffsets() throws IOException {
-        writeObject(OFFSETS_FILE, termOffsets);
-        log.info("Offsets saved: {} terms", termOffsets.size());
+    private void persistSparseOffset() throws IOException {
+        writeObject(SPARSE_OFFSETS_FILE, sparseOffsets);
+        log.info("Sparse offsets saved: {} terms", sparseOffsets.size());
     }
 
-    public static Map<String, Long> loadOffsets() throws IOException, ClassNotFoundException {
-        return readObject(OFFSETS_FILE);
+    public static SortedMap<String, Long> loadSparseOffsets() throws IOException, ClassNotFoundException {
+        return readObject(SPARSE_OFFSETS_FILE);
     }
 
     public static RegistryData loadRegistry() throws IOException, ClassNotFoundException {
@@ -305,9 +359,9 @@ public class SPIMI {
 
     private BufferedReader openReader(Path file) throws IOException {
         InputStream raw = new BufferedInputStream(Files.newInputStream(file), 64 * 1024);
-        if (file.getFileName().toString().toLowerCase().endsWith(".bz2")) {
-            raw = new BZip2CompressorInputStream(raw);
-        }
+//        if (file.getFileName().toString().toLowerCase().endsWith(".bz2")) {
+//            raw = new BZip2CompressorInputStream(raw);
+//        }
         return new BufferedReader(new InputStreamReader(raw, StandardCharsets.UTF_8));
     }
 
