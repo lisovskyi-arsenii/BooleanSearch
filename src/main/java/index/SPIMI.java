@@ -3,7 +3,6 @@ package index;
 import document.DocumentRegistry;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import serialization.data.IndexMetadata;
 import serialization.data.RegistryData;
 import tokenization.Tokenizer;
@@ -15,6 +14,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.function.Predicate;
 
 @Slf4j
 public class SPIMI {
@@ -30,7 +30,7 @@ public class SPIMI {
     private static final String TEMP_DIR            = "temp_blocks";
     private static final String POSTINGS_FILE       = "postings.dat";
     private static final String DICT_FILE           = "dictionary.dat";
-    private static final String POSITIONS_FILE      = "positions.dat";
+//    private static final String POSITIONS_FILE      = "positions.dat";
     private static final String REGISTRY_FILE       = "registry.dat";
     private static final String SPARSE_OFFSETS_FILE = "sparse_offsets.bin";
     private static final int SPARSE_INTERVAL = 128;
@@ -38,7 +38,7 @@ public class SPIMI {
     // State
 
     private final TreeMap<String, Long> sparseOffsets       = new TreeMap<>();
-    private final DocumentRegistry globalRegistry           = new DocumentRegistry();
+    private final DocumentRegistry      globalRegistry      = new DocumentRegistry();
 
     @Getter private final AtomicInteger blocksCreated       = new AtomicInteger();
     @Getter private final AtomicInteger documentsIndexed    = new AtomicInteger();
@@ -79,6 +79,55 @@ public class SPIMI {
         log.info("SPIMI completed in {} ms", elapsed);
         printStats(meta);
     }
+
+    public void open() throws IOException, ClassNotFoundException {
+        TreeMap<String, Long> loaded = readObject(SPARSE_OFFSETS_FILE);
+        sparseOffsets.clear();
+        sparseOffsets.putAll(loaded);
+        log.info("Sparse index loaded: {} anchor terms", sparseOffsets.size());
+    }
+
+    public List<String> findTermsWithPrefix(String prefix) throws IOException {
+        Map.Entry<String, Long> floor = sparseOffsets.floorEntry(prefix);
+        long rangeStart = (floor != null) ? floor.getValue() : 0L;
+
+        List<String> result = new ArrayList<>();
+        try (RandomAccessFile dictFile = new RandomAccessFile(DICT_FILE, "r")) {
+            dictFile.seek(rangeStart);
+            while (dictFile.getFilePointer() < dictFile.length()) {
+                int    termLen   = dictFile.readShort() & 0xFFFF;
+                byte[] termBytes = new byte[termLen];
+                dictFile.readFully(termBytes);
+                String term = new String(termBytes, StandardCharsets.UTF_8);
+                dictFile.readLong(); // skip postings offset
+
+                if (term.startsWith(prefix)) {
+                    result.add(term);
+                } else if (term.compareTo(prefix) > 0 && !term.startsWith(prefix)) {
+                    break; // the dictionary is sorted — past the prefix range
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public List<String> findTerms(Predicate<String> filter) throws IOException {
+        List<String> result = new ArrayList<>();
+        try (RandomAccessFile dictFile = new RandomAccessFile(DICT_FILE, "r")) {
+            while (dictFile.getFilePointer() < dictFile.length()) {
+                int    termLen   = dictFile.readShort() & 0xFFFF;
+                byte[] termBytes = new byte[termLen];
+                dictFile.readFully(termBytes);
+                String term = new String(termBytes, StandardCharsets.UTF_8);
+                dictFile.readLong(); // skip postings offset
+
+                if (filter.test(term)) result.add(term);
+            }
+        }
+        return result;
+    }
+
 
     private List<String> buildBlocks(List<Path> files) throws IOException {
         Queue<String> createdBlocks = new ConcurrentLinkedQueue<>();
@@ -177,8 +226,8 @@ public class SPIMI {
         sparseOffsets.clear();
 
         try (DataOutputStream postingsOut  = bufferedOutput(POSTINGS_FILE);
-             DataOutputStream dictOut      = bufferedOutput(DICT_FILE);
-             DataOutputStream positionsOut = bufferedOutput(POSITIONS_FILE)) {
+             DataOutputStream dictOut      = bufferedOutput(DICT_FILE)) {
+//             DataOutputStream positionsOut = bufferedOutput(POSITIONS_FILE)) {
 
             while (!heap.isEmpty()) {
                 String term = heap.peek().peekTerm();
@@ -193,20 +242,19 @@ public class SPIMI {
                     if (r.hasNext()) heap.add(r); else r.close();
                 }
 
-                // postings.dat
+                // postings.dat — raw postings, no term string
                 int postingsWritten = writeTermPostings(postingsOut, merged);
 
-                // dictionary.dat
-                // Entry: [2b termLen][term UTF-8 bytes][8b offset in postings.dat]
+                // dictionary.dat - [2b termLen][term UTF-8][8b postingsOffset]
                 byte[] termBytes = term.getBytes(StandardCharsets.UTF_8);
                 dictOut.writeShort(termBytes.length);
                 dictOut.write(termBytes);
                 dictOut.writeLong(postingsOffset);
                 int dictEntrySize = Short.BYTES + termBytes.length + Long.BYTES;
 
-                // positions.dat
-                // Record where this dictionary entry starts — used for binary search
-                positionsOut.writeLong(dictOffset);
+//                // positions.dat
+//                // Record where this dictionary entry starts — used for binary search
+//                positionsOut.writeLong(dictOffset);
 
                 if (uniqueTerms % SPARSE_INTERVAL == 0) {
                     sparseOffsets.put(term, dictOffset);
@@ -280,37 +328,11 @@ public class SPIMI {
         }
     }
 
-    private Map<Integer, List<Integer>> lookup(String term) throws IOException {
-        Map.Entry<String, Long> floor = sparseOffsets.floorEntry(term);
-        Map.Entry<String, Long> ceil  = sparseOffsets.higherEntry(term);
-
-        long rangeStart = (floor != null) ? floor.getValue() : 0L;
-        long rangeEnd   = (ceil != null)  ? ceil.getValue()  : Files.size(Paths.get(DICT_FILE));
-
-        try (RandomAccessFile dictFile = new RandomAccessFile(DICT_FILE, "r")) {
-            dictFile.seek(rangeStart);
-
-            while (dictFile.getFilePointer() < rangeEnd) {
-                int termLen         = dictFile.readShort() & 0xFFFF;
-                byte[] termBytes    = new byte[termLen];
-                dictFile.readFully(termBytes);
-                String candidate    = new String(termBytes, StandardCharsets.UTF_8);
-                long postOff        = dictFile.readLong();
-
-                int cmp = candidate.compareTo(term);
-                if (cmp == 0) return readPostings(postOff);
-                if (cmp > 0) break;
-            }
-        }
-
-        return Collections.emptyMap();
-    }
-
     private Map<Integer, List<Integer>> readPostings(long offset) throws IOException {
         try (RandomAccessFile postFile = new RandomAccessFile(POSTINGS_FILE, "r")) {
             postFile.seek(offset);
             int docCount = postFile.readInt();
-            Map<Integer, List<Integer>> result = LinkedHashMap.newLinkedHashMap(docCount * 2);
+            Map<Integer, List<Integer>> result = LinkedHashMap.newLinkedHashMap(docCount);
             for (int i = 0; i < docCount; i++) {
                 int docId       = postFile.readInt();
                 int posCount    = postFile.readInt();
@@ -334,7 +356,7 @@ public class SPIMI {
         log.info("Sparse offsets saved: {} terms", sparseOffsets.size());
     }
 
-    public static SortedMap<String, Long> loadSparseOffsets() throws IOException, ClassNotFoundException {
+    public static TreeMap<String, Long> loadSparseOffsets() throws IOException, ClassNotFoundException {
         return readObject(SPARSE_OFFSETS_FILE);
     }
 
@@ -404,7 +426,7 @@ public class SPIMI {
         double mb    = m.totalBytesProcessed() / (1024.0 * 1024.0);
         double idxMb = m.finalIndexSize()       / (1024.0 * 1024.0);
 
-        System.out.println("\n" + "=".repeat(72));
+        System.out.println("\n" + "=".repeat(70));
         System.out.println("SPIMI RESULTS");
         System.out.println("=".repeat(72));
         System.out.printf("  Documents:       %,d%n",     m.documentsCount());
@@ -414,7 +436,7 @@ public class SPIMI {
         System.out.printf("  Blocks created:  %d%n",      m.blocksCreated());
         System.out.printf("  Time:            %.2f sec%n", sec);
         System.out.printf("  Throughput:      %.2f MB/s%n", mb / sec);
-        System.out.println("=".repeat(72));
+        System.out.println("=".repeat(70));
     }
 
     private static class BlockReader implements AutoCloseable {
@@ -432,7 +454,7 @@ public class SPIMI {
             try {
                 currentTerm = in.readUTF();
                 int docCount = in.readInt();
-                currentPostings = new HashMap<>(docCount * 2);
+                currentPostings = HashMap.newHashMap(docCount);
                 for (int i = 0; i < docCount; i++) {
                     int docId    = in.readInt();
                     int posCount = in.readInt();
