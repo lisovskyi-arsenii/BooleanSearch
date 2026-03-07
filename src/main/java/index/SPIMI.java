@@ -10,10 +10,16 @@ import util.FileWalker;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 @Slf4j
@@ -30,7 +36,6 @@ public class SPIMI {
     private static final String TEMP_DIR            = "temp_blocks";
     private static final String POSTINGS_FILE       = "postings.dat";
     private static final String DICT_FILE           = "dictionary.dat";
-//    private static final String POSITIONS_FILE      = "positions.dat";
     private static final String REGISTRY_FILE       = "registry.dat";
     private static final String SPARSE_OFFSETS_FILE = "sparse_offsets.bin";
     private static final int SPARSE_INTERVAL = 128;
@@ -128,6 +133,31 @@ public class SPIMI {
         return result;
     }
 
+    public Map<Integer, List<Integer>> lookup(String term) throws IOException {
+        Map.Entry<String, Long> floor = sparseOffsets.floorEntry(term);
+        Map.Entry<String, Long> ceil  = sparseOffsets.higherEntry(term);
+
+        long rangeStart = (floor != null) ? floor.getValue() : 0L;
+        long rangeEnd   = (ceil != null)  ? ceil.getValue()  : Files.size(Paths.get(DICT_FILE));
+
+        try (RandomAccessFile dictFile = new RandomAccessFile(DICT_FILE, "r")) {
+            dictFile.seek(rangeStart);
+
+            while (dictFile.getFilePointer() < rangeEnd) {
+                int termLen         = dictFile.readShort() & 0xFFFF;
+                byte[] termBytes    = new byte[termLen];
+                dictFile.readFully(termBytes);
+                String candidate    = new String(termBytes, StandardCharsets.UTF_8);
+                long postOff        = dictFile.readLong();
+
+                int cmp = candidate.compareTo(term);
+                if (cmp == 0) return readPostings(postOff);
+                if (cmp > 0) break;
+            }
+        }
+
+        return Collections.emptyMap();
+    }
 
     private List<String> buildBlocks(List<Path> files) throws IOException {
         Queue<String> createdBlocks = new ConcurrentLinkedQueue<>();
@@ -356,10 +386,6 @@ public class SPIMI {
         log.info("Sparse offsets saved: {} terms", sparseOffsets.size());
     }
 
-    public static TreeMap<String, Long> loadSparseOffsets() throws IOException, ClassNotFoundException {
-        return readObject(SPARSE_OFFSETS_FILE);
-    }
-
     public static RegistryData loadRegistry() throws IOException, ClassNotFoundException {
         return readObject(REGISTRY_FILE);
     }
@@ -426,9 +452,9 @@ public class SPIMI {
         double mb    = m.totalBytesProcessed() / (1024.0 * 1024.0);
         double idxMb = m.finalIndexSize()       / (1024.0 * 1024.0);
 
-        System.out.println("\n" + "=".repeat(70));
+        System.out.println("\n" + "=".repeat(75));
         System.out.println("SPIMI RESULTS");
-        System.out.println("=".repeat(72));
+        System.out.println("=".repeat(75));
         System.out.printf("  Documents:       %,d%n",     m.documentsCount());
         System.out.printf("  Unique terms:    %,d%n",     m.uniqueTerms());
         System.out.printf("  Data processed:  %.2f MB%n", mb);
@@ -436,7 +462,7 @@ public class SPIMI {
         System.out.printf("  Blocks created:  %d%n",      m.blocksCreated());
         System.out.printf("  Time:            %.2f sec%n", sec);
         System.out.printf("  Throughput:      %.2f MB/s%n", mb / sec);
-        System.out.println("=".repeat(70));
+        System.out.println("=".repeat(75));
     }
 
     private static class BlockReader implements AutoCloseable {

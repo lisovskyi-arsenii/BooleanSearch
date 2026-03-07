@@ -27,7 +27,6 @@ import static constants.Filenames.DEFAULT_FILENAME;
 import static constants.Filenames.DIRECTORY_PATH;
 import static enums.FileOperation.LOAD;
 import static enums.FileOperation.SAVE;
-import static enums.MenuChoice.*;
 import static enums.SearchOperators.*;
 
 @Slf4j
@@ -619,15 +618,17 @@ public class MenuController {
                 String term = entry.getKey();
                 Set<Integer> docIds = entry.getValue();
 
+                final int limit = 100;
+
                 System.out.printf("%-15s → %d documents: %s%n",
                         term,
                         docIds.size(),
                         docIds.stream()
                                 .sorted()
                                 .map(String::valueOf)
-                                .limit(100)
+                                .limit(limit)
                                 .collect(Collectors.joining(", "))
-                                + (docIds.size() > 5 ? "..." : ""));
+                                + (docIds.size() > limit ? "..." : ""));
             }
 
             int totalDocs = results.values().stream()
@@ -698,6 +699,12 @@ public class MenuController {
 
     public void showTopTerms() {
         showMessage();
+        if (searchEngine.getCurrentMode() == BooleanSearchEngine.IndexingMode.DISK_BASED) {
+            System.out.println("showTopTerms() is not available in DISK-BASED mode.");
+            System.out.println("Use wildcardSearch() or simpleSearch() instead.");
+            return;
+        }
+
         System.out.print("Enter how many terms you want to show: ");
         OptionalInt topCountOpt = scanner.parseInt();
 
@@ -872,8 +879,7 @@ public class MenuController {
             input = "document,text,file,data";
         }
 
-        List<String> testTerms = Arrays.asList(input.split(","))
-                .stream()
+        List<String> testTerms = Arrays.stream(input.split(","))
                 .map(String::trim)
                 .toList();
 

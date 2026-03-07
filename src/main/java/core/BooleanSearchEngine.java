@@ -1,10 +1,10 @@
 package core;
 
-import index.*;
-import index.Dictionary;
 import document.DocumentRegistry;
 import enums.FileSerializationFormat;
 import enums.SearchStructureType;
+import index.*;
+import index.Dictionary;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import matrix.TermDocumentMatrix;
@@ -24,7 +24,6 @@ import tokenization.Tokenizer;
 import util.FileWalker;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -33,9 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
@@ -70,9 +67,6 @@ public class BooleanSearchEngine implements SearchEngine {
 
     // Disk-based mode
     private final SPIMI spimi;
-    private RandomAccessFile postingsFile;
-    private Map<String, Long> termOffsets;
-    private final Lock fileLock = new ReentrantLock();
 
     public BooleanSearchEngine() {
         this.index = new InvertedIndex();
@@ -171,7 +165,6 @@ public class BooleanSearchEngine implements SearchEngine {
             log.info("   Large collection indexed successfully!");
             log.info("   Mode: DISK-BASED (Random Access)");
             log.info("   Documents: {}", registry.documentCount());
-            log.info("   Terms: {}", termOffsets.size());
             log.info("   You can now search using disk-based mode");
 
         } catch (ClassNotFoundException e) {
@@ -242,110 +235,68 @@ public class BooleanSearchEngine implements SearchEngine {
     private void enableDiskBasedMode() throws IOException, ClassNotFoundException {
         log.info("Enabling disk-based mode...");
 
-        RandomAccessFile tempFile = null;
-        try {
-            // Завантажуємо тільки offsets (маленький файл)
-            termOffsets = SPIMI.loadSparseOffsets();
+        spimi.open();
 
-            // Завантажуємо registry
-            RegistryData registryData = SPIMI.loadRegistry();
-            registry.loadData(registryData);
+        RegistryData registryData = SPIMI.loadRegistry();
+        registry.loadData(registryData);
 
-            // Відкриваємо postings.dat для Random Access
-            var postingsFilename = "postings.dat";
-            tempFile = new RandomAccessFile(postingsFilename, "r");
+        long sparseSize   = Files.size(Path.of("sparse_offsets.bin"));
+        long postingsSize = Files.size(Path.of("postings.dat"));
+        long dictSize     = Files.size(Path.of("dictionary.dat"));
 
-            postingsFile = tempFile;
-
-            long offsetsSize = Files.size(Path.of("offsets.bin"));
-            long postingsSize = Files.size(Path.of(postingsFilename));
-
-            log.info("   Disk-based mode enabled!");
-            log.info("   Offsets in RAM:    {} MB ({} terms)",
-                    offsetsSize / (1024.0 * 1024.0), termOffsets.size());
-            log.info("   Postings on disk:  {} MB",
-                    postingsSize / (1024.0 * 1024.0));
-        } catch (IOException | ClassNotFoundException e) {
-            if (tempFile != null) {
-                try {
-                    tempFile.close();
-                } catch (IOException closeEx) {
-                    log.warn("Failed to close temporary file", closeEx);
-                }
-            }
-            throw e;
-        }
-
+        log.info("Disk-based mode enabled!");
+        log.info("   Sparse index in RAM: {} KB", sparseSize / 1024);
+        log.info("   Postings on disk:    {} MB", postingsSize / (1024.0 * 1024.0));
+        log.info("   Dictionary on disk:  {} MB", dictSize / (1024.0 * 1024.0));
     }
 
     private Optional<Set<Integer>> searchFromDisk(String term) throws IOException, IllegalStateException {
-        Long offset = termOffsets.get(term);
-        if (offset == null) {
+//        Long offset = termOffsets.get(term);
+//        if (offset == null) {
+//            log.debug("Term '{}' not found in dictionary", term);
+//            return Optional.empty();
+//        }
+//
+//        fileLock.lock();
+//        try {
+//            if (postingsFile == null) {
+//                throw new IllegalStateException("Postings file has not been initialized");
+//            }
+//
+//            postingsFile.seek(offset);
+//            postingsFile.readUTF();
+//            int docCount = postingsFile.readInt();
+//
+//            Set<Integer> documents = new HashSet<>();
+//            for (int i = 0; i < docCount; i++) {
+//                int docId = postingsFile.readInt();
+//                int posCount = postingsFile.readInt();
+//                postingsFile.skipBytes(posCount * 4);
+//                documents.add(docId);
+//            }
+//
+//            log.debug("Found '{}' in {} documents (disk seek)", term, documents.size());
+//            return Optional.of(documents);
+//        } finally {
+//            fileLock.unlock();
+//        }
+        Map<Integer, List<Integer>> postings = spimi.lookup(term);
+        if (postings.isEmpty()) {
             log.debug("Term '{}' not found in dictionary", term);
             return Optional.empty();
         }
-
-        fileLock.lock();
-        try {
-            if (postingsFile == null) {
-                throw new IllegalStateException("Postings file has not been initialized");
-            }
-
-            postingsFile.seek(offset);
-            postingsFile.readUTF();
-            int docCount = postingsFile.readInt();
-
-            Set<Integer> documents = new HashSet<>();
-            for (int i = 0; i < docCount; i++) {
-                int docId = postingsFile.readInt();
-                int posCount = postingsFile.readInt();
-                postingsFile.skipBytes(posCount * 4);
-                documents.add(docId);
-            }
-
-            log.debug("Found '{}' in {} documents (disk seek)", term, documents.size());
-            return Optional.of(documents);
-        } finally {
-            fileLock.unlock();
-        }
+        log.debug("Found '{}' in {} documents (disk lookup)", term, postings.size());
+        return Optional.of(postings.keySet());
     }
 
     private Optional<Map<Integer, List<Integer>>> searchFromDiskWithPositions(String term)
             throws IOException, IllegalStateException {
-        Long offset = termOffsets.get(term);
-        if (offset == null) {
-            log.debug("Term '{}' not found in dictionary", term);
+        Map<Integer, List<Integer>> postings = spimi.lookup(term);
+        if (postings.isEmpty()) {
+            log.debug("Term '{}' not found", term);
             return Optional.empty();
         }
-
-        fileLock.lock();
-        try {
-            if (postingsFile == null) {
-                throw new IllegalStateException("Postings file has not been initialized");
-            }
-
-            postingsFile.seek(offset);
-            postingsFile.readUTF();
-            int docCount = postingsFile.readInt();
-
-            Map<Integer, List<Integer>> postings = new HashMap<>();
-
-            for (int i = 0; i < docCount; i++) {
-                int docId = postingsFile.readInt();
-                int posCount = postingsFile.readInt();
-
-                List<Integer> positions = new ArrayList<>(posCount);
-                for (int j = 0; j < posCount; j++) {
-                    positions.add(postingsFile.readInt());
-                }
-
-                postings.put(docId, positions);
-            }
-
-            return Optional.of(postings);
-        } finally {
-            fileLock.unlock();
-        }
+        return Optional.of(postings);
     }
 
     // ============================================================================
@@ -468,11 +419,11 @@ public class BooleanSearchEngine implements SearchEngine {
         }
     }
 
-    private Optional<Set<Integer>> phraseSearchOnDisk(String[] phrases) throws IOException {
+    private Optional<Set<Integer>> phraseSearchOnDisk(String[] terms) throws IOException {
         List<Map<Integer, List<Integer>>> allPostings = new ArrayList<>();
 
-        for (var phrase : phrases) {
-            var postings = searchFromDiskWithPositions(phrase);
+        for (String term : terms) {
+            var postings = searchFromDiskWithPositions(term);
             if (postings.isEmpty()) return Optional.empty();
             allPostings.add(postings.get());
         }
@@ -622,7 +573,7 @@ public class BooleanSearchEngine implements SearchEngine {
         }
     }
 
-    private List<String> findMatchingTerms(String wildcardQuery) {
+    private List<String> findMatchingTerms(String wildcardQuery) throws IOException {
         boolean endsWithWildcard = wildcardQuery.endsWith("*") &&
                 wildcardQuery.indexOf("*") == wildcardQuery.length() - 1;
         boolean startsWithWildcard = wildcardQuery.startsWith("*") &&
@@ -632,21 +583,14 @@ public class BooleanSearchEngine implements SearchEngine {
             // Disk-based
             if (endsWithWildcard) {
                 String prefix = wildcardQuery.substring(0, wildcardQuery.length() - 1);
-                return termOffsets.keySet().stream()
-                        .filter(term -> term.startsWith(prefix))
-                        .sorted()
-                        .toList();
+
+                return spimi.findTermsWithPrefix(prefix);
             } else if (startsWithWildcard) {
                 String suffix = wildcardQuery.substring(1);
-                return termOffsets.keySet().stream()
-                        .filter(term -> term.endsWith(suffix))
-                        .sorted()
-                        .toList();
+
+                return spimi.findTerms(term -> term.endsWith(suffix));
             } else {
-                return termOffsets.keySet().stream()
-                        .filter(term -> matchesWildcard(wildcardQuery, term))
-                        .sorted()
-                        .toList();
+                return spimi.findTerms(term -> matchesWildcard(wildcardQuery, term));
             }
         } else {
             long starCount = wildcardQuery.chars().filter(c -> c == '*').count();
@@ -661,7 +605,8 @@ public class BooleanSearchEngine implements SearchEngine {
     }
 
     private boolean matchesWildcard(String pattern, String term) {
-        int p = 0, t = 0;
+        int p = 0;
+        int t = 0;
         int starIdx = -1;
         int match = 0;
 
@@ -936,40 +881,39 @@ public class BooleanSearchEngine implements SearchEngine {
             System.out.println("\n" + "=".repeat(70));
             System.out.println("BOOLEAN SEARCH ENGINE STATISTICS");
             System.out.println("=".repeat(70));
-
             System.out.println("Current mode:        " + currentMode);
             System.out.println();
 
             switch (currentMode) {
-                case IndexingMode.DISK_BASED -> {
+                case DISK_BASED -> {
                     System.out.printf("Documents:           %,d%n", registry.documentCount());
-                    System.out.printf("Terms:               %,d%n", termOffsets.size());
 
                     try {
-                        System.out.printf("RAM usage:           ~%.2f MB (offsets only)%n",
-                                Files.size(Path.of("offsets.bin")) / (1024.0 * 1024.0));
-                        System.out.printf("Disk storage:        %.2f MB (postings)%n",
-                                Files.size(Path.of("postings.dat")) / (1024.0 * 1024.0));
+                        long sparseSize   = Files.size(Path.of("sparse_offsets.bin"));
+                        long postingsSize = Files.size(Path.of("postings.dat"));
+                        long dictSize     = Files.size(Path.of("dictionary.dat"));
+
+                        System.out.printf("RAM usage:           ~%.2f MB (sparse index)%n",
+                                sparseSize / (1024.0 * 1024.0));
+                        System.out.printf("Disk storage:        %.2f MB (postings + dict)%n",
+                                (postingsSize + dictSize) / (1024.0 * 1024.0));
                     } catch (IOException e) {
                         log.warn("Could not read file sizes", e);
                     }
 
-                    System.out.println("Search type:         O(1) disk seek per term");
-                    System.out.println("Expected latency:    5-10 ms per term");
-
+                    System.out.println("Search type:         sparse index + sequential dict scan");
+                    System.out.println("Expected latency:    1-5 ms per term");
                 }
-                case IndexingMode.IN_MEMORY -> {
+                case IN_MEMORY -> {
                     System.out.printf("Documents:           %,d%n", registry.documentCount());
                     System.out.printf("Terms:               %,d%n", index.size());
                     System.out.println("Search type:         RAM-based (instant)");
-
                 }
                 default -> {
                     System.out.println("No data indexed yet.");
                     System.out.println("Use indexDocuments() or indexLargeCollection()");
                 }
             }
-
             System.out.println("=".repeat(70));
         } finally {
             lock.readLock().unlock();
@@ -1008,16 +952,6 @@ public class BooleanSearchEngine implements SearchEngine {
     public void clear() {
         lock.writeLock().lock();
         try {
-            // Close disk resources
-            if (postingsFile != null) {
-                try {
-                    postingsFile.close();
-                } catch (IOException e) {
-                    log.warn("Error closing postings file", e);
-                }
-                postingsFile = null;
-            }
-
             // Clear all structures
             index.clear();
             matrix.clear();
@@ -1039,13 +973,7 @@ public class BooleanSearchEngine implements SearchEngine {
                 threeGramIndex.clear();
             }
 
-            if (termOffsets != null) {
-                termOffsets.clear();
-                termOffsets = null;
-            }
-
             currentMode = IndexingMode.NOT_INIT;
-
             log.info("All indexes cleared, mode reset to NOT_INIT");
         } finally {
             lock.writeLock().unlock();
@@ -1055,16 +983,8 @@ public class BooleanSearchEngine implements SearchEngine {
     public void close() {
         lock.writeLock().lock();
         try {
-            if (postingsFile != null) {
-                try {
-                    postingsFile.close();
-                    log.info("Disk-based index closed");
-                } catch (IOException e) {
-                    log.warn("Error closing postings file", e);
-                }
-                postingsFile = null;
-                currentMode = IndexingMode.NOT_INIT;
-            }
+            currentMode = IndexingMode.NOT_INIT;
+            log.info("Search engine closed");
         } finally {
             lock.writeLock().unlock();
         }
