@@ -36,10 +36,10 @@ public class MenuController {
 
     public MenuController(BooleanSearchEngine searchEngine, CustomScanner scanner) {
         if (scanner == null) {
-            throw new NullPointerException("Scanner cannot be null.");
+            throw new IllegalArgumentException("Scanner cannot be null");
         }
         if (searchEngine == null) {
-            throw new NullPointerException("SearchEngine cannot be null.");
+            throw new IllegalArgumentException("SearchEngine cannot be null");
         }
         this.scanner = scanner;
         this.searchEngine = searchEngine;
@@ -139,9 +139,7 @@ public class MenuController {
 
         try {
             log.info("Starting SPIMI indexing from {}", directoryPath);
-
             searchEngine.indexLargeCollection(directoryPath);
-
             System.out.println("\n  Large collection indexed successfully!");
             System.out.println("Building wildcard indexes...");
 
@@ -592,6 +590,20 @@ public class MenuController {
         System.out.println("  te*ti*   - multiple wildcards (using 3-gram)");
         System.out.println();
 
+        if (searchEngine.getCurrentMode() == BooleanSearchEngine.IndexingMode.IN_MEMORY) {
+            System.out.println("\nChoose wildcard strategy for single-'*' queries:");
+            System.out.println("  1. Permuterm Index  (precise, handles all patterns)");
+            System.out.println("  2. BTree/ReverseBTree (BTree for prefix, ReverseBTree for suffix)");
+            System.out.print("Enter choice (default = 1): ");
+
+            var strategyOpt = scanner.parseInt();
+            if (strategyOpt.isPresent() && strategyOpt.getAsInt() == 2) {
+                searchEngine.setWildcardStrategy(WildcardStrategy.BTREE);
+            } else {
+                searchEngine.setWildcardStrategy(WildcardStrategy.PERMUTERM);
+            }
+        }
+
         System.out.print("Enter wildcard query: ");
         String query = scanner.parseString().toLowerCase();
         if (query.isBlank()) {
@@ -765,9 +777,8 @@ public class MenuController {
                 (filepath, extension) -> {
                     try {
                         searchEngine.saveIndex(filepath, extension);
-                        String fullPath = filepath + "." + extension;
-                        System.out.printf("Index was saved into %s%n", fullPath);
-                        log.info("Index was saved into {}%n", fullPath);
+                        System.out.printf("Index was saved into %s%n", filepath);
+                        log.info("Index was saved into {}%n", filepath);
                     } catch (IOException e) {
                         System.err.printf("Failed to save index: %s%n", filepath);
                         log.error("Failed to load index", e);
@@ -784,9 +795,8 @@ public class MenuController {
                 (filepath, extension) -> {
                     try {
                         searchEngine.loadIndex(filepath, extension);
-                        String fullPath = filepath + "." + extension;
-                        System.out.printf("Index was loaded from %s%n", fullPath);
-                        log.info("Index was loaded from {}%n", fullPath);
+                        System.out.printf("Index was loaded from %s%n", filepath);
+                        log.info("Index was loaded from {}%n", filepath);
 
                         System.out.println("\nRebuilding wildcard indexes");
                         searchEngine.buildWildcardIndexes();
@@ -826,7 +836,7 @@ public class MenuController {
         }
 
         String extension = format.get().getExtension();
-        String fullPath = filename + "." + extension;
+        String fullPath = filename + '.' + extension;
         try {
             function.apply(fullPath, extension);
         } catch (Exception e) {

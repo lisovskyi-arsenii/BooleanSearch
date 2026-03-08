@@ -9,10 +9,13 @@ import tokenization.Tokenizer;
 import util.FileWalker;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -20,27 +23,43 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
 
 @Slf4j
 public class SPIMI {
 
+    //
     // Constants
+    //
 
     private static final long MEMORY_THRESHOLD_SIZE =
             Math.max(512 * 1024 * 1024L, (long) (Runtime.getRuntime().maxMemory() * 0.7));
 
     private static final int DISK_BUFFER_SIZE = 4 * 1024 * 1024;
     private static final int THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
-
-    private static final String TEMP_DIR            = "temp_blocks";
-    private static final String POSTINGS_FILE       = "postings.dat";
-    private static final String DICT_FILE           = "dictionary.dat";
-    private static final String REGISTRY_FILE       = "registry.dat";
-    private static final String SPARSE_OFFSETS_FILE = "sparse_offsets.bin";
     private static final int SPARSE_INTERVAL = 128;
 
+    //
+    // Files
+    //
+
+    private static final String TEMP_DIR            = "temp_blocks";
+    private static final String REGISTRY_FILE       = "registry.dat";
+
+    public static final String POSTINGS_FILE       = "postings.dat";
+    public static final String DICT_FILE           = "dictionary.dat";
+    public static final String SPARSE_OFFSETS_FILE = "sparse_offsets.bin";
+
+
+    //
     // State
+    //
+
+    private FileChannel postingsChannel;
+    private FileChannel dictionaryChannel;
+    private final ReadWriteLock stateLock = new ReentrantReadWriteLock();
 
     private final TreeMap<String, Long> sparseOffsets       = new TreeMap<>();
     private final DocumentRegistry      globalRegistry      = new DocumentRegistry();
@@ -49,7 +68,7 @@ public class SPIMI {
     @Getter private final AtomicInteger documentsIndexed    = new AtomicInteger();
     @Getter private final AtomicLong    bytesProcessed      = new AtomicLong();
 
-    // Methods
+    // public API
 
     public void buildIndex(String directoryPath) throws IOException {
         long start = System.currentTimeMillis();
@@ -86,78 +105,116 @@ public class SPIMI {
     }
 
     public void open() throws IOException, ClassNotFoundException {
-        TreeMap<String, Long> loaded = readObject(SPARSE_OFFSETS_FILE);
-        sparseOffsets.clear();
-        sparseOffsets.putAll(loaded);
-        log.info("Sparse index loaded: {} anchor terms", sparseOffsets.size());
+        stateLock.writeLock().lock();
+        try {
+            TreeMap<String, Long> loaded = readObject(SPARSE_OFFSETS_FILE);
+            sparseOffsets.clear();
+            sparseOffsets.putAll(loaded);
+            log.info("Sparse index loaded: {} anchor terms", sparseOffsets.size());
+
+            var tempPostings = FileChannel.open(Paths.get(POSTINGS_FILE), StandardOpenOption.READ);
+            try {
+                dictionaryChannel = FileChannel.open(Paths.get(DICT_FILE), StandardOpenOption.READ);
+            } catch (IOException e) {
+                tempPostings.close();
+                throw e;
+            }
+
+            postingsChannel = tempPostings;
+            log.info("Sparse index loaded: {} anchor terms", sparseOffsets.size());
+        } finally {
+            stateLock.writeLock().unlock();
+        }
+    }
+
+    public void close() {
+        stateLock.writeLock().lock();
+        try {
+            sparseOffsets.clear();
+            closeQuietly(postingsChannel);
+            closeQuietly(dictionaryChannel);
+            postingsChannel   = null;
+            dictionaryChannel = null;
+            log.info("SPIMI closed");
+        } finally {
+            stateLock.writeLock().unlock();
+        }
+    }
+
+    //
+    // Search methods
+    //
+    public Map<Integer, List<Integer>> lookup(String term) throws IOException {
+        stateLock.readLock().lock();
+        try {
+            Map.Entry<String, Long> floor = sparseOffsets.floorEntry(term);
+            Map.Entry<String, Long> ceil  = sparseOffsets.higherEntry(term);
+
+            long position = (floor != null) ? floor.getValue() : 0L;
+            long rangeEnd   = (ceil != null)  ? ceil.getValue()  : dictionaryChannel.size();
+
+            while (position < rangeEnd) {
+                DictionaryEntry entry = readDictionaryEntry(position);
+                int cmp = entry.term().compareTo(term);
+                if (cmp == 0) return readPostings(entry.postingsOffset());
+                if (cmp > 0) break;
+                position = entry.nextPosition();
+            }
+            return Collections.emptyMap();
+        } finally {
+            stateLock.readLock().unlock();
+        }
     }
 
     public List<String> findTermsWithPrefix(String prefix) throws IOException {
-        Map.Entry<String, Long> floor = sparseOffsets.floorEntry(prefix);
-        long rangeStart = (floor != null) ? floor.getValue() : 0L;
+        stateLock.readLock().lock();
+        try {
+            Map.Entry<String, Long> floor = sparseOffsets.floorEntry(prefix);
+            long position = (floor != null) ? floor.getValue() : 0L;
+            long fileSize = dictionaryChannel.size();
+            List<String> result = new ArrayList<>();
 
-        List<String> result = new ArrayList<>();
-        try (RandomAccessFile dictFile = new RandomAccessFile(DICT_FILE, "r")) {
-            dictFile.seek(rangeStart);
-            while (dictFile.getFilePointer() < dictFile.length()) {
-                int    termLen   = dictFile.readShort() & 0xFFFF;
-                byte[] termBytes = new byte[termLen];
-                dictFile.readFully(termBytes);
-                String term = new String(termBytes, StandardCharsets.UTF_8);
-                dictFile.readLong(); // skip postings offset
-
-                if (term.startsWith(prefix)) {
-                    result.add(term);
-                } else if (term.compareTo(prefix) > 0 && !term.startsWith(prefix)) {
-                    break; // the dictionary is sorted — past the prefix range
+            while (position < fileSize) {
+                DictionaryEntry entry = readDictionaryEntry(position);
+                if (entry.term().startsWith(prefix)) {
+                    result.add(entry.term());
+                } else if (entry.term().compareTo(prefix) > 0) {
+                    break;
                 }
+                position = entry.nextPosition();
             }
+            return result;
+        } finally {
+            stateLock.readLock().unlock();
         }
-
-        return result;
     }
 
     public List<String> findTerms(Predicate<String> filter) throws IOException {
-        List<String> result = new ArrayList<>();
-        try (RandomAccessFile dictFile = new RandomAccessFile(DICT_FILE, "r")) {
-            while (dictFile.getFilePointer() < dictFile.length()) {
-                int    termLen   = dictFile.readShort() & 0xFFFF;
-                byte[] termBytes = new byte[termLen];
-                dictFile.readFully(termBytes);
-                String term = new String(termBytes, StandardCharsets.UTF_8);
-                dictFile.readLong(); // skip postings offset
+        stateLock.readLock().lock();
+        try {
+            long position = 0L;
+            long fileSize = dictionaryChannel.size();
+            List<String> result = new ArrayList<>();
 
-                if (filter.test(term)) result.add(term);
+            while (position < fileSize) {
+                DictionaryEntry entry = readDictionaryEntry(position);
+                if (filter.test(entry.term())) result.add(entry.term());
+                position = entry.nextPosition();
             }
+            return result;
+        } finally {
+            stateLock.readLock().unlock();
         }
-        return result;
     }
 
-    public Map<Integer, List<Integer>> lookup(String term) throws IOException {
-        Map.Entry<String, Long> floor = sparseOffsets.floorEntry(term);
-        Map.Entry<String, Long> ceil  = sparseOffsets.higherEntry(term);
-
-        long rangeStart = (floor != null) ? floor.getValue() : 0L;
-        long rangeEnd   = (ceil != null)  ? ceil.getValue()  : Files.size(Paths.get(DICT_FILE));
-
-        try (RandomAccessFile dictFile = new RandomAccessFile(DICT_FILE, "r")) {
-            dictFile.seek(rangeStart);
-
-            while (dictFile.getFilePointer() < rangeEnd) {
-                int termLen         = dictFile.readShort() & 0xFFFF;
-                byte[] termBytes    = new byte[termLen];
-                dictFile.readFully(termBytes);
-                String candidate    = new String(termBytes, StandardCharsets.UTF_8);
-                long postOff        = dictFile.readLong();
-
-                int cmp = candidate.compareTo(term);
-                if (cmp == 0) return readPostings(postOff);
-                if (cmp > 0) break;
-            }
-        }
-
-        return Collections.emptyMap();
+    public static RegistryData loadRegistry() throws IOException, ClassNotFoundException {
+        return readObject(REGISTRY_FILE);
     }
+
+    //
+    // Block building
+    //
+
 
     private List<String> buildBlocks(List<Path> files) throws IOException {
         Queue<String> createdBlocks = new ConcurrentLinkedQueue<>();
@@ -234,80 +291,6 @@ public class SPIMI {
         }
     }
 
-    private int mergeBlocks(List<String> blockFiles) throws IOException {
-        if (blockFiles.isEmpty()) {
-            log.warn("No blocks to merge"); return 0;
-        }
-
-        log.info("K-way merge of {} blocks...", blockFiles.size());
-
-        PriorityQueue<BlockReader> heap =
-                new PriorityQueue<>(Comparator.comparing(BlockReader::peekTerm));
-
-        for (String f : blockFiles) {
-            BlockReader reader = new BlockReader(f);
-            if (reader.hasNext()) heap.add(reader);
-            else reader.close();
-        }
-
-        int uniqueTerms     = 0;
-        long postingsOffset = 0;
-        long dictOffset     = 0;
-        sparseOffsets.clear();
-
-        try (DataOutputStream postingsOut  = bufferedOutput(POSTINGS_FILE);
-             DataOutputStream dictOut      = bufferedOutput(DICT_FILE)) {
-//             DataOutputStream positionsOut = bufferedOutput(POSITIONS_FILE)) {
-
-            while (!heap.isEmpty()) {
-                String term = heap.peek().peekTerm();
-
-                // Collect and merge postings for `term` from all blocks that have it
-                Map<Integer, List<Integer>> merged = new TreeMap<>();
-                while (!heap.isEmpty() && heap.peek().peekTerm().equals(term)) {
-                    BlockReader r = heap.poll();
-                    r.nextPostings().forEach((docId, positions) ->
-                            merged.computeIfAbsent(docId, k -> new ArrayList<>())
-                                    .addAll(positions));
-                    if (r.hasNext()) heap.add(r); else r.close();
-                }
-
-                // postings.dat — raw postings, no term string
-                int postingsWritten = writeTermPostings(postingsOut, merged);
-
-                // dictionary.dat - [2b termLen][term UTF-8][8b postingsOffset]
-                byte[] termBytes = term.getBytes(StandardCharsets.UTF_8);
-                dictOut.writeShort(termBytes.length);
-                dictOut.write(termBytes);
-                dictOut.writeLong(postingsOffset);
-                int dictEntrySize = Short.BYTES + termBytes.length + Long.BYTES;
-
-//                // positions.dat
-//                // Record where this dictionary entry starts — used for binary search
-//                positionsOut.writeLong(dictOffset);
-
-                if (uniqueTerms % SPARSE_INTERVAL == 0) {
-                    sparseOffsets.put(term, dictOffset);
-                }
-
-                // Advance offsets
-                postingsOffset += postingsWritten;
-                dictOffset     += dictEntrySize;
-                uniqueTerms++;
-
-                if (uniqueTerms % 10_000 == 0) {
-                    log.info("Merged {} terms (postings: {} MB, dict: {} KB)",
-                            uniqueTerms,
-                            postingsOffset  / (1024 * 1024),
-                            dictOffset      / 1024);
-                }
-            }
-        }
-
-        log.info("Merge complete: {} unique terms", uniqueTerms);
-        return uniqueTerms;
-    }
-
     private String saveBlock(PositionalIndex index) throws IOException {
         int    id   = blocksCreated.getAndIncrement();
         String path = TEMP_DIR + "/block_" + id + ".bin";
@@ -326,6 +309,147 @@ public class SPIMI {
         log.debug("Block {} saved: {} terms", id, terms.size());
         return path;
     }
+
+    private int mergeBlocks(List<String> blockFiles) throws IOException {
+        if (blockFiles.isEmpty()) {
+            log.warn("No blocks to merge"); return 0;
+        }
+
+        log.info("K-way merge of {} blocks...", blockFiles.size());
+
+        PriorityQueue<BlockReader> heap =
+                new PriorityQueue<>(Comparator.comparing(BlockReader::peekTerm));
+
+        List<BlockReader> allReaders = new ArrayList<>();
+        try {
+            for (String f : blockFiles) {
+                BlockReader reader = new BlockReader(f);
+                allReaders.add(reader);
+                if (reader.hasNext()) heap.add(reader);
+                else reader.close();
+            }
+        } catch (IOException e) {
+            for (BlockReader r : allReaders) {
+                try { r.close(); } catch (IOException ex) {
+                    log.warn("Failed to close block reader", ex);
+                }
+            }
+            throw e;
+        }
+
+        int uniqueTerms     = 0;
+        long postingsOffset = 0;
+        long dictOffset     = 0;
+        sparseOffsets.clear();
+
+        try (DataOutputStream postingsOut = bufferedOutput(POSTINGS_FILE);
+             DataOutputStream dictOut     = bufferedOutput(DICT_FILE)) {
+
+            while (!heap.isEmpty()) {
+                String term = heap.peek().peekTerm();
+
+                Map<Integer, List<Integer>> merged = new TreeMap<>();
+                while (!heap.isEmpty() && heap.peek().peekTerm().equals(term)) {
+                    BlockReader r = heap.poll();
+                    r.nextPostings().forEach((docId, positions) ->
+                            merged.computeIfAbsent(docId, k -> new ArrayList<>())
+                                    .addAll(positions));
+                    if (r.hasNext()) heap.add(r);
+                }
+
+                int postingsWritten = writeTermPostings(postingsOut, merged);
+
+                byte[] termBytes = term.getBytes(StandardCharsets.UTF_8);
+                dictOut.writeShort(termBytes.length);
+                dictOut.write(termBytes);
+                dictOut.writeLong(postingsOffset);
+                int dictEntrySize = Short.BYTES + termBytes.length + Long.BYTES;
+
+                if (uniqueTerms % SPARSE_INTERVAL == 0) {
+                    sparseOffsets.put(term, dictOffset);
+                }
+
+                postingsOffset += postingsWritten;
+                dictOffset     += dictEntrySize;
+                uniqueTerms++;
+
+                if (uniqueTerms % 10_000 == 0) {
+                    log.info("Merged {} terms (postings: {} MB, dict: {} KB)",
+                            uniqueTerms, postingsOffset / (1024 * 1024), dictOffset / 1024);
+                }
+            }
+
+        } finally {
+            for (var reader : allReaders) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    log.warn("Failed to close block reader", e);
+                }
+            }
+        }
+
+        log.info("Merge complete: {} unique terms", uniqueTerms);
+        return uniqueTerms;
+    }
+
+    //
+    // Binary Read Helpers
+    //
+
+    private record DictionaryEntry(String term, long postingsOffset, long nextPosition) {}
+
+    private DictionaryEntry readDictionaryEntry(long position) throws IOException {
+        ByteBuffer lenBuf = ByteBuffer.allocate(Short.BYTES);
+        dictionaryChannel.read(lenBuf, position);
+        position += Short.BYTES;
+
+        int termLen = lenBuf.flip().getShort() & 0xFFFF;
+        ByteBuffer termBuf = ByteBuffer.allocate(termLen);
+        dictionaryChannel.read(termBuf, position);
+        position += termLen;
+
+        String term = new String(termBuf.flip().array(), StandardCharsets.UTF_8);
+
+        ByteBuffer offBuf = ByteBuffer.allocate(Long.BYTES);
+        dictionaryChannel.read(offBuf, position);
+        position += Long.BYTES;
+        long postOff = offBuf.flip().getLong();
+
+        return new DictionaryEntry(term, postOff, position);
+    }
+
+    private Map<Integer, List<Integer>> readPostings(long offset) throws IOException {
+        ByteBuffer countBuf = ByteBuffer.allocate(Integer.BYTES);
+        postingsChannel.read(countBuf, offset);
+        int docCount = countBuf.flip().getInt();
+        offset += Integer.BYTES;
+
+        Map<Integer, List<Integer>> result = LinkedHashMap.newLinkedHashMap(docCount);
+        for (int i = 0; i < docCount; i++) {
+            ByteBuffer docBuf = ByteBuffer.allocate(Integer.BYTES * 2);
+            postingsChannel.read(docBuf, offset);
+            docBuf.flip();
+            offset += Integer.BYTES * 2;
+
+            int docId    = docBuf.getInt();
+            int posCount = docBuf.getInt();
+
+            ByteBuffer posBuf = ByteBuffer.allocate(Integer.BYTES * posCount);
+            postingsChannel.read(posBuf, offset);
+            posBuf.flip();
+            offset += (long) Integer.BYTES * posCount;
+
+            List<Integer> positions = new ArrayList<>(posCount);
+            for (int j = 0; j < posCount; j++) positions.add(posBuf.getInt());
+            result.put(docId, positions);
+        }
+        return result;
+    }
+
+    //
+    // Binary Write Helpers
+    //
 
     private int writeTermPostings(DataOutputStream out,
                                   Map<Integer, List<Integer>> postings) throws IOException {
@@ -358,23 +482,9 @@ public class SPIMI {
         }
     }
 
-    private Map<Integer, List<Integer>> readPostings(long offset) throws IOException {
-        try (RandomAccessFile postFile = new RandomAccessFile(POSTINGS_FILE, "r")) {
-            postFile.seek(offset);
-            int docCount = postFile.readInt();
-            Map<Integer, List<Integer>> result = LinkedHashMap.newLinkedHashMap(docCount);
-            for (int i = 0; i < docCount; i++) {
-                int docId       = postFile.readInt();
-                int posCount    = postFile.readInt();
-                List<Integer> positions = new ArrayList<>(posCount);
-                for (int j = 0; j < posCount; j++) {
-                    positions.add(postFile.readInt());
-                }
-                result.put(docId, positions);
-            }
-            return result;
-        }
-    }
+    //
+    // Persistence Helpers
+    //
 
     private void persistRegistry() throws IOException {
         writeObject(REGISTRY_FILE, globalRegistry.exportData());
@@ -384,10 +494,6 @@ public class SPIMI {
     private void persistSparseOffset() throws IOException {
         writeObject(SPARSE_OFFSETS_FILE, sparseOffsets);
         log.info("Sparse offsets saved: {} terms", sparseOffsets.size());
-    }
-
-    public static RegistryData loadRegistry() throws IOException, ClassNotFoundException {
-        return readObject(REGISTRY_FILE);
     }
 
     @SuppressWarnings("unchecked")
@@ -405,21 +511,34 @@ public class SPIMI {
         }
     }
 
+    //
+    // Utility
+    //
+
     private BufferedReader openReader(Path file) throws IOException {
-        InputStream raw = new BufferedInputStream(Files.newInputStream(file), 64 * 1024);
-//        if (file.getFileName().toString().toLowerCase().endsWith(".bz2")) {
-//            raw = new BZip2CompressorInputStream(raw);
-//        }
-        return new BufferedReader(new InputStreamReader(raw, StandardCharsets.UTF_8));
+        return new BufferedReader(new InputStreamReader(
+                new BufferedInputStream(Files.newInputStream(file), 64 * 1024),
+                StandardCharsets.UTF_8));
     }
 
     private DataOutputStream bufferedOutput(String path) throws IOException {
         return new DataOutputStream(
-                new BufferedOutputStream(new FileOutputStream(path), DISK_BUFFER_SIZE));
+                new BufferedOutputStream(new FileOutputStream(path),
+                        DISK_BUFFER_SIZE));
     }
 
     private long estimateTokenMemory(String token) {
         return 40L + (token.length() * 2L) + 80L;
+    }
+
+    private void closeQuietly(FileChannel file) {
+        if (file != null) {
+            try {
+                file.close();
+            } catch (IOException e) {
+                log.warn("Failed to close file: {}", e.getMessage());
+            }
+        }
     }
 
     private void awaitAll(List<Future<?>> futures) throws IOException {
@@ -464,6 +583,10 @@ public class SPIMI {
         System.out.printf("  Throughput:      %.2f MB/s%n", mb / sec);
         System.out.println("=".repeat(75));
     }
+
+    //
+    // Inner class
+    //
 
     private static class BlockReader implements AutoCloseable {
         private final DataInputStream in;

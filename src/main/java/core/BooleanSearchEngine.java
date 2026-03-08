@@ -3,9 +3,11 @@ package core;
 import document.DocumentRegistry;
 import enums.FileSerializationFormat;
 import enums.SearchStructureType;
+import enums.WildcardStrategy;
 import index.*;
 import index.Dictionary;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import matrix.TermDocumentMatrix;
 import query.PhraseSearch;
@@ -51,10 +53,16 @@ public class BooleanSearchEngine implements SearchEngine {
     private final BiwordIndex biwordIndex;
     private final PositionalIndex positionalIndex;
     private final TermDocumentMatrix matrix;
+
     private BTree bTree;
     private ReverseBTree reverseBTree;
     private PermutermIndex permutermIndex;
     private ThreeGramIndex threeGramIndex;
+
+    @Setter
+    @Getter
+    private volatile WildcardStrategy wildcardStrategy = WildcardStrategy.PERMUTERM;
+
     private final DocumentRegistry registry;
     private final Map<SearchStructureType, QueryExecutor<?>> executors;
     private final Map<SearchStructureType, Dictionary> dictionaries;
@@ -101,7 +109,7 @@ public class BooleanSearchEngine implements SearchEngine {
         lock.writeLock().lock();
         try {
             if (currentMode == IndexingMode.DISK_BASED) {
-                System.out.println("⚠️ Current mode is DISK-BASED.");
+                System.out.println("   Current mode is DISK-BASED.");
                 System.out.println("   Call clear() first to switch to IN-MEMORY mode.");
                 return;
             }
@@ -155,18 +163,31 @@ public class BooleanSearchEngine implements SearchEngine {
                 System.out.println("   Call clear() first to switch to DISK-BASED mode.");
                 return;
             }
-
-            log.info("Starting SPIMI disk-based indexing");
-
-            spimi.buildIndex(directoryPath);
-            enableDiskBasedMode();
             currentMode = IndexingMode.DISK_BASED;
+        } finally {
+            lock.writeLock().unlock();
+        }
+        log.info("Starting SPIMI disk-based indexing");
 
+        try {
+            spimi.buildIndex(directoryPath);
+        } catch (IOException e) {
+            lock.writeLock().lock();
+            try {
+                currentMode = IndexingMode.NOT_INIT;
+                throw new IOException("Failed to build index", e);
+            } finally {
+                lock.writeLock().unlock();
+            }
+        }
+
+        lock.writeLock().lock();
+        try {
+            enableDiskBasedMode();
             log.info("   Large collection indexed successfully!");
             log.info("   Mode: DISK-BASED (Random Access)");
             log.info("   Documents: {}", registry.documentCount());
             log.info("   You can now search using disk-based mode");
-
         } catch (ClassNotFoundException e) {
             throw new IOException("Failed to load index", e);
         } finally {
@@ -240,9 +261,9 @@ public class BooleanSearchEngine implements SearchEngine {
         RegistryData registryData = SPIMI.loadRegistry();
         registry.loadData(registryData);
 
-        long sparseSize   = Files.size(Path.of("sparse_offsets.bin"));
-        long postingsSize = Files.size(Path.of("postings.dat"));
-        long dictSize     = Files.size(Path.of("dictionary.dat"));
+        long sparseSize   = Files.size(Path.of(SPIMI.SPARSE_OFFSETS_FILE));
+        long postingsSize = Files.size(Path.of(SPIMI.POSTINGS_FILE));
+        long dictSize     = Files.size(Path.of(SPIMI.DICT_FILE));
 
         log.info("Disk-based mode enabled!");
         log.info("   Sparse index in RAM: {} KB", sparseSize / 1024);
@@ -251,42 +272,13 @@ public class BooleanSearchEngine implements SearchEngine {
     }
 
     private Optional<Set<Integer>> searchFromDisk(String term) throws IOException, IllegalStateException {
-//        Long offset = termOffsets.get(term);
-//        if (offset == null) {
-//            log.debug("Term '{}' not found in dictionary", term);
-//            return Optional.empty();
-//        }
-//
-//        fileLock.lock();
-//        try {
-//            if (postingsFile == null) {
-//                throw new IllegalStateException("Postings file has not been initialized");
-//            }
-//
-//            postingsFile.seek(offset);
-//            postingsFile.readUTF();
-//            int docCount = postingsFile.readInt();
-//
-//            Set<Integer> documents = new HashSet<>();
-//            for (int i = 0; i < docCount; i++) {
-//                int docId = postingsFile.readInt();
-//                int posCount = postingsFile.readInt();
-//                postingsFile.skipBytes(posCount * 4);
-//                documents.add(docId);
-//            }
-//
-//            log.debug("Found '{}' in {} documents (disk seek)", term, documents.size());
-//            return Optional.of(documents);
-//        } finally {
-//            fileLock.unlock();
-//        }
         Map<Integer, List<Integer>> postings = spimi.lookup(term);
         if (postings.isEmpty()) {
             log.debug("Term '{}' not found in dictionary", term);
             return Optional.empty();
         }
         log.debug("Found '{}' in {} documents (disk lookup)", term, postings.size());
-        return Optional.of(postings.keySet());
+        return Optional.of(new HashSet<>(postings.keySet()));
     }
 
     private Optional<Map<Integer, List<Integer>>> searchFromDiskWithPositions(String term)
@@ -437,15 +429,22 @@ public class BooleanSearchEngine implements SearchEngine {
         var result = new HashSet<Integer>();
         for (int docId : commonDocs) {
             List<Integer> firstPositions = allPostings.getFirst().get(docId);
+
+            List<Set<Integer>> positionSets = new ArrayList<>(allPostings.size());
+            positionSets.add(null);
+            for (int i = 1; i < allPostings.size(); i++) {
+                positionSets.add(new HashSet<>(allPostings.get(i).get(docId)));
+            }
+
             for (int startPos : firstPositions) {
                 boolean isPhrase = true;
                 for (int i = 1; i < allPostings.size(); i++) {
-                    List<Integer> nextPositions = allPostings.get(i).get(docId);
-                    if (!nextPositions.contains(startPos + i)) {
+                    if (!positionSets.get(i).contains(startPos + i)) {
                         isPhrase = false;
                         break;
                     }
                 }
+
                 if (isPhrase) {
                     result.add(docId);
                     break;
@@ -547,7 +546,7 @@ public class BooleanSearchEngine implements SearchEngine {
             }
 
             if (currentMode == IndexingMode.IN_MEMORY
-                    && (bTree == null || reverseBTree == null || threeGramIndex == null)) {
+                    && (bTree == null || reverseBTree == null || threeGramIndex == null || permutermIndex == null)) {
                     throw new IllegalStateException(
                             "Wildcard indexes not built. Call buildWildcardIndexes() first."
                     );
@@ -583,25 +582,33 @@ public class BooleanSearchEngine implements SearchEngine {
             // Disk-based
             if (endsWithWildcard) {
                 String prefix = wildcardQuery.substring(0, wildcardQuery.length() - 1);
-
                 return spimi.findTermsWithPrefix(prefix);
             } else if (startsWithWildcard) {
                 String suffix = wildcardQuery.substring(1);
-
                 return spimi.findTerms(term -> term.endsWith(suffix));
             } else {
                 return spimi.findTerms(term -> matchesWildcard(wildcardQuery, term));
             }
-        } else {
-            long starCount = wildcardQuery.chars().filter(c -> c == '*').count();
-            if (starCount == 1) {
-                // one * - permuterm, two or more - threeGram
-                return permutermIndex.search(wildcardQuery);
-            } else {
-                // кілька '*' — тільки 3-gram справляється
-                return threeGramIndex.search(wildcardQuery);
-            }
         }
+        // RAM-based
+        long starCount = wildcardQuery.chars().filter(c -> c == '*').count();
+        if (starCount >= 2) {
+            return threeGramIndex.search(wildcardQuery);
+        }
+
+        return switch (wildcardStrategy) {
+            case PERMUTERM -> permutermIndex.search(wildcardQuery);
+
+            case BTREE -> {
+                if (endsWithWildcard) {
+                    yield bTree.search(wildcardQuery);
+                } else if (startsWithWildcard) {
+                    yield reverseBTree.search(wildcardQuery);
+                } else { // fallback to permuterm
+                    yield permutermIndex.search(wildcardQuery);
+                }
+            }
+        };
     }
 
     private boolean matchesWildcard(String pattern, String term) {
@@ -889,9 +896,9 @@ public class BooleanSearchEngine implements SearchEngine {
                     System.out.printf("Documents:           %,d%n", registry.documentCount());
 
                     try {
-                        long sparseSize   = Files.size(Path.of("sparse_offsets.bin"));
-                        long postingsSize = Files.size(Path.of("postings.dat"));
-                        long dictSize     = Files.size(Path.of("dictionary.dat"));
+                        long sparseSize   = Files.size(Path.of(SPIMI.SPARSE_OFFSETS_FILE));
+                        long postingsSize = Files.size(Path.of(SPIMI.POSTINGS_FILE));
+                        long dictSize     = Files.size(Path.of(SPIMI.DICT_FILE));
 
                         System.out.printf("RAM usage:           ~%.2f MB (sparse index)%n",
                                 sparseSize / (1024.0 * 1024.0));
@@ -952,6 +959,10 @@ public class BooleanSearchEngine implements SearchEngine {
     public void clear() {
         lock.writeLock().lock();
         try {
+            if (currentMode == IndexingMode.DISK_BASED) {
+                spimi.close();
+            }
+
             // Clear all structures
             index.clear();
             matrix.clear();
@@ -960,18 +971,13 @@ public class BooleanSearchEngine implements SearchEngine {
             registry.clear();
             totalCollectionSize.set(0);
 
-            if (bTree != null) {
-                bTree.clear();
-            }
-            if (reverseBTree != null) {
-                reverseBTree.clear();
-            }
-            if (permutermIndex != null) {
-                permutermIndex.clear();
-            }
-            if (threeGramIndex != null) {
-                threeGramIndex.clear();
-            }
+            if (bTree != null)          bTree.clear();
+
+            if (reverseBTree != null)   reverseBTree.clear();
+
+            if (permutermIndex != null) permutermIndex.clear();
+
+            if (threeGramIndex != null) threeGramIndex.clear();
 
             currentMode = IndexingMode.NOT_INIT;
             log.info("All indexes cleared, mode reset to NOT_INIT");
@@ -983,6 +989,10 @@ public class BooleanSearchEngine implements SearchEngine {
     public void close() {
         lock.writeLock().lock();
         try {
+            if (currentMode == IndexingMode.DISK_BASED) {
+                spimi.close();
+            }
+
             currentMode = IndexingMode.NOT_INIT;
             log.info("Search engine closed");
         } finally {
