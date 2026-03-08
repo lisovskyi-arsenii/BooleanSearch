@@ -267,8 +267,8 @@ public class BooleanSearchEngine implements SearchEngine {
 
         log.info("Disk-based mode enabled!");
         log.info("   Sparse index in RAM: {} KB", sparseSize / 1024);
-        log.info("   Postings on disk:    {} MB", postingsSize / (1024.0 * 1024.0));
-        log.info("   Dictionary on disk:  {} MB", dictSize / (1024.0 * 1024.0));
+        log.info("   Postings on disk:    {}", String.format("%.2f MB", postingsSize / 1024.0 / 1024.0));
+        log.info("   Dictionary on disk:  {}", String.format("%.2f MB", dictSize    / 1024.0 / 1024.0));
     }
 
     private Optional<Set<Integer>> searchFromDisk(String term) throws IOException, IllegalStateException {

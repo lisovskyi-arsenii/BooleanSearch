@@ -34,11 +34,9 @@ public class SPIMI {
     // Constants
     //
 
-    private static final long MEMORY_THRESHOLD_SIZE =
-            Math.max(512 * 1024 * 1024L, (long) (Runtime.getRuntime().maxMemory() * 0.7));
-
-    private static final int DISK_BUFFER_SIZE = 4 * 1024 * 1024;
-    private static final int THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
+    private static final long LOCAL_BLOCK_THRESHOLD =
+            Math.max(128 * 1024 * 1024L, (long) (Runtime.getRuntime().maxMemory() * 0.10));
+    private static final int DISK_BUFFER_SIZE = 16 * 1024 * 1024; // 16 MB
     private static final int SPARSE_INTERVAL = 128;
 
     //
@@ -48,7 +46,9 @@ public class SPIMI {
     private static final String TEMP_DIR            = "temp_blocks";
     private static final String REGISTRY_FILE       = "registry.dat";
 
+    // постинги
     public static final String POSTINGS_FILE       = "postings.dat";
+    // термін + зміщення
     public static final String DICT_FILE           = "dictionary.dat";
     public static final String SPARSE_OFFSETS_FILE = "sparse_offsets.bin";
 
@@ -73,7 +73,7 @@ public class SPIMI {
     public void buildIndex(String directoryPath) throws IOException {
         long start = System.currentTimeMillis();
         log.info("SPIMI: starting indexing from {}", directoryPath);
-        log.info("Memory threshold: {} MB", MEMORY_THRESHOLD_SIZE / 1024 / 1024);
+        log.info("Block threshold: {} MB", LOCAL_BLOCK_THRESHOLD / 1024 / 1024);
 
         Files.createDirectories(Paths.get(TEMP_DIR));
 
@@ -110,7 +110,6 @@ public class SPIMI {
             TreeMap<String, Long> loaded = readObject(SPARSE_OFFSETS_FILE);
             sparseOffsets.clear();
             sparseOffsets.putAll(loaded);
-            log.info("Sparse index loaded: {} anchor terms", sparseOffsets.size());
 
             var tempPostings = FileChannel.open(Paths.get(POSTINGS_FILE), StandardOpenOption.READ);
             try {
@@ -226,7 +225,7 @@ public class SPIMI {
             docIds.put(file, id);
         }
 
-        try (var pool = Executors.newFixedThreadPool(THREAD_POOL_SIZE)) {
+        try (var pool = Executors.newVirtualThreadPerTaskExecutor()) {
             List<Future<?>> futures = new ArrayList<>();
 
             for (var entry : docIds.entrySet()) {
@@ -254,8 +253,6 @@ public class SPIMI {
         long            memUse = 0;
         int             pos    = 0;
 
-        long localThreshold = MEMORY_THRESHOLD_SIZE / THREAD_POOL_SIZE;
-
         try (BufferedReader reader = openReader(file)) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -267,16 +264,14 @@ public class SPIMI {
                     block.addTerm(token, docId, pos++);
                     memUse += estimateTokenMemory(token);
 
-                    if (memUse >= localThreshold) {
+                    if (memUse >= LOCAL_BLOCK_THRESHOLD) {
                         out.add(saveBlock(block));
                         block  = new PositionalIndex();
                         memUse = 0;
                     }
                 }
 
-                bytesProcessed.addAndGet(
-                        line.getBytes(StandardCharsets.UTF_8).length + 1L
-                );
+                bytesProcessed.addAndGet(line.length() + 1L);
             }
         }
 
@@ -300,7 +295,7 @@ public class SPIMI {
         Collections.sort(terms);
 
         try (DataOutputStream out = new DataOutputStream(
-                new BufferedOutputStream(new FileOutputStream(path), 65_536))) {
+                new BufferedOutputStream(new FileOutputStream(path), DISK_BUFFER_SIZE))) {
             for (String term : terms) {
                 writeTermEntry(out, term, idx.get(term));
             }
@@ -453,20 +448,17 @@ public class SPIMI {
 
     private int writeTermPostings(DataOutputStream out,
                                   Map<Integer, List<Integer>> postings) throws IOException {
-        ByteArrayOutputStream buf = new ByteArrayOutputStream();
-        try (DataOutputStream tmp = new DataOutputStream(buf)) {
-            tmp.writeInt(postings.size());
-            for (var entry : postings.entrySet()) {
-                tmp.writeInt(entry.getKey());
-                List<Integer> pos = entry.getValue();
-                tmp.writeInt(pos.size());
-                for (int p : pos) tmp.writeInt(p);
-            }
-        }
+        int size = Integer.BYTES;
+        out.writeInt(postings.size());
 
-        byte[] data = buf.toByteArray();
-        out.write(data);
-        return data.length;
+        for (var entry : postings.entrySet()) {
+            out.writeInt(entry.getKey());
+            List<Integer> pos = entry.getValue();
+            out.writeInt(pos.size());
+            for (int p : pos) out.writeInt(p);
+            size += Integer.BYTES * 2 + Integer.BYTES * pos.size(); // docId + posCount + positions
+        }
+        return size;
     }
 
     private void writeTermEntry(DataOutputStream out,
@@ -528,7 +520,7 @@ public class SPIMI {
     }
 
     private long estimateTokenMemory(String token) {
-        return 40L + (token.length() * 2L) + 80L;
+        return 20L + (token.length() * 2L);
     }
 
     private void closeQuietly(FileChannel file) {

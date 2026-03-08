@@ -140,14 +140,9 @@ public class MenuController {
         try {
             log.info("Starting SPIMI indexing from {}", directoryPath);
             searchEngine.indexLargeCollection(directoryPath);
+
             System.out.println("\n  Large collection indexed successfully!");
-            System.out.println("Building wildcard indexes...");
-
-            searchEngine.buildWildcardIndexes();
-
-            System.out.println("    Wildcard indexes ready");
             System.out.println("\nYou can now search the indexed collection");
-
         } catch (IOException e) {
             System.err.println("\n  Indexing failed: " + e.getMessage());
             log.error("SPIMI indexing failed", e);
@@ -280,6 +275,10 @@ public class MenuController {
     }
 
     private Optional<SearchStructureType> getType() {
+        if (searchEngine.getCurrentMode() == BooleanSearchEngine.IndexingMode.DISK_BASED) {
+            return Optional.of(SearchStructureType.INDEX);
+        }
+
         String[] valid = {"index", "matrix", "biword", "positional"};
         System.out.printf("Enter structure (%s): ", String.join("/", valid));
 
@@ -660,6 +659,11 @@ public class MenuController {
 
     public void viewStatistics() {
         showMessage();
+        if (searchEngine.getCurrentMode() == BooleanSearchEngine.IndexingMode.DISK_BASED) {
+            searchEngine.printStatistics();
+            return;
+        }
+
         var typeOptional = getType();
         if (typeOptional.isEmpty()) {
             System.out.println("Type cannot be empty");
@@ -847,7 +851,6 @@ public class MenuController {
 
     public void compareFormats() {
         showMessage();
-        SerializationComparison comparison;
         if (searchEngine.getIndex().size() == 0) {
             System.out.println("Index is empty. Please index some documents first");
             return;
@@ -855,21 +858,27 @@ public class MenuController {
 
         System.out.println("No comparison data found. Measuring now");
 
-        try {
-            comparison = searchEngine.measureAllFormats();
-            searchEngine.setSerializationComparison(comparison);
-        } catch (IOException e) {
-            System.err.println("Failed to measure formats: " + e.getMessage());
-            log.error("Failed to measure formats", e);
-            return;
+        var comparison = searchEngine.getSerializationComparison();
+
+        if (comparison != null) {
+            System.out.println("Using cached comparison data");
+        } else {
+            System.out.println("No comparison data found. Measuring now...");
+            try {
+                comparison = searchEngine.measureAllFormats();
+                if (comparison == null) return;
+                searchEngine.setSerializationComparison(comparison);
+            } catch (IOException e) {
+                System.err.println("Failed to measure formats: " + e.getMessage());
+                log.error("Failed to measure formats", e);
+                return;
+            }
         }
 
         System.out.println("\n" + "=".repeat(80));
         System.out.println("SERIALIZATION FORMAT COMPARISON");
         System.out.println("=".repeat(80));
-
         comparison.printData();
-
         System.out.println("=".repeat(80));
     }
 
@@ -881,6 +890,8 @@ public class MenuController {
     }
 
     public void compareBenchmarks() {
+        showMessage();
+
         System.out.println("Enter test terms (comma-separated, e.g.: java,python,algorithm,data):");
         String input = scanner.parseString();
 
@@ -898,8 +909,13 @@ public class MenuController {
     }
 
     public void compareCompression() {
-        CompressionBenchmark benchmark = new CompressionBenchmark();
+        if (searchEngine.getCurrentMode() != BooleanSearchEngine.IndexingMode.IN_MEMORY) {
+            System.out.println("Compression benchmark requires IN_MEMORY mode.");
+            System.out.println("Call indexDocuments() first, or call clear() to leave DISK_BASED mode.");
+            return;
+        }
+
+        var benchmark = new CompressionBenchmark();
         benchmark.runAllBenchmarks(searchEngine.getIndex());
     }
-
 }
