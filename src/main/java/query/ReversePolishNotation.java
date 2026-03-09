@@ -19,14 +19,18 @@ public class ReversePolishNotation {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    public static Set<Integer> evaluate(String expression, BooleanSearchEngine searchEngine) throws IllegalArgumentException {
+    public static Set<Integer> evaluate(
+            String expression,
+            BooleanSearchEngine searchEngine,
+            SearchStructureType type
+    ) throws IllegalArgumentException {
+
         if (expression == null || expression.isBlank()) {
             throw new IllegalArgumentException("Expression cannot be null or blank");
         }
         if (searchEngine == null) {
             throw new IllegalArgumentException("SearchEngine cannot be null");
         }
-
 
         var allDocIds = searchEngine.getAllDocumentIDs();
 
@@ -42,7 +46,7 @@ public class ReversePolishNotation {
                 processOperator(token, stack, allDocIds);
 
             } else {
-                Set<Integer> docIds = searchEngine.search(token, SearchStructureType.INDEX)
+                Set<Integer> docIds = searchEngine.search(token, type)
                         .orElse(Set.of());
 
                 log.debug("Term `{}` -> `{}` docs", token, docIds.size());

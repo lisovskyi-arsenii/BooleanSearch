@@ -15,12 +15,13 @@ public class PhraseSearch {
     private final BiwordIndex biwordIndex;
 
     public PhraseSearch(PositionalIndex positionalIndex, BiwordIndex biwordIndex) {
-        this.positionalIndex = positionalIndex;
-        this.biwordIndex = biwordIndex;
+        this.positionalIndex = Objects.requireNonNull(positionalIndex, "Positional index must be not null");
+        this.biwordIndex = Objects.requireNonNull(biwordIndex, "Biword index must be not null");
     }
 
-
     public Optional<Set<Integer>> search(String phrase, SearchStructureType type) {
+        Objects.requireNonNull(type, "Search structure type must be not null");
+
         var termsOpt = validateStringAndCheckForEmpty(phrase);
         if (termsOpt.isEmpty()) {
             log.debug("Terms were not found");
@@ -45,7 +46,7 @@ public class PhraseSearch {
 
 
     private Optional<Set<Integer>> searchPhraseBiwordInternal(List<String> terms) {
-        String firstTerm = terms.get(0);
+        String firstTerm = terms.getFirst();
         String secondTerm = terms.get(1);
 
         if (firstTerm.isBlank() || secondTerm.isBlank()) {

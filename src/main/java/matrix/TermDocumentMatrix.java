@@ -69,6 +69,11 @@ public class TermDocumentMatrix implements Dictionary {
     }
 
     @Override
+    public Set<String> getAllTerms() {
+        return termToIndex.keySet();
+    }
+
+    @Override
     public int size() {
         return termCount;
     }

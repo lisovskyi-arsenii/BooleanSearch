@@ -41,6 +41,7 @@ public class InvertedIndex implements Dictionary {
                 : Optional.empty();
     }
 
+    @Override
     public Set<String> getAllTerms() {
         return Collections.unmodifiableSet(index.keySet());
     }
@@ -60,9 +61,4 @@ public class InvertedIndex implements Dictionary {
     public void clear() {
         index.clear();
     }
-
-//    public void print() {
-//        index.forEach((term, docID) ->
-//                System.out.println(term + ": " + docID));
-//    }
 }

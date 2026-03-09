@@ -10,12 +10,15 @@ repositories {
     mavenCentral()
 }
 
-val slf4jVersion = "2.0.9"
-val logbackVersion = "1.5.13"
-val jacksonVersion = "2.18.2"
-val lombokVersion = "1.18.42"
-val guavaLibVersion = "33.5.0"
-val junitVersion = "5.14.0"
+val slf4jVersion            = "2.0.9"
+val logbackVersion          = "1.5.32"
+val jacksonVersion          = "2.21.1"
+val lombokVersion           = "1.18.42"
+val guavaLibVersion         = "33.5.0"
+val apacheCommonsCompress   = "1.28.0"
+val apacheLuceneAnalysis    = "10.4.0"
+val caffeineVersion         = "3.2.3"
+val junitVersion            = "5.14.0"
 
 dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -29,6 +32,11 @@ dependencies {
     implementation("com.google.guava:guava:${guavaLibVersion}-jre")
 
     implementation(fileTree("libs") {include ( "*.jar") })
+
+    implementation("org.apache.commons:commons-compress:${apacheCommonsCompress}")
+    implementation("org.apache.lucene:lucene-analysis-common:${apacheLuceneAnalysis}")
+
+    implementation("com.github.ben-manes.caffeine:caffeine:${caffeineVersion}")
 
     compileOnly("org.projectlombok:lombok:${lombokVersion}")
     annotationProcessor("org.projectlombok:lombok:${lombokVersion}")

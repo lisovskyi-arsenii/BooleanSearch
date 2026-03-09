@@ -13,6 +13,7 @@ public class TextSerializer implements IndexSerializer {
     private static final String FORMAT = "TEXT";
     private static final String SEPARATOR = ": ";
     private static final String DOC_SEPARATOR = ", ";
+    private static final String POS_SEPARATOR = "; ";
 
     private static final String INDEX_SECTION = "### INDEX ###";
     private static final String DOC_NAMES_SECTION = "### DOCUMENT_NAMES ###";
@@ -35,15 +36,23 @@ public class TextSerializer implements IndexSerializer {
             writer.write(INDEX_SECTION);
             writer.newLine();
 
-            List<String> sortedTerms = new ArrayList<>(indexData.index().keySet());
+            List<String> sortedTerms = new ArrayList<>(indexData.positionalIndex().keySet());
             Collections.sort(sortedTerms);
 
             for (String term : sortedTerms) {
-                Set<Integer> docIDs = indexData.index().get(term);
-                String docIDsStr = docIDs.stream()
-                        .sorted()
-                        .map(String::valueOf)
-                        .collect(Collectors.joining(DOC_SEPARATOR));
+                Map<Integer, List<Integer>> docPositions = indexData.positionalIndex().get(term);
+
+                String docIDsStr = docPositions.entrySet().stream()
+                                    .sorted(Map.Entry.comparingByKey())
+                                    .map(entry -> {
+                                        int docId = entry.getKey();
+                                        String positions = entry.getValue().stream()
+                                                .map(String::valueOf)
+                                                .collect(Collectors.joining(DOC_SEPARATOR));
+                                        return docId + "[" + positions + "]";
+                                    })
+                                    .collect(Collectors.joining(POS_SEPARATOR));
+
                 writer.write(term + SEPARATOR + docIDsStr);
                 writer.newLine();
             }
@@ -82,7 +91,7 @@ public class TextSerializer implements IndexSerializer {
                 BufferedReader reader = new BufferedReader(
                         new FileReader(filepath, StandardCharsets.UTF_8));
         ) {
-            Map<String, Set<Integer>> index = new ConcurrentHashMap<>();
+            Map<String, Map<Integer, List<Integer>>> positionalIndex = new ConcurrentHashMap<>();
             Map<Integer, String> idToFilename = new ConcurrentHashMap<>();
             Map<String, Long> filenameToSize = new ConcurrentHashMap<>();
             int nextDocID = 1;
@@ -126,12 +135,34 @@ public class TextSerializer implements IndexSerializer {
                         nextDocID = Integer.parseInt(value);
                     }
                 } else if (INDEX_SECTION.equals(currentSection)) {
-                    Set<Integer> docIDs = Arrays.stream(value.split(DOC_SEPARATOR))
-                            .map(String::trim)
-                            .filter(s -> !s.isEmpty())
-                            .map(Integer::parseInt)
-                            .collect(Collectors.toSet());
-                    index.put(key, docIDs);
+                    Map<Integer, List<Integer>> docPositions = new HashMap<>();
+
+                    String[] docEntries = value.split(POS_SEPARATOR);
+
+                    for (String entry : docEntries) {
+                        entry = entry.trim();
+                        if (entry.isBlank()) continue;
+
+                        int bracketIndex = entry.indexOf('[');
+                        if (bracketIndex == -1) continue;
+
+                        int docId = Integer.parseInt(entry.substring(0, bracketIndex).trim());
+
+                        int closeBracketIndex = entry.indexOf(']');
+                        if (closeBracketIndex == -1) continue;
+
+                        String positionStr = entry.substring(bracketIndex + 1, closeBracketIndex);
+
+                        List<Integer> positions = Arrays.stream(positionStr.split(DOC_SEPARATOR))
+                                .map(String::trim)
+                                .filter(s -> !s.isBlank())
+                                .map(Integer::parseInt)
+                                .toList();
+
+                        docPositions.put(docId, positions);
+                    }
+
+                    positionalIndex.put(key, docPositions);
                 } else if (DOC_NAMES_SECTION.equals(currentSection)) {
                     int docID = Integer.parseInt(key);
                     idToFilename.put(docID, value);
@@ -153,7 +184,7 @@ public class TextSerializer implements IndexSerializer {
                     nextDocID
             );
 
-            return new IndexData(index, registryData);
+            return new IndexData(positionalIndex, registryData);
         }
     }
 

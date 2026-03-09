@@ -43,3 +43,11 @@ bin/
 .DS_Store
 
 ### other ###*.hprof
+documents/
+large_documents/
+large_large_documents/
+.dat
+.bin
+.json
+.txt
+logs/
