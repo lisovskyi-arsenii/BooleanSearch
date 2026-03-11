@@ -9,6 +9,98 @@ public final class GammaCode {
         throw new UnsupportedOperationException("GammaCode class is utility class - cannot create instance of it");
     }
 
+    public static String encodeNumber(int n) {
+        if (n <= 0) {
+            throw new IllegalArgumentException("Number must be positive");
+        }
+
+        int m = (int) (Math.log(n) / Math.log(2));
+
+        String unary = "0".repeat(m);
+        String binary = Integer.toBinaryString(n);
+
+        return unary + binary;
+    }
+
+    public static byte[] encode(List<Integer> numbers) {
+        if (numbers.isEmpty()) {
+            return new byte[0];
+        }
+
+        BitWriter writer = new BitWriter();
+
+        for (int num : numbers) {
+            String encoded = encodeNumber(num);
+
+            for (char c : encoded.toCharArray()) {
+                writer.writeBit(c == '1' ? 1 : 0);
+            }
+        }
+
+        return writer.toByteArray();
+    }
+
+    public static byte[] encodeWithGaps(List<Integer> sortedNumbers) {
+        if (sortedNumbers.isEmpty()) return new byte[0];
+
+        List<Integer> gaps = new ArrayList<>();
+        int previous = 0;
+
+        for (int num : sortedNumbers) {
+            gaps.add((num - previous) + 1);
+            previous = num;
+        }
+
+        return encode(gaps);
+    }
+
+    public static List<Integer> decode(byte[] encoded) {
+        if (encoded.length == 0) {
+            return new ArrayList<>();
+        }
+
+        List<Integer> numbers = new ArrayList<>();
+        BitReader reader = new BitReader(encoded);
+
+        while (reader.hasNext()) {
+            int m = 0;
+            int bit = reader.readBit();
+            if (bit == -1) break;
+
+            while (bit == 0) {
+                m++;
+                bit = reader.readBit();
+                if (bit == -1) return numbers;
+            }
+
+            int value = 1;
+            for (int i = 0; i < m; i++) {
+                bit = reader.readBit();
+                if (bit == -1) return numbers;
+                value = (value << 1) | bit;
+            }
+
+            numbers.add(value);
+        }
+
+        return numbers;
+    }
+
+    public static List<Integer> decodeWithGaps(byte[] encoded) {
+        if (encoded.length == 0) return new ArrayList<>();
+
+        List<Integer> gaps    = decode(encoded);
+        List<Integer> numbers = new ArrayList<>();
+        int current = 0;
+
+        for (int gap : gaps) {
+            current += (gap - 1);
+            numbers.add(current);
+        }
+
+        return numbers;
+    }
+
     private static class BitWriter {
         private byte[] bytes = new byte[256];
         private int size;
@@ -72,101 +164,5 @@ public final class GammaCode {
         public boolean hasNext() {
             return byteIndex < bytes.length;
         }
-    }
-
-    public static String encodeNumber(int n) {
-        if (n <= 0) {
-            throw new IllegalArgumentException("Number must be positive");
-        }
-
-        int m = (int) (Math.log(n) / Math.log(2));
-
-        String unary = "0".repeat(m);
-        String binary = Integer.toBinaryString(n);
-
-        return unary + binary;
-    }
-
-    public static byte[] encode(List<Integer> numbers) {
-        if (numbers.isEmpty()) {
-            return new byte[0];
-        }
-
-        BitWriter writer = new BitWriter();
-
-        for (int num : numbers) {
-            String encoded = encodeNumber(num);
-
-            for (char c : encoded.toCharArray()) {
-                writer.writeBit(c == '1' ? 1 : 0);
-            }
-        }
-
-        return writer.toByteArray();
-    }
-
-    public static byte[] encodeWithGaps(List<Integer> sortedNumbers) {
-        if (sortedNumbers.isEmpty()) {
-            return new byte[0];
-        }
-
-        List<Integer> gaps = new ArrayList<>();
-        int previous = 0;
-
-        for (int num : sortedNumbers) {
-            gaps.add(num - previous);
-            previous = num;
-        }
-
-        return encode(gaps);
-    }
-
-    public static List<Integer> decode(byte[] encoded) {
-        if (encoded.length == 0) {
-            return new ArrayList<>();
-        }
-
-        List<Integer> numbers = new ArrayList<>();
-        BitReader reader = new BitReader(encoded);
-
-        while (reader.hasNext()) {
-            int m = 0;
-            int bit = reader.readBit();
-            if (bit == -1) break;
-
-            while (bit == 0) {
-                m++;
-                bit = reader.readBit();
-                if (bit == -1) return numbers;
-            }
-
-            int value = 1;
-            for (int i = 0; i < m; i++) {
-                bit = reader.readBit();
-                if (bit == -1) return numbers;
-                value = (value << 1) | bit;
-            }
-
-            numbers.add(value);
-        }
-
-        return numbers;
-    }
-
-    public static List<Integer> decodeWithGaps(byte[] encoded) {
-        if (encoded.length == 0) {
-            return new ArrayList<>();
-        }
-
-        List<Integer> gaps = decode(encoded);
-        List<Integer> numbers = new ArrayList<>();
-
-        int current = 0;
-        for (int gap : gaps) {
-            current += gap;
-            numbers.add(current);
-        }
-
-        return numbers;
     }
 }

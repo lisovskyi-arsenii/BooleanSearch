@@ -19,18 +19,14 @@ public class InvertedIndex implements Dictionary {
         index.clear();
 
         newIndex.forEach((term, docIDs) -> {
-            Set<Integer> threadSafeSet = ConcurrentHashMap.newKeySet();
-            threadSafeSet.addAll(docIDs);
-            index.put(term, threadSafeSet);
+            Set<Integer> set = ConcurrentHashMap.newKeySet();
+            set.addAll(docIDs);
+            index.put(term, set);
         });
     }
 
     public Map<String, Set<Integer>> getIndex() {
         return Collections.unmodifiableMap(index);
-    }
-
-    public Set<Map.Entry<String, Set<Integer>>> entrySet() {
-        return Collections.unmodifiableSet(index.entrySet());
     }
 
     @Override

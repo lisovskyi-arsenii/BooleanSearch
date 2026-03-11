@@ -24,6 +24,7 @@ import serialization.serializers.TextSerializer;
 import statistics.DictionaryStats;
 import tokenization.Tokenizer;
 import util.FileWalker;
+import util.XmlTextExtractor;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -197,6 +198,11 @@ public class BooleanSearchEngine implements SearchEngine {
 
     private void indexFile(Path path, int docId) throws IOException {
         String content = Files.readString(path);
+
+        if (isXmlFile(path, content)) {
+            content = XmlTextExtractor.extractText(content);
+        }
+
         List<String> tokens = Tokenizer.tokenize(content);
 
         for (int position = 0; position < tokens.size(); position++) {
@@ -1008,5 +1014,14 @@ public class BooleanSearchEngine implements SearchEngine {
             throw new IllegalArgumentException("Unknown search structure type: " + type);
         }
         return executor;
+    }
+
+    private boolean isXmlFile(Path path, String content) {
+        String filename = path.getFileName().toString().toLowerCase(Locale.ROOT);
+        if (filename.endsWith(".xml")) return true;
+
+        String start = content.stripLeading();
+        return start.startsWith("<?xml") || start.startsWith("<mediawiki")
+                || start.startsWith("<feed") || start.startsWith("<root");
     }
 }

@@ -7,6 +7,7 @@ import serialization.data.IndexMetadata;
 import serialization.data.RegistryData;
 import tokenization.Tokenizer;
 import util.FileWalker;
+import util.XmlTextExtractor;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -253,25 +254,45 @@ public class SPIMI {
         long            memUse = 0;
         int             pos    = 0;
 
-        try (BufferedReader reader = openReader(file)) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.isBlank()) continue;
+        if (isXmlFile(file)) {
+            String rawContent = Files.readString(file, StandardCharsets.UTF_8);
+            String cleanContent = XmlTextExtractor.extractText(rawContent);
+            bytesProcessed.addAndGet(rawContent.length());
 
-                for (String token : Tokenizer.tokenize(line)) {
-                    if (token.isBlank()) continue;
+            for (String token : Tokenizer.tokenize(cleanContent)) {
+                if (token.isBlank()) continue;
 
-                    block.addTerm(token, docId, pos++);
-                    memUse += estimateTokenMemory(token);
+                block.addTerm(token, docId, pos++);
+                memUse += estimateTokenMemory(token);
 
-                    if (memUse >= LOCAL_BLOCK_THRESHOLD) {
-                        out.add(saveBlock(block));
-                        block  = new PositionalIndex();
-                        memUse = 0;
-                    }
+                if (memUse >= LOCAL_BLOCK_THRESHOLD) {
+                    out.add(saveBlock(block));
+                    block  = new PositionalIndex();
+                    memUse = 0;
                 }
+            }
+        } else {
+            // Звичайні файли — рядково (ефективно для великих файлів)
+            try (BufferedReader reader = openReader(file)) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.isBlank()) continue;
 
-                bytesProcessed.addAndGet(line.length() + 1L);
+                    for (String token : Tokenizer.tokenize(line)) {
+                        if (token.isBlank()) continue;
+
+                        block.addTerm(token, docId, pos++);
+                        memUse += estimateTokenMemory(token);
+
+                        if (memUse >= LOCAL_BLOCK_THRESHOLD) {
+                            out.add(saveBlock(block));
+                            block  = new PositionalIndex();
+                            memUse = 0;
+                        }
+                    }
+
+                    bytesProcessed.addAndGet(line.length() + 1L);
+                }
             }
         }
 
@@ -284,6 +305,10 @@ public class SPIMI {
             log.info("Processed {} files ({} MB)",
                     count, bytesProcessed.get() / (1024 * 1024));
         }
+    }
+
+    private boolean isXmlFile(Path file) {
+        return file.getFileName().toString().toLowerCase().endsWith(".xml");
     }
 
     private String saveBlock(PositionalIndex index) throws IOException {

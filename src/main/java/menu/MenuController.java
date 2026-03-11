@@ -476,26 +476,32 @@ public class MenuController {
             return;
         }
 
-        System.out.println("Choose search type:");
-        System.out.println("  1. Biword Index");
-        System.out.println("  2. Positional Index");
-        System.out.print("Enter choice: ");
+        SearchStructureType type;
 
-        OptionalInt choiceOpt = scanner.parseInt();
-        if (choiceOpt.isEmpty()) {
-            System.out.println("Invalid choice");
-            return;
+        if (searchEngine.getCurrentMode() == BooleanSearchEngine.IndexingMode.DISK_BASED) {
+            type = SearchStructureType.POSITIONAL;
+        } else {
+            System.out.println("Choose search type:");
+            System.out.println("  1. Biword Index");
+            System.out.println("  2. Positional Index");
+            System.out.print("Enter choice: ");
+
+            OptionalInt choiceOpt = scanner.parseInt();
+            if (choiceOpt.isEmpty()) {
+                System.out.println("Invalid choice");
+                return;
+            }
+
+            int choice = choiceOpt.getAsInt();
+            if (choice != 1 && choice != 2) {
+                System.out.println("Invalid choice. Please enter 1 or 2");
+                return;
+            }
+
+            type = choice == 1
+                    ? SearchStructureType.BIWORD
+                    : SearchStructureType.POSITIONAL;
         }
-
-        int choice = choiceOpt.getAsInt();
-        if (choice != 1 && choice != 2) {
-            System.out.println("Invalid choice. Please enter 1 or 2");
-            return;
-        }
-
-        SearchStructureType type = choice == 1
-                ? SearchStructureType.BIWORD
-                : SearchStructureType.POSITIONAL;
 
         log.debug("Searching phrase '{}' using {}", phrase, type);
 
@@ -518,6 +524,7 @@ public class MenuController {
                 },
                 () -> System.out.printf("Phrase '%s' not found%n", phrase));
     }
+
 
     public void proximitySearch() {
         showMessage();
@@ -646,7 +653,7 @@ public class MenuController {
                     .flatMap(Set::stream)
                     .collect(Collectors.toSet()).size();
 
-            System.out.printf("%n📊 Terms found: %d | Unique docs: %d (from %d)%n",
+            System.out.printf("%n   Terms found: %d | Unique docs: %d (from %d)%n",
                     results.size(), totalDocs, searchEngine.getRegistry().documentCount());
             System.out.printf("%nSearch time: %.2f ms%n", timeMs);
         } catch (IllegalStateException e) {
@@ -855,8 +862,6 @@ public class MenuController {
             System.out.println("Index is empty. Please index some documents first");
             return;
         }
-
-        System.out.println("No comparison data found. Measuring now");
 
         var comparison = searchEngine.getSerializationComparison();
 

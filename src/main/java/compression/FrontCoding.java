@@ -15,21 +15,22 @@ public final class FrontCoding {
 
     public record CompressedDictionary(List<String> blocks, int originalSize, int compressedSize) {
         public double getCompressionRatio() {
+            if (originalSize <= 0) return 0.0;
             return (double) compressedSize / originalSize * 100;
         }
     }
 
     public static CompressedDictionary compress(List<String> terms, int blockSize) {
-        Collections.sort(terms);
+        List<String> sorted = new ArrayList<>(terms);
+        Collections.sort(sorted);
 
         List<String> blocks = new ArrayList<>();
-        int originalSize = 0;
+        int originalSize   = 0;
         int compressedSize = 0;
 
-
-        for (int i = 0; i < terms.size(); i += blockSize) {
-            int end = Math.min(i + blockSize, terms.size());
-            List<String> blockTerms = terms.subList(i, end);
+        for (int i = 0; i < sorted.size(); i += blockSize) {
+            int end = Math.min(i + blockSize, sorted.size());
+            List<String> blockTerms = sorted.subList(i, end);
 
             StringBuilder compressed = new StringBuilder();
             String previous = "";
@@ -38,13 +39,13 @@ public final class FrontCoding {
                 originalSize += term.length() + 1;
 
                 int prefixLength = commonPrefixLength(previous, term);
-                String suffix = term.substring(prefixLength);
+                String suffix    = term.substring(prefixLength);
 
                 compressed.append(prefixLength).append(':')
                         .append(suffix).append('|');
 
-                compressedSize += String.valueOf(prefixLength).length() + 1 +
-                        suffix.length() + 1;
+                compressedSize += String.valueOf(prefixLength).length() + 1
+                        + suffix.length() + 1;
 
                 previous = term;
             }
@@ -53,7 +54,7 @@ public final class FrontCoding {
         }
 
         log.info("Front Coding: {} terms → {} blocks, ratio: {}%",
-                terms.size(),
+                sorted.size(),
                 blocks.size(),
                 String.format("%.2f", (double) compressedSize / originalSize * 100));
 
@@ -107,7 +108,7 @@ public final class FrontCoding {
     }
 
     public static List<String> decompressFromBytes(byte[] compressed) {
-        String data = new String(compressed, StandardCharsets.UTF_8);
+        String data     = new String(compressed, StandardCharsets.UTF_8);
         String[] blocks = data.split("\\|\\|");
 
         List<String> blockList = new ArrayList<>();
@@ -117,7 +118,8 @@ public final class FrontCoding {
             }
         }
 
-        CompressedDictionary dictionary = new CompressedDictionary(blockList, compressed.length, compressed.length);
+        CompressedDictionary dictionary =
+                new CompressedDictionary(blockList, -1, compressed.length);
         return decompress(dictionary);
     }
 

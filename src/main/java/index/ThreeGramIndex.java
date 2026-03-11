@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -13,7 +14,7 @@ public class ThreeGramIndex implements WildcardIndex {
     private static final char MARKER = '$';
     private static final int N = 3;
 
-    private final Map<String, Set<String>> index = new ConcurrentHashMap<>();
+    private final Map<String, Set<String>> index = new ConcurrentSkipListMap<>();
     private final Set<String> terms = ConcurrentHashMap.newKeySet();
 
     @Override

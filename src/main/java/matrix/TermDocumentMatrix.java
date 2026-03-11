@@ -2,14 +2,12 @@ package matrix;
 
 import index.Dictionary;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+// Матриця інцидентності ефективна лише для малих колекцій через квадратичне зростання пам'яті O(Rows*Cols).
+// Інвертований індекс зберігає лише ненульові значення, що дає лінійне зростання O(N) від кількості унікальних пар термін-документ
 public class TermDocumentMatrix implements Dictionary {
     private static final int INITIAL_SIZE = 1000;
     private final Map<String, Integer> termToIndex;
@@ -23,9 +21,9 @@ public class TermDocumentMatrix implements Dictionary {
 
 
     public TermDocumentMatrix() {
-        termToIndex = new ConcurrentHashMap<>();
-        docToIndex = new ConcurrentHashMap<>();
-        indexToDoc = new ConcurrentHashMap<>();
+        termToIndex = new HashMap<>();
+        docToIndex = new HashMap<>();
+        indexToDoc = new HashMap<>();
         matrix = new boolean[INITIAL_SIZE][INITIAL_SIZE];
     }
 

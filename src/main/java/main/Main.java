@@ -17,7 +17,7 @@ public class Main {
         System.setProperty("slf4j.internal.verbosity", "WARN");
     }
 
-    static void main(String[] args) {
+    public static void main(String[] args) {
         log.info("=".repeat(80));
         log.info("APPLICATION STARTED at {}", LocalDateTime.now());
         log.info("=".repeat(80));
