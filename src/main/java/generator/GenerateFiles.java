@@ -216,10 +216,12 @@ public final class GenerateFiles {
 
     private static String prependMetadata(BookMetadata metadata, String content) {
         log.info("Prepending metadata to the start of the document");
+        String subjects = String.join(", ", metadata.subjects());
         return String.format(
-                "Title: %s%nAuthor: %s%nEBook-No.: %d%n%n%s",
+                "Title: %s%nAuthor: %s%nSubject: %s%nEBook-No.: %d%n%n%s",
                 metadata.title(),
                 metadata.authorMetadata().name(),
+                subjects.isEmpty() ? "Unknown" : subjects,
                 metadata.bookId(),
                 content
         );
@@ -238,7 +240,7 @@ public final class GenerateFiles {
         };
 
         static final int[] LARGE = {
-                2701, 2600, 1399, 1661, 135, 996, 3296, 2554, 1342, 4300,
+                2701, 2600, 1399, 1661, 135, 3296, 2554, 1342, 4300,
                 8800, 6761, 3207, 19942, 16328, 4517, 7370, 2148, 3600
         };
     }

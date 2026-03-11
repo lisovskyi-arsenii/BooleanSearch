@@ -31,8 +31,6 @@ public final class Tokenizer {
             return new ArrayList<>();
         }
 
-        StringBuilder sb = new StringBuilder(64);
-
         String cleaned = PUNCTUATION_PATTERN.matcher(content)
                 .replaceAll("")
                 .toLowerCase(Locale.ROOT);
