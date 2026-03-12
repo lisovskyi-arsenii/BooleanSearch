@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import menu.MenuController;
 import scanner.CustomScanner;
 
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.OptionalInt;
 import java.util.Scanner;
@@ -18,6 +20,7 @@ public class Main {
     }
 
     public static void main(String[] args) {
+        System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
         log.info("=".repeat(80));
         log.info("APPLICATION STARTED at {}", LocalDateTime.now());
         log.info("=".repeat(80));

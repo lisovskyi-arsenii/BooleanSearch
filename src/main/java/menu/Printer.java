@@ -72,7 +72,8 @@ public final class Printer {
                 "Advanced search (complex boolean expressions)",
                 "Phrase search (exact match)",
                 "Proximity search (NEAR/k) - requires positional index",
-                "Wildcard search (*, ?) - prefix/suffix/middle"
+                "Wildcard search (*, ?) - prefix/suffix/middle",
+                "Zone ranking search"
         ));
 
         printSection("ANALYTICS & STATISTICS", List.of(

@@ -34,17 +34,19 @@ public final class ModeMenuMapping {
                     MenuChoice.PHRASE_SEARCH,             // 7
                     MenuChoice.PROXIMITY_SEARCH,          // 8
                     MenuChoice.WILDCARD_SEARCH,           // 9
-                    MenuChoice.VIEW_STATISTICS,           // 10
-                    MenuChoice.SHOW_TOP_TERMS,            // 11
-                    MenuChoice.SAVE_INDEX,                // 12
-                    MenuChoice.COMPARE_FORMATS,           // 13
-                    MenuChoice.COMPARE_PERFORMANCE,       // 14
-                    MenuChoice.COMPRESSION_PERFORMANCE,   // 15
-                    MenuChoice.CLEAR_INDEX,               // 16
-                    MenuChoice.GENERATE_FILES,            // 17
-                    MenuChoice.LIST_DIRECTORY,            // 18
-                    MenuChoice.CLEAR_ALL_FILES            // 19
+                    MenuChoice.ZONE_RANKING_SEARCH,       // 10
+                    MenuChoice.VIEW_STATISTICS,           // 11
+                    MenuChoice.SHOW_TOP_TERMS,            // 12
+                    MenuChoice.SAVE_INDEX,                // 13
+                    MenuChoice.COMPARE_FORMATS,           // 14
+                    MenuChoice.COMPARE_PERFORMANCE,       // 15
+                    MenuChoice.COMPRESSION_PERFORMANCE,   // 16
+                    MenuChoice.CLEAR_INDEX,               // 17
+                    MenuChoice.GENERATE_FILES,            // 18
+                    MenuChoice.LIST_DIRECTORY,            // 19
+                    MenuChoice.CLEAR_ALL_FILES            // 20
             );
+
 
 
             case DISK_BASED -> List.of(
