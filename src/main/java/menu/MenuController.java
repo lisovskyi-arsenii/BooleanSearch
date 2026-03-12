@@ -68,6 +68,7 @@ public class MenuController {
             case PROXIMITY_SEARCH -> proximitySearch();
             case WILDCARD_SEARCH -> wildcardSearch();
             case ZONE_RANKING_SEARCH -> zoneRankingSearch();
+            case CLUSTER_DOCUMENTS -> clusterDocuments();
             case VIEW_STATISTICS -> viewStatistics();
             case SHOW_TOP_TERMS -> showTopTerms();
             case SAVE_INDEX -> saveIndex();
@@ -706,6 +707,63 @@ public class MenuController {
                 ZoneWeight.AUTHOR.getWeight().doubleValue(),
                 ZoneWeight.SUBJECT.getWeight().doubleValue(),
                 ZoneWeight.BODY.getWeight().doubleValue());
+    }
+
+    public void clusterDocuments() {
+        showMessage();
+
+        System.out.println("Enter number of clusters (k): ");
+        var kOpt = scanner.parseInt();
+        if (kOpt.isEmpty()) {
+            System.out.println("k is invalid number");
+            return;
+        }
+        if (kOpt.getAsInt() < 2) {
+            System.out.println("k must be >= 2");
+            return;
+        }
+
+        var k = kOpt.getAsInt();
+
+        System.out.println("Enter max iterations (default 10): ");
+        final int defaultMaxIterations = 10;
+        var iterations = scanner.parseInt().orElse(defaultMaxIterations);
+
+        if (iterations == defaultMaxIterations) {
+            System.out.printf("Invalid number of max iterations, fallback to default = %d%n", defaultMaxIterations);
+        }
+
+        var resultOpt = searchEngine.clusterDocuments(k, iterations);
+        if (resultOpt.isEmpty()) {
+            System.out.println("No documents found");
+            return;
+        }
+
+        var result = resultOpt.get();
+
+        System.out.printf("%nClustering completed: %d clusters%n", result.clusterCount());
+        System.out.println("=".repeat(60));
+
+        for (var entry : result.getClusters().entrySet()) {
+            int clusterId = entry.getKey();
+            List<Integer> docIds = entry.getValue();
+            List<String> names = searchEngine.getDocumentNames(new HashSet<>(docIds));
+
+            System.out.printf("%nCluster %d (%d documents):%n", clusterId + 1, docIds.size());
+
+            for (int i = 0; i < docIds.size(); i++) {
+                int docId = docIds.get(i);
+                String name = names.get(i);
+                int cluster = result.getClusterForDoc(docId);
+                System.out.printf("  • %-40s [doc #%d → cluster %d]%n", name, docId, cluster + 1);
+            }
+        }
+
+        System.out.println("\n" + "=".repeat(60));
+        System.out.printf("Total: %d documents in %d clusters%n",
+                result.getClusters().values().stream().mapToInt(List::size).sum(),
+                result.clusterCount());
+
     }
 
     public void viewStatistics() {

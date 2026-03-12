@@ -35,16 +35,17 @@ public final class ModeMenuMapping {
                     MenuChoice.PROXIMITY_SEARCH,          // 8
                     MenuChoice.WILDCARD_SEARCH,           // 9
                     MenuChoice.ZONE_RANKING_SEARCH,       // 10
-                    MenuChoice.VIEW_STATISTICS,           // 11
-                    MenuChoice.SHOW_TOP_TERMS,            // 12
-                    MenuChoice.SAVE_INDEX,                // 13
-                    MenuChoice.COMPARE_FORMATS,           // 14
-                    MenuChoice.COMPARE_PERFORMANCE,       // 15
-                    MenuChoice.COMPRESSION_PERFORMANCE,   // 16
-                    MenuChoice.CLEAR_INDEX,               // 17
-                    MenuChoice.GENERATE_FILES,            // 18
-                    MenuChoice.LIST_DIRECTORY,            // 19
-                    MenuChoice.CLEAR_ALL_FILES            // 20
+                    MenuChoice.CLUSTER_DOCUMENTS,         // 11
+                    MenuChoice.VIEW_STATISTICS,           // 12
+                    MenuChoice.SHOW_TOP_TERMS,            // 13
+                    MenuChoice.SAVE_INDEX,                // 14
+                    MenuChoice.COMPARE_FORMATS,           // 15
+                    MenuChoice.COMPARE_PERFORMANCE,       // 16
+                    MenuChoice.COMPRESSION_PERFORMANCE,   // 17
+                    MenuChoice.CLEAR_INDEX,               // 18
+                    MenuChoice.GENERATE_FILES,            // 19
+                    MenuChoice.LIST_DIRECTORY,            // 20
+                    MenuChoice.CLEAR_ALL_FILES            // 21
             );
 
 

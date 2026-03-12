@@ -1,5 +1,8 @@
 package core;
 
+import clustering.ClusterResult;
+import clustering.KMeansClusterer;
+import clustering.TfIdfVectorizer;
 import document.DocumentRegistry;
 import enums.FileSerializationFormat;
 import enums.SearchStructureType;
@@ -636,6 +639,25 @@ public class BooleanSearchEngine implements SearchEngine {
         }
     }
 
+    public Optional<ClusterResult> clusterDocuments(int k, int maxIterations) {
+        lock.readLock().lock();
+        try {
+            if (currentMode != IndexingMode.IN_MEMORY) {
+                System.out.println("Cluster search is only available in IN_MEMORY mode");
+                return Optional.empty();
+            }
+
+            var vectorizer = new TfIdfVectorizer(positionalIndex, registry.documentCount());
+            var vectors = vectorizer.buildVectors();
+
+            var clusterer = new KMeansClusterer(k, maxIterations);
+            var result = clusterer.cluster(vectors);
+            return result != null ? Optional.of(result) : Optional.empty();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
     private List<String> findMatchingTerms(String wildcardQuery) throws IOException {
         boolean endsWithWildcard = wildcardQuery.endsWith("*") &&
                 wildcardQuery.indexOf("*") == wildcardQuery.length() - 1;
@@ -1026,13 +1048,13 @@ public class BooleanSearchEngine implements SearchEngine {
             if (currentMode == IndexingMode.DISK_BASED) {
                 spimi.close();
             }
-
             // Clear all structures
             index.clear();
             matrix.clear();
             biwordIndex.clear();
             positionalIndex.clear();
             zoneIndex.clear();
+
             registry.clear();
             totalCollectionSize.set(0);
 

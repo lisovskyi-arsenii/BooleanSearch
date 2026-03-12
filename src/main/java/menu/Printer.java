@@ -73,7 +73,8 @@ public final class Printer {
                 "Phrase search (exact match)",
                 "Proximity search (NEAR/k) - requires positional index",
                 "Wildcard search (*, ?) - prefix/suffix/middle",
-                "Zone ranking search"
+                "Zone ranking search",
+                "Cluster documents (K-Means)"
         ));
 
         printSection("ANALYTICS & STATISTICS", List.of(
