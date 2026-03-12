@@ -10,7 +10,6 @@ import query.ProximitySearch;
 import query.ReversePolishNotation;
 import query.ShuntingYard;
 import scanner.CustomScanner;
-import serialization.SerializationComparison;
 import statistics.DictionaryStats;
 
 import java.io.IOException;
@@ -68,6 +67,7 @@ public class MenuController {
             case PHRASE_SEARCH -> phraseSearch();
             case PROXIMITY_SEARCH -> proximitySearch();
             case WILDCARD_SEARCH -> wildcardSearch();
+            case ZONE_RANKING_SEARCH -> zoneRankingSearch();
             case VIEW_STATISTICS -> viewStatistics();
             case SHOW_TOP_TERMS -> showTopTerms();
             case SAVE_INDEX -> saveIndex();
@@ -662,6 +662,50 @@ public class MenuController {
         } catch (Exception e) {
             System.err.println("\nError: " + e.getMessage());
         }
+    }
+
+    public void zoneRankingSearch() {
+        showMessage();
+
+        if (searchEngine.getCurrentMode() != BooleanSearchEngine.IndexingMode.IN_MEMORY) {
+            System.out.println("Zone ranking is available in IN-MEMORY mode.");
+            return;
+        }
+
+        System.out.println("Enter query (space-generated terms): ");
+        String query = scanner.parseString().toLowerCase().trim();
+        if (query.isBlank()) {
+            System.out.println("Query cannot be empty");
+            return;
+        }
+
+        long start = System.nanoTime();
+        List<BooleanSearchEngine.ScoredDocument> results = searchEngine.zoneRankSearch(query);
+        double end = (System.nanoTime() - start) / 1_000_000.0;
+
+        if (results.isEmpty()) {
+            System.out.printf("No documents found for query: '%s'%n", query);
+            return;
+        }
+
+        System.out.printf("%nZone-ranked results for \"%s\" — %d document(s) (%.2f ms):%n",
+                query, results.size(), end);
+        System.out.printf("%-5s %-45s %s%n", "Rank", "Document", "Score");
+        System.out.println("-".repeat(65));
+
+        for (int i = 0; i < results.size(); i++) {
+            var doc = results.get(i);
+            List<String> names = searchEngine.getDocumentNames(Set.of(doc.docId()));
+            String name = names.isEmpty() ? "doc#" + doc.docId() : names.getFirst();
+            System.out.printf("%-5d %-45s %.4f%n", i + 1, name, doc.score());
+        }
+
+        System.out.println("-".repeat(65));
+        System.out.printf("Weights — TITLE: %.2f | AUTHOR: %.2f | SUBJECT: %.2f | BODY: %.2f%n",
+                ZoneWeight.TITLE.getWeight().doubleValue(),
+                ZoneWeight.AUTHOR.getWeight().doubleValue(),
+                ZoneWeight.SUBJECT.getWeight().doubleValue(),
+                ZoneWeight.BODY.getWeight().doubleValue());
     }
 
     public void viewStatistics() {

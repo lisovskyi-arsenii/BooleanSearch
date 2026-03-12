@@ -18,6 +18,7 @@ public enum MenuChoice {
     PHRASE_SEARCH("Phrase search"),
     PROXIMITY_SEARCH("Proximity search"),
     WILDCARD_SEARCH("Wildcard search"),
+    ZONE_RANKING_SEARCH("Zone ranking search"),
     VIEW_STATISTICS("View statistics"),
     SHOW_TOP_TERMS("Show top N terms"),
     SAVE_INDEX("Save index"),

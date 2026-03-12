@@ -4,12 +4,14 @@ import document.DocumentRegistry;
 import enums.FileSerializationFormat;
 import enums.SearchStructureType;
 import enums.WildcardStrategy;
+import enums.ZoneWeight;
 import index.*;
 import index.Dictionary;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import matrix.TermDocumentMatrix;
+import parser.ZoneParser;
 import query.PhraseSearch;
 import query.ProximitySearch;
 import query.QueryExecutor;
@@ -42,6 +44,13 @@ import java.util.stream.Collectors;
 @Slf4j
 @Getter
 public class BooleanSearchEngine implements SearchEngine {
+    public record ScoredDocument(int docId, double score) implements Comparable<ScoredDocument> {
+        @Override
+        public int compareTo(ScoredDocument other) {
+            return Double.compare(other.score, this.score);
+        }
+    }
+
     public enum IndexingMode {
         NOT_INIT,
         IN_MEMORY,
@@ -54,6 +63,7 @@ public class BooleanSearchEngine implements SearchEngine {
     private final BiwordIndex biwordIndex;
     private final PositionalIndex positionalIndex;
     private final TermDocumentMatrix matrix;
+    private final ZoneIndex zoneIndex;
 
     private BTree bTree;
     private ReverseBTree reverseBTree;
@@ -82,6 +92,7 @@ public class BooleanSearchEngine implements SearchEngine {
         this.biwordIndex = new BiwordIndex();
         this.positionalIndex = new PositionalIndex();
         this.matrix = new TermDocumentMatrix();
+        this.zoneIndex = new ZoneIndex();
         this.registry = new DocumentRegistry();
         this.spimi = new SPIMI();
         this.phraseSearch = new PhraseSearch(positionalIndex, biwordIndex);
@@ -114,9 +125,9 @@ public class BooleanSearchEngine implements SearchEngine {
                 System.out.println("   Call clear() first to switch to IN-MEMORY mode.");
                 return;
             }
-            currentMode = IndexingMode.IN_MEMORY;
 
             List<Path> paths = FileWalker.findFiles(directoryPath);
+            currentMode = IndexingMode.IN_MEMORY;
 
             Map<Path, Integer> docIds = new LinkedHashMap<>();
             for (Path file : paths) {
@@ -198,13 +209,11 @@ public class BooleanSearchEngine implements SearchEngine {
 
     private void indexFile(Path path, int docId) throws IOException {
         String content = Files.readString(path);
-
         if (isXmlFile(path, content)) {
             content = XmlTextExtractor.extractText(content);
         }
 
         List<String> tokens = Tokenizer.tokenize(content);
-
         for (int position = 0; position < tokens.size(); position++) {
             String token = tokens.get(position);
 
@@ -217,6 +226,23 @@ public class BooleanSearchEngine implements SearchEngine {
                 biwordIndex.addWord(token, nextToken, docId);
             }
         }
+
+        Map<ZoneWeight, String> zones;
+        try {
+            zones = ZoneParser.parseDocuments(path);
+            if (zones.get(ZoneWeight.TITLE).isBlank()) {
+                zones = new EnumMap<>(ZoneWeight.class);
+                zones.put(ZoneWeight.TITLE, path.getFileName().toString());
+            }
+        } catch (Exception e) {
+            log.warn("ZoneParser failed for {}, falling back to filename+body", path.getFileName(), e);
+            zones = new EnumMap<>(ZoneWeight.class);
+            for (var zone : ZoneWeight.values()) zones.put(zone, "");
+            zones.put(ZoneWeight.TITLE, path.getFileName().toString());
+            zones.put(ZoneWeight.BODY, content);
+        }
+
+        zoneIndex.addDocument(zones, docId);
     }
 
     public void buildWildcardIndexes() {
@@ -573,6 +599,38 @@ public class BooleanSearchEngine implements SearchEngine {
         } catch (IOException e) {
             log.error("Wildcard search failed", e);
             return Optional.empty();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public List<ScoredDocument> zoneRankSearch(String query) {
+        Objects.requireNonNull(query, "Query must not be null");
+
+        List<String> terms = Tokenizer.tokenize(query);
+        if (terms.isEmpty()) return List.of();
+        lock.readLock().lock();
+        try {
+            if (currentMode != IndexingMode.IN_MEMORY) {
+                System.out.println("Zone ranking search is only available in IN_MEMORY mode");
+                return List.of();
+            }
+
+            Set<Integer> candidates = new HashSet<>();
+            for (var term : terms) {
+                candidates.addAll(zoneIndex.search(term));
+            }
+
+            return candidates.stream()
+                    .map(docId -> {
+                        double score = terms.stream()
+                                .mapToDouble(term -> zoneIndex.score(term, docId))
+                                .sum();
+                        return new ScoredDocument(docId, score);
+                    })
+                    .filter(sd -> sd.score() > 0)
+                    .sorted()
+                    .toList();
         } finally {
             lock.readLock().unlock();
         }
@@ -974,6 +1032,7 @@ public class BooleanSearchEngine implements SearchEngine {
             matrix.clear();
             biwordIndex.clear();
             positionalIndex.clear();
+            zoneIndex.clear();
             registry.clear();
             totalCollectionSize.set(0);
 
