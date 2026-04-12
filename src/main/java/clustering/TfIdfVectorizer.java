@@ -14,6 +14,7 @@ public class TfIdfVectorizer {
     private final int totalDocs;
 
     public Map<Integer, Map<String, Double>> buildVectors() {
+        // docId -> { term, tfidf }
         Map<Integer, Map<String, Double>> result = new HashMap<>();
 
         var terms = positionalIndex.getAllTerms();
@@ -23,18 +24,24 @@ public class TfIdfVectorizer {
             var documentsOpt = positionalIndex.getDocuments(term);
             if (documentsOpt.isEmpty()) continue;
 
+            // скільки документів містять цей термін
             int docFreq = documentsOpt.get().size();
-            double idf = Math.log((double) totalDocs / (1 + docFreq));
+            // рідкісні терміни отримують більше вагу
+            double idf = Math.log(1.0 + (double) totalDocs / docFreq);
 
             for (int docId : documentsOpt.get()) {
                 var positionsInDocOpt = positionalIndex.getPositionsInDocument(term, docId);
                 if (positionsInDocOpt.isEmpty()) continue;
 
+                // скільки разів термін зустрічається в документі
                 int tf = positionsInDocOpt.get().size();
+                // docFreq * inverse doc freq
                 double tfidf = tf * idf;
 
-                result.computeIfAbsent(docId, _ -> new HashMap<>())
-                        .put(term, tfidf);
+                if (tfidf > 0) {
+                    result.computeIfAbsent(docId, _ -> new HashMap<>())
+                            .put(term, tfidf);
+                }
             }
         }
 

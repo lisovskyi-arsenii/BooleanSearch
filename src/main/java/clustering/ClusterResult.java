@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public class ClusterResult {
-    // кластер -> список docId
+    // clusterId -> список docId
     @Getter
     private final Map<Integer, List<Integer>> clusters;
     // docId -> кластер (для швидкого пошуку)
@@ -33,10 +33,5 @@ public class ClusterResult {
 
     public int clusterCount() {
         return clusters.size();
-    }
-
-    public int clusterSize(int clusterId) {
-        var cluster = clusters.get(clusterId);
-        return cluster == null ? 0 : cluster.size();
     }
 }

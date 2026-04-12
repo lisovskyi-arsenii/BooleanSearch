@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -180,7 +181,7 @@ public class MenuController {
         }
 
         try {
-            log.info("Generating {} {} files...", quantityOpt, fileGenerationType.get().getType());
+            log.info("Generating {} {} files...", quantityOfFiles, fileGenerationType.get().getType());
 
             switch (fileGenerationType.get()) {
                 case SMALL -> GenerateFiles.generateSmallFiles(quantityOfFiles);
@@ -728,8 +729,8 @@ public class MenuController {
 
         System.out.println("Enter max iterations (default 10): ");
         final int defaultMaxIterations = 10;
-        var iterations = scanner.parseInt().orElse(defaultMaxIterations);
 
+        var iterations = scanner.parseInt().orElse(defaultMaxIterations);
         if (iterations == defaultMaxIterations) {
             System.out.printf("Invalid number of max iterations, fallback to default = %d%n", defaultMaxIterations);
         }
@@ -894,13 +895,12 @@ public class MenuController {
                     try {
                         searchEngine.saveIndex(filepath, extension);
                         System.out.printf("Index was saved into %s%n", filepath);
-                        log.info("Index was saved into {}%n", filepath);
+                        log.info("Index was saved into {}", filepath);
                     } catch (IOException e) {
                         System.err.printf("Failed to save index: %s%n", filepath);
-                        log.error("Failed to load index", e);
+                        log.error("Failed to save index", e);
                     }
-                    return null;
-                }
+git                 }
         );
     }
 
@@ -912,7 +912,7 @@ public class MenuController {
                     try {
                         searchEngine.loadIndex(filepath, extension);
                         System.out.printf("Index was loaded from %s%n", filepath);
-                        log.info("Index was loaded from {}%n", filepath);
+                        log.info("Index was loaded from {}", filepath);
 
                         System.out.println("\nRebuilding wildcard indexes");
                         searchEngine.buildWildcardIndexes();
@@ -925,14 +925,13 @@ public class MenuController {
                         System.err.printf("Error: %s%n", e.getMessage());
                         log.error("Error: {}", e.getMessage());
                     }
-                    return null;
                 }
         );
     }
 
     private void performFileOperationOnIndex(
             FileOperation operation,
-            BiFunction<String, String, Void> function
+            BiConsumer<String, String> function
     ) {
         System.out.println("Choose format: ");
         System.out.println("ser/txt/json: ");
@@ -954,7 +953,7 @@ public class MenuController {
         String extension = format.get().getExtension();
         String fullPath = filename + '.' + extension;
         try {
-            function.apply(fullPath, extension);
+            function.accept(fullPath, extension);
         } catch (Exception e) {
             System.err.printf("Failed to %s index: %s", operation.getOperation(), e.getMessage());
             log.error("Failed to {} index: {}", operation.getOperation(), e.getMessage());
