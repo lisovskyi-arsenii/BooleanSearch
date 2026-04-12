@@ -2,11 +2,15 @@ package compression;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+//
+// алгоритм - сортую словник і зберігаю не слова, а довжину спільного префіксу з попереднім словом і залишок (суфікс)
+//
 @Slf4j
 public final class FrontCoding {
     private FrontCoding() {
@@ -38,14 +42,16 @@ public final class FrontCoding {
             for (String term : blockTerms) {
                 originalSize += term.length() + 1;
 
+                // спільний префікс для попереднього та поточного слів
                 int prefixLength = commonPrefixLength(previous, term);
                 String suffix    = term.substring(prefixLength);
 
+                // формат запису: <довжина_префіксу>:<суфікс>|
                 compressed.append(prefixLength).append(':')
                         .append(suffix).append('|');
 
-                compressedSize += String.valueOf(prefixLength).length() + 1
-                        + suffix.length() + 1;
+                compressedSize += String.valueOf(prefixLength).length() + 1 // розмір :
+                        + suffix.length() + 1; // розмір |
 
                 previous = term;
             }
@@ -61,15 +67,20 @@ public final class FrontCoding {
         return new CompressedDictionary(blocks, originalSize, compressedSize);
     }
 
-    public static byte[] compressToBytes(List<String> terms, int blockSize) {
+    public static byte[] compressToBytes(List<String> terms, int blockSize) throws IOException {
         CompressedDictionary dictionary = compress(terms, blockSize);
 
-        StringBuilder combined = new StringBuilder();
-        for (String block : dictionary.blocks()) {
-            combined.append(block).append("||");
-        }
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
 
-        return combined.toString().getBytes(StandardCharsets.UTF_8);
+        dos.writeInt(dictionary.blocks.size());
+        for (String block : dictionary.blocks()) {
+            byte[] blockBytes = block.getBytes(StandardCharsets.UTF_8);
+            dos.writeInt(blockBytes.length);
+            dos.write(blockBytes);
+        }
+        dos.flush();
+        return baos.toByteArray();
     }
 
     public static List<String> decompress(CompressedDictionary dictionary) {
@@ -77,12 +88,13 @@ public final class FrontCoding {
 
         for (String block : dictionary.blocks()) {
             String previous = "";
-
+            // розділяю на блоки
             String[] entries = block.split("\\|");
 
             for (String entry : entries) {
                 if (entry.isBlank()) continue;
 
+                // розділюю на дві частини: довж_префіксу,суфікс
                 String[] parts = entry.split(":", 2);
                 if (parts.length < 2) continue;
 
@@ -103,23 +115,24 @@ public final class FrontCoding {
                 }
             }
         }
-
         return terms;
     }
 
-    public static List<String> decompressFromBytes(byte[] compressed) {
-        String data     = new String(compressed, StandardCharsets.UTF_8);
-        String[] blocks = data.split("\\|\\|");
+    public static List<String> decompressFromBytes(byte[] compressed) throws IOException {
+        ByteArrayInputStream bais = new ByteArrayInputStream(compressed);
+        DataInputStream dis = new DataInputStream(bais);
 
-        List<String> blockList = new ArrayList<>();
-        for (String block : blocks) {
-            if (!block.isBlank()) {
-                blockList.add(block);
-            }
+        int blockCount = dis.readInt();
+        List<String> blockList = new ArrayList<>(blockCount);
+
+        for (int i = 0; i < blockCount; i++) {
+            int blockLength = dis.readInt();
+            byte[] blockBytes = new byte[blockLength];
+            dis.readFully(blockBytes);
+            blockList.add(new String(blockBytes, StandardCharsets.UTF_8));
         }
 
-        CompressedDictionary dictionary =
-                new CompressedDictionary(blockList, -1, compressed.length);
+        CompressedDictionary dictionary = new CompressedDictionary(blockList, -1, compressed.length);
         return decompress(dictionary);
     }
 

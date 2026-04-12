@@ -6,6 +6,7 @@ import java.util.*;
 
 @Getter
 public class ReverseBTree extends AbstractBTree {
+    // red-black tree map: reverse term -> term
     private final TreeMap<String, String> reverseMap = new TreeMap<>();
 
     // для швидшого пошуку додав цю структуру, щоб за O(1) знаходити чи є такий термін в моєму дереві
@@ -66,14 +67,22 @@ public class ReverseBTree extends AbstractBTree {
 
     public List<String> findBySuffix(String suffix) {
         if (suffix == null || suffix.isBlank()) {
-            return new ArrayList<>(terms);
+            return new ArrayList<>(new TreeSet<>(terms));
         }
 
         String reversedSuffix = reverseString(suffix);
         String upperBound = getNextPrefix(reversedSuffix);
 
+        if (upperBound == null) {
+            return reverseMap.tailMap(reversedSuffix)
+                    .values().stream()
+                    .sorted()
+                    .toList();
+        }
+
         return reverseMap.subMap(reversedSuffix, upperBound)
                 .values().stream()
+                .sorted()
                 .toList();
     }
 }

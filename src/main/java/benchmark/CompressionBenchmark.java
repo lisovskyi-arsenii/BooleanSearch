@@ -11,12 +11,11 @@ import java.util.*;
 
 @Slf4j
 public class CompressionBenchmark {
-    private static final int WARMUP_ITERATIONS    = 3;
     private static final int BENCHMARK_ITERATIONS = 10;
 
     public void runAllBenchmarks(InvertedIndex original) {
         if (original == null || original.getAllTerms().isEmpty()) {
-            System.out.println("Index is empty — nothing to benchmark");
+            log.error("Index is empty — nothing to benchmark");
             return;
         }
 
@@ -30,12 +29,24 @@ public class CompressionBenchmark {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("BENCHMARKING: Variable Byte Code (VBC)");
         System.out.println("=".repeat(80));
-        results.add(benchmarkMethod(original, CompressionMethod.VBC));
+
+        CompressionResult vbcResult = benchmarkMethod(original, CompressionMethod.VBC);
+        if (!vbcResult.valid()) {
+            log.error("Skipping comparison — verification failed for VBC");
+            return;
+        }
+        results.add(vbcResult);
 
         System.out.println("\n" + "=".repeat(80));
         System.out.println("BENCHMARKING: Gamma Code");
         System.out.println("=".repeat(80));
-        results.add(benchmarkMethod(original, CompressionMethod.G));
+
+        CompressionResult gammaResult = benchmarkMethod(original, CompressionMethod.G);
+        if (!gammaResult.valid()) {
+            log.error("Skipping comparison — verification failed for Gamma");
+            return;
+        }
+        results.add(gammaResult);
 
         printComparison(results);
     }
@@ -43,13 +54,6 @@ public class CompressionBenchmark {
     private CompressionResult benchmarkMethod(InvertedIndex original, CompressionMethod method) {
         List<String> sortedTerms = new ArrayList<>(original.getAllTerms());
         Collections.sort(sortedTerms);
-
-        System.out.printf("Warming up (%d iterations)...%n", WARMUP_ITERATIONS);
-        for (int i = 0; i < WARMUP_ITERATIONS; i++) {
-            CompressedData data = compress(sortedTerms, original, method);
-            InvertedIndex decompressed = decompress(data, method);
-            if (decompressed == null) throw new RuntimeException("Warmup failed");
-        }
 
         System.out.printf("Measuring compression (%d iterations)...%n", BENCHMARK_ITERATIONS);
         long[] compressTimes = new long[BENCHMARK_ITERATIONS];
@@ -59,7 +63,7 @@ public class CompressionBenchmark {
             long start = System.nanoTime();
             CompressedData data = compress(sortedTerms, original, method);
             compressTimes[i] = System.nanoTime() - start;
-            if (i == 0) finalData = data;
+            finalData = data;
         }
 
         long avgCompressTime = trimmedAverage(compressTimes);
@@ -81,7 +85,9 @@ public class CompressionBenchmark {
         if (lastDecompressed == null) throw new IllegalStateException("Decompression failed");
 
         boolean valid = verifyIndices(original, lastDecompressed);
-        if (!valid) System.err.println("WARNING: Decompressed data does not match original!");
+        if (!valid) {
+            log.error("WARNING: Decompressed data does not match original!");
+        }
 
         printMethodResults(method, finalData, avgCompressTime, avgDecompressTime, valid);
 
@@ -127,8 +133,8 @@ public class CompressionBenchmark {
         return new CompressedData(
                 dict,
                 postings,
-                (long) dict.originalSize(),
-                (long) dict.compressedSize(),
+                dict.originalSize(),
+                dict.compressedSize(),
                 originalPostingsSize,
                 compressedPostingsSize
         );
@@ -193,9 +199,14 @@ public class CompressionBenchmark {
                                     long compressNs,
                                     long decompressNs,
                                     boolean valid) {
-        long totalOrig  = data.originalDictSize    + data.originalPostingsSize;
-        long totalComp  = data.compressedDictSize  + data.compressedPostingsSize;
-        double ratio    = (double) totalComp / totalOrig * 100;
+        long totalOrig = data.originalDictSize   + data.originalPostingsSize;
+        long totalComp = data.compressedDictSize + data.compressedPostingsSize;
+        double ratio   = (double) totalComp / totalOrig * 100;
+
+        double dictRatio = data.originalDictSize == 0 ? 0.0
+                : (double) data.compressedDictSize / data.originalDictSize * 100;
+        double postRatio = data.originalPostingsSize == 0 ? 0.0
+                : (double) data.compressedPostingsSize / data.originalPostingsSize * 100;
 
         System.out.printf("%nResults for %s:%n", method);
         System.out.println("-".repeat(80));
@@ -206,11 +217,9 @@ public class CompressionBenchmark {
         System.out.printf("Compression ratio:  %.2f%%%n", ratio);
         System.out.println();
         System.out.printf("Dictionary:         %,d → %,d bytes (%.2f%%)%n",
-                data.originalDictSize, data.compressedDictSize,
-                (double) data.compressedDictSize / data.originalDictSize * 100);
+                data.originalDictSize, data.compressedDictSize, dictRatio);
         System.out.printf("Postings:           %,d → %,d bytes (%.2f%%)%n",
-                data.originalPostingsSize, data.compressedPostingsSize,
-                (double) data.compressedPostingsSize / data.originalPostingsSize * 100);
+                data.originalPostingsSize, data.compressedPostingsSize, postRatio);
         System.out.println();
         System.out.printf("Compression time:   %.2f ms (avg of %d runs)%n",
                 compressNs / 1_000_000.0, BENCHMARK_ITERATIONS);
@@ -218,6 +227,7 @@ public class CompressionBenchmark {
                 decompressNs / 1_000_000.0, BENCHMARK_ITERATIONS);
         System.out.printf("Verification:       %s%n", valid ? "PASSED" : "FAILED");
     }
+
 
     private void printComparison(List<CompressionResult> results) {
         if (results.size() != 2) return;
@@ -317,7 +327,9 @@ public class CompressionBenchmark {
                         (double) compressedPostingsSize   / originalPostingsSize   * 100;
                 case "total"      ->
                         (double) compressedSize           / originalSize           * 100;
-                default -> 0.0;
+                default -> throw new IllegalArgumentException(
+                        "Unknown compression component: '" + component + "'"
+                );
             };
         }
     }

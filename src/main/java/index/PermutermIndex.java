@@ -4,15 +4,15 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Getter
 public class PermutermIndex implements WildcardIndex {
     private static final char MARKER = '$';
 
+    // red-black tree map: rotation -> original term
     private final TreeMap<String, String> rotationMap = new TreeMap<>();
-    private final Set<String> terms = ConcurrentHashMap.newKeySet();
+    private final Set<String> terms = new HashSet<>();
 
     @Override
     public void buildFromDictionary(Dictionary dictionary) {
@@ -41,6 +41,7 @@ public class PermutermIndex implements WildcardIndex {
             return;
         }
 
+        // add marker and then rotate word
         String extended = term + MARKER;
 
         for (int i = 0; i < extended.length(); i++) {
@@ -69,10 +70,9 @@ public class PermutermIndex implements WildcardIndex {
 
         long starCount = wildcardQuery.chars().filter(c -> c == '*').count();
         if (starCount > 1) {
-            throw new IllegalArgumentException(
-                    "PermutermIndex supports only one '*'. " +
-                            "For advanced wildcard queries use ThreeGramIndex."
-            );
+            log.warn("PermutermIndex supports only one '*', got query: {}. " +
+                    "Use ThreeGramIndex for multi-wildcard queries.", wildcardQuery);
+            return Collections.emptyList();
         }
 
         String prefix = buildSearchPrefix(wildcardQuery);

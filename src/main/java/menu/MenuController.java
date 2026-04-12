@@ -673,7 +673,7 @@ public class MenuController {
             return;
         }
 
-        System.out.println("Enter query (space-generated terms): ");
+        System.out.println("Enter query (space-separated terms): ");
         String query = scanner.parseString().toLowerCase().trim();
         if (query.isBlank()) {
             System.out.println("Query cannot be empty");
@@ -698,7 +698,8 @@ public class MenuController {
             var doc = results.get(i);
             List<String> names = searchEngine.getDocumentNames(Set.of(doc.docId()));
             String name = names.isEmpty() ? "doc#" + doc.docId() : names.getFirst();
-            System.out.printf("%-5d %-45s %.4f%n", i + 1, name, doc.score());
+            String truncated = name.length() > 44 ? name.substring(0, 41) + "..." : name;
+            System.out.printf("%-5d %-45s %.4f%n", i + 1, truncated, doc.score());
         }
 
         System.out.println("-".repeat(65));
@@ -809,11 +810,13 @@ public class MenuController {
         System.out.println("-".repeat(80));
 
         if (searchEngine.getBTree() != null) {
-            System.out.printf("  BTree size:             %,d terms%n", searchEngine.getBTree().size());
-            System.out.printf("  ReverseBTree size:      %,d terms%n", searchEngine.getReverseBTree().size());
-            System.out.printf("  ThreeGramIndex size:    %,d terms%n", searchEngine.getThreeGramIndex().size());
-            System.out.printf("  ThreeGram n-grams:      %,d%n",
-                    searchEngine.getThreeGramIndex().getIndex().size());
+            System.out.printf("  BTree size:           %,d terms%n", searchEngine.getBTree().size());
+            System.out.printf("  ReverseBTree size:    %,d terms%n", searchEngine.getReverseBTree().size());
+            System.out.printf("  PermutermIndex size:  %,d terms, %,d rotations%n",
+                    searchEngine.getPermutermIndex().size(),
+                    searchEngine.getPermutermIndex().getRotationMap().size());
+            System.out.printf("  ThreeGramIndex size:  %,d terms%n", searchEngine.getThreeGramIndex().size());
+            System.out.printf("  ThreeGram n-grams:    %,d%n", searchEngine.getThreeGramIndex().getIndex().size());
         } else {
             System.out.println("  Wildcard indexes not built");
             System.out.println("  Use option 1 (Index documents) to build them");

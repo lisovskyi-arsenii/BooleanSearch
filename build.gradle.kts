@@ -45,6 +45,7 @@ dependencies {
     testAnnotationProcessor("org.projectlombok:lombok:${lombokVersion}")
 }
 
+
 application {
     mainClass.set("Main")
 }

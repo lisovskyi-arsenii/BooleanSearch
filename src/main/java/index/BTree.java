@@ -8,6 +8,7 @@ import java.util.TreeSet;
 
 @Getter
 public class BTree extends AbstractBTree {
+    // red-black tree set
     private final TreeSet<String> terms = new TreeSet<>();
 
     @Override
@@ -62,6 +63,9 @@ public class BTree extends AbstractBTree {
         }
 
         String upperBound = getNextPrefix(prefix);
+        if (upperBound == null) {
+            return new ArrayList<>(terms.tailSet(prefix));
+        }
         return new ArrayList<>(terms.subSet(prefix, upperBound));
     }
 }

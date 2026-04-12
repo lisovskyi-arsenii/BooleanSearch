@@ -48,9 +48,7 @@ public class ZoneIndex {
 
     public Set<Integer> search(String term) {
         Set<Integer> result = new HashSet<>();
-        zoneIndex.values().forEach(index -> {
-            index.getDocuments(term).ifPresent(result::addAll);
-        });
+        zoneIndex.values().forEach(index -> index.getDocuments(term).ifPresent(result::addAll));
         return result;
     }
 

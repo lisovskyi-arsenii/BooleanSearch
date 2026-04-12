@@ -14,6 +14,7 @@ public class ThreeGramIndex implements WildcardIndex {
     private static final char MARKER = '$';
     private static final int N = 3;
 
+    // skip list map: nGram -> set of terms
     private final Map<String, Set<String>> index = new ConcurrentSkipListMap<>();
     private final Set<String> terms = ConcurrentHashMap.newKeySet();
 
@@ -39,10 +40,9 @@ public class ThreeGramIndex implements WildcardIndex {
         terms.add(term);
 
         String editedTerm = "$" + term + "$";
-
         for (int i = 0; i <= editedTerm.length() - N; i++) {
             String nGram = editedTerm.substring(i, i + N);
-            index.computeIfAbsent(nGram, key -> new HashSet<>()).add(term);
+            index.computeIfAbsent(nGram, _ -> ConcurrentHashMap.newKeySet()).add(term);
         }
     }
 

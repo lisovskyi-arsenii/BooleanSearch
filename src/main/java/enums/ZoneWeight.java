@@ -17,6 +17,7 @@ public enum ZoneWeight {
         this.weight = BigDecimal.valueOf(weight);
     }
 
+    // статичний метод для перевірки чи в сумі усі зони дають 1
     static {
         BigDecimal sum = BigDecimal.ZERO;
         for (var zone : values()) {

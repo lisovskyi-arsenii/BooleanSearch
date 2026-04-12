@@ -1,10 +1,18 @@
 package compression;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+//
+// алгоритм - замість збереження числа в 4 байти - оптимізуємо і записуємо це в меншу кількість байтів
+//
+@Slf4j
 public final class VariableByteCode {
+    private static final byte MASK = 0x7F; // 0111 1111
+
     private VariableByteCode() {
         throw new UnsupportedOperationException("Utility class");
     }
@@ -26,11 +34,12 @@ public final class VariableByteCode {
             throw new IllegalArgumentException("VByte supports only non-negative integers");
         }
 
+        // 32 / 7 -> приблизно 5, тому створюємо масив на 5 елементів щоб записувати туди байти
         int[] chunks = new int[5];
         int count = 0;
 
         do {
-            chunks[count++] = num & 0x7F;
+            chunks[count++] = num & MASK;
             num >>>= 7;
         } while (num != 0);
 
@@ -52,6 +61,10 @@ public final class VariableByteCode {
         int previous = 0;
 
         for (int num : sortedNumbers) {
+            if (num < previous) {
+                throw new IllegalArgumentException(
+                        "Input must be sorted ascending, but " + num + " < " + previous);
+            }
             gaps.add(num - previous);
             previous = num;
         }
@@ -65,7 +78,7 @@ public final class VariableByteCode {
 
         for (byte b : encoded) {
             int val = b & 0xFF;
-            current = (current << 7) | (val & 0x7F);
+            current = (current << 7) | (val & MASK);
 
             if ((val & 0x80) != 0) {
                 numbers.add(current);
@@ -73,10 +86,16 @@ public final class VariableByteCode {
             }
         }
 
+        if (current != 0) {
+            throw new IllegalStateException(
+                    "Incomplete VByte number at end of stream — data may be corrupted");
+        }
         return numbers;
     }
 
     public static List<Integer> decodeWithGaps(byte[] encoded) {
+        if (encoded.length == 0) return new ArrayList<>();
+
         List<Integer> gaps = decode(encoded);
         List<Integer> numbers = new ArrayList<>();
 
@@ -87,10 +106,5 @@ public final class VariableByteCode {
         }
 
         return numbers;
-    }
-
-    public static double compressionRatio(List<Integer> original, byte[] compressed) {
-        int originalBytes = original.size() * 4; // Integer = 4 bytes
-        return (double) compressed.length / originalBytes * 100;
     }
 }

@@ -20,6 +20,13 @@ public abstract class AbstractBTree implements WildcardIndex {
                     : Collections.emptyList();
         }
 
+        long starCount = wildcard.chars().filter(c -> c == '*').count();
+        if (starCount > 1) {
+            throw new IllegalArgumentException(
+                    "BTree/ReverseBTree support only one '*'. Use ThreeGramIndex for '" + wildcard + "'"
+            );
+        }
+
         int starIndex = wildcard.indexOf("*");
         validateWildcardStarIndex(starIndex, wildcard);
         return searchWildcard(wildcard, starIndex);
@@ -33,9 +40,11 @@ public abstract class AbstractBTree implements WildcardIndex {
             return String.valueOf(Character.MAX_VALUE);
         }
 
-        char[] currentPrefix = prefix.toCharArray();
-        currentPrefix[currentPrefix.length - 1]++;
-        return new String(currentPrefix);
+        char last = prefix.charAt(prefix.length() - 1);
+        if (last == Character.MAX_VALUE) {
+            return null;
+        }
+        return prefix.substring(0, prefix.length() - 1) + (char)(last + 1);
     }
 
     protected String reverseString(String str) {
