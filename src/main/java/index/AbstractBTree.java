@@ -35,18 +35,6 @@ public abstract class AbstractBTree implements WildcardIndex {
     protected abstract void validateWildcardStarIndex(int starIndex, String wildcard) throws IllegalArgumentException;
     protected abstract List<String> searchWildcard(String wildcard, int starIndex);
 
-    protected String getNextPrefix(String prefix) {
-        if (prefix == null || prefix.isBlank()) {
-            return String.valueOf(Character.MAX_VALUE);
-        }
-
-        char last = prefix.charAt(prefix.length() - 1);
-        if (last == Character.MAX_VALUE) {
-            return null;
-        }
-        return prefix.substring(0, prefix.length() - 1) + (char)(last + 1);
-    }
-
     protected String reverseString(String str) {
         return new StringBuilder(str).reverse().toString();
     }

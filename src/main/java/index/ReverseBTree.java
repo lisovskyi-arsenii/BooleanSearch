@@ -71,7 +71,7 @@ public class ReverseBTree extends AbstractBTree {
         }
 
         String reversedSuffix = reverseString(suffix);
-        String upperBound = getNextPrefix(reversedSuffix);
+        String upperBound = nextPrefix(reversedSuffix);
 
         if (upperBound == null) {
             return reverseMap.tailMap(reversedSuffix)

@@ -19,7 +19,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -592,23 +591,28 @@ public class MenuController {
         showMessage();
         System.out.println("\n=== Wildcard Search ===");
         System.out.println("Supported patterns:");
-        System.out.println("  mon*     - words starting with 'mon' (using BTree)");
-        System.out.println("  *ing     - words ending with 'ing' (using ReverseBTree)");
-        System.out.println("  m*n      - middle wildcard (using 3-gram)");
-        System.out.println("  te*ti*   - multiple wildcards (using 3-gram)");
+        System.out.println("  mon*     - prefix wildcard");
+        System.out.println("  *ing     - suffix wildcard");
+        System.out.println("  m*n      - middle wildcard");
+        System.out.println("  te*ti*n  - multiple wildcards (always uses 3-gram)");
         System.out.println();
 
         if (searchEngine.getCurrentMode() == BooleanSearchEngine.IndexingMode.IN_MEMORY) {
             System.out.println("\nChoose wildcard strategy for single-'*' queries:");
             System.out.println("  1. Permuterm Index  (precise, handles all patterns)");
             System.out.println("  2. BTree/ReverseBTree (BTree for prefix, ReverseBTree for suffix)");
-            System.out.print("Enter choice (default = 1): ");
+            System.out.println("  3. ThreeGram Index (for multi-* queries)");
 
             var strategyOpt = scanner.parseInt();
-            if (strategyOpt.isPresent() && strategyOpt.getAsInt() == 2) {
-                searchEngine.setWildcardStrategy(WildcardStrategy.BTREE);
-            } else {
-                searchEngine.setWildcardStrategy(WildcardStrategy.PERMUTERM);
+            if (strategyOpt.isEmpty()) {
+                throw new IllegalArgumentException("Invalid choice");
+            }
+
+            switch (strategyOpt.getAsInt()) {
+                case 1 -> searchEngine.setWildcardStrategy(WildcardStrategy.PERMUTERM);
+                case 2 -> searchEngine.setWildcardStrategy(WildcardStrategy.BTREE);
+                case 3 -> searchEngine.setWildcardStrategy(WildcardStrategy.THREE_GRAM);
+                default -> throw new IllegalArgumentException("Invalid number");
             }
         }
 
@@ -633,12 +637,12 @@ public class MenuController {
             }
 
             Map<String, Set<Integer>> results = resultOpt.get();
+            final int limit = 100;
 
             for (var entry : results.entrySet()) {
                 String term = entry.getKey();
                 Set<Integer> docIds = entry.getValue();
 
-                final int limit = 100;
 
                 System.out.printf("%-15s → %d documents: %s%n",
                         term,
@@ -900,7 +904,7 @@ public class MenuController {
                         System.err.printf("Failed to save index: %s%n", filepath);
                         log.error("Failed to save index", e);
                     }
-git                 }
+                }
         );
     }
 

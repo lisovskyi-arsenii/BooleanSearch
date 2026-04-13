@@ -679,6 +679,7 @@ public class BooleanSearchEngine implements SearchEngine {
         // RAM-based
         long starCount = wildcardQuery.chars().filter(c -> c == '*').count();
         if (starCount >= 2) {
+            System.out.println("Find 2 or more '*' - switching to threegram index");
             return threeGramIndex.search(wildcardQuery);
         }
 
@@ -694,6 +695,8 @@ public class BooleanSearchEngine implements SearchEngine {
                     yield permutermIndex.search(wildcardQuery);
                 }
             }
+
+            case THREE_GRAM -> threeGramIndex.search(wildcardQuery);
         };
     }
 

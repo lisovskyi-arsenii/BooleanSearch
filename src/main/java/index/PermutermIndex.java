@@ -115,11 +115,4 @@ public class PermutermIndex implements WildcardIndex {
         Collections.sort(result);
         return result;
     }
-
-    private String nextPrefix(String prefix) {
-        if (prefix.isEmpty()) return null;
-        char last = prefix.charAt(prefix.length() - 1);
-        if (last == Character.MAX_VALUE) return null;
-        return prefix.substring(0, prefix.length() - 1) + (char) (last + 1);
-    }
 }

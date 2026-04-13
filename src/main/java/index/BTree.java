@@ -62,7 +62,7 @@ public class BTree extends AbstractBTree {
             return new ArrayList<>(terms);
         }
 
-        String upperBound = getNextPrefix(prefix);
+        String upperBound = nextPrefix(prefix);
         if (upperBound == null) {
             return new ArrayList<>(terms.tailSet(prefix));
         }
